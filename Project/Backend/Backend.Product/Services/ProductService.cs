@@ -37,28 +37,13 @@ namespace Backend.Product.Services
             {
                 Success = true,
                 Message = OperationResult.Success,
-                SellerProduct = new ProductSellerDTO
-                {
-                    ProductId = product.ProductId,
-                    StoreId = product.StoreId,
-                    CategoryId = product.CategoryId,
-                    ProductName = product.ProductName,
-                    Description = product.Description,
-                    SalePrice = product.SalePrice,
-                    ImportPrice = product.ImportPrice,
-                    Quantity = product.Quantity,
-                    Supplier = product.Supplier,
-                    IsActive = product.IsActive,
-                    CreatedAt = product.CreatedAt,
-                    UpdatedAt = product.UpdatedAt
-                }
+                SellerProduct = _mapper.Map<ProductSellerDTO>(product)
             };
         }
 
         public async Task<ProductResponseModel> GetProductsByStoreAsync(Guid storeId, ClaimsPrincipal user)
         {
             var products = await _repo.GetProductByStoreIdAsync(storeId);
-
             var roleClaim = user.FindFirst(ClaimTypes.Role)?.Value;
 
             if (roleClaim == "seller")
@@ -67,21 +52,7 @@ namespace Backend.Product.Services
                 {
                     Success = true,
                     Message = OperationResult.Success,
-                    SellerProductList = products.Select(p => new ProductSellerDTO
-                    {
-                        ProductId = p.ProductId,
-                        StoreId = p.StoreId,
-                        CategoryId = p.CategoryId,
-                        ProductName = p.ProductName,
-                        Description = p.Description,
-                        SalePrice = p.SalePrice,
-                        ImportPrice = p.ImportPrice,
-                        Quantity = p.Quantity,
-                        Supplier = p.Supplier,
-                        IsActive = p.IsActive,
-                        CreatedAt = p.CreatedAt,
-                        UpdatedAt = p.UpdatedAt
-                    })
+                    SellerProductList = _mapper.Map<IEnumerable<ProductSellerDTO>>(products)
                 };
             }
 
@@ -89,16 +60,8 @@ namespace Backend.Product.Services
             {
                 Success = true,
                 Message = OperationResult.Success,
-                BuyerProductList = products.Select(p => new ProductBuyerDTO
-                {
-                    ProductName = p.ProductName,
-                    Description = p.Description,
-                    SalePrice = p.SalePrice,
-                    Quantity = p.Quantity,
-                    IsActive = p.IsActive
-                })
+                BuyerProductList = _mapper.Map<IEnumerable<ProductBuyerDTO>>(products)
             };
-            
         }
 
         public async Task<ProductResponseModel> GetProductsByStoreAndCategoryAsync(Guid storeId, Guid categoryId)
@@ -109,21 +72,7 @@ namespace Backend.Product.Services
             {
                 Success = true,
                 Message = OperationResult.Success,
-                SellerProductList = products.Select(p => new ProductSellerDTO
-                {
-                    ProductId = p.ProductId,
-                    StoreId = p.StoreId,
-                    CategoryId = p.CategoryId,
-                    ProductName = p.ProductName,
-                    Description = p.Description,
-                    SalePrice = p.SalePrice,
-                    ImportPrice = p.ImportPrice,
-                    Quantity = p.Quantity,
-                    Supplier = p.Supplier,
-                    IsActive = p.IsActive,
-                    CreatedAt = p.CreatedAt,
-                    UpdatedAt = p.UpdatedAt
-                })
+                SellerProductList = _mapper.Map<IEnumerable<ProductSellerDTO>>(products)
             };
         }
 
@@ -135,21 +84,7 @@ namespace Backend.Product.Services
             {
                 Success = true,
                 Message = OperationResult.Success,
-                SellerProductList = products.Select(p => new ProductSellerDTO
-                {
-                    ProductId = p.ProductId,
-                    StoreId = p.StoreId,
-                    CategoryId = p.CategoryId,
-                    ProductName = p.ProductName,
-                    Description = p.Description,
-                    SalePrice = p.SalePrice,
-                    ImportPrice = p.ImportPrice,
-                    Quantity = p.Quantity,
-                    Supplier = p.Supplier,
-                    IsActive = p.IsActive,
-                    CreatedAt = p.CreatedAt,
-                    UpdatedAt = p.UpdatedAt
-                })
+                SellerProductList = _mapper.Map<IEnumerable<ProductSellerDTO>>(products)
             };
         }
 
@@ -200,7 +135,7 @@ namespace Backend.Product.Services
                         continue;
                     }
 
-                    _mapper.Map(dto, item); 
+                    _mapper.Map(dto, item);
                     item.UpdatedAt = DateTime.UtcNow;
 
                     updatedCount++;
@@ -237,7 +172,6 @@ namespace Backend.Product.Services
             }
         }
 
-
         public async Task<ProductResponseModel> DeleteProductAsync(Guid productId)
         {
             try
@@ -270,21 +204,15 @@ namespace Backend.Product.Services
             }
         }
 
-
-         //---------------------------
-         //Category
-         //---------------------------
+        //---------------------------
+        // Category
+        //---------------------------
         public async Task<ProductResponseModel> CreateCategoryAsync(CategoryDTO category)
         {
             try
             {
-                var newCategory = new CategoryModel()
-                {
-                    CategoryId = Guid.NewGuid(),
-                    CategoryName = category.CategoryName,
-                    StoreId = category.StoreId,
-
-                };
+                var newCategory = _mapper.Map<CategoryModel>(category);
+                newCategory.CategoryId = Guid.NewGuid();
 
                 await _repo.CreateCategoryAsync(newCategory);
                 await _repo.SaveChangesAsync();
@@ -293,12 +221,7 @@ namespace Backend.Product.Services
                 {
                     Success = true,
                     Message = OperationResult.Success,
-                    CategoryInfo = new CategoryDTO
-                    {
-                        CategoryId = category.CategoryId,
-                        StoreId = category.StoreId,
-                        CategoryName = category.CategoryName
-                    }
+                    CategoryInfo = _mapper.Map<CategoryDTO>(newCategory)
                 };
             }
             catch (Exception ex)
@@ -320,83 +243,8 @@ namespace Backend.Product.Services
             {
                 Success = true,
                 Message = OperationResult.Success,
-                CategoryList = categories.Select(c => new CategoryDTO
-                {
-                    CategoryId = c.CategoryId,
-                    StoreId = c.StoreId,
-                    CategoryName = c.CategoryName
-                })
+                CategoryList = _mapper.Map<IEnumerable<CategoryDTO>>(categories)
             };
         }
-
-
-        // ---------------------------
-        // Buyer
-        // ---------------------------
-        //public async Task<ProductResponseModel> GetProductsByCategoryForBuyerAsync(Guid categoryId)
-        //{
-        //    try
-        //    {
-        //        var products = await _repo.GetProductByCategoryAsync(categoryId);
-
-        //        return new ProductResponseModel
-        //        {
-        //            Success = true,
-        //            Message = OperationResult.Success,
-        //            BuyerProductList = products.Select(p => new ProductBuyerDTO
-        //            {
-        //                ProductName = p.ProductName,
-        //                Description = p.Description,
-        //                SalePrice = p.SalePrice,
-        //                Quantity = p.Quantity,
-        //                IsActive = p.IsActive
-        //            })
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ProductResponseModel
-        //        {
-        //            Success = false,
-        //            Message = OperationResult.Error,
-        //            ErrorMessage = ex.Message
-        //        };
-        //    }
-        //}
-
-        //public async Task<ProductResponseModel> SearchProductsForBuyerAsync(string keyword)
-        //{
-        //    try
-        //    {
-        //        var products = await _repo.SearchProductAsync(keyword);
-
-        //        return new ProductResponseModel
-        //        {
-        //            Success = true,
-        //            Message = OperationResult.Success,
-        //            BuyerProductList = products.Select(p => new ProductBuyerDTO
-        //            {
-        //                ProductName = p.ProductName,
-        //                Description = p.Description,
-        //                SalePrice = p.SalePrice,
-        //                Quantity = p.Quantity,
-        //                IsActive = p.IsActive
-        //            })
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ProductResponseModel
-        //        {
-        //            Success = false,
-        //            Message = OperationResult.Error,
-        //            ErrorMessage = ex.Message
-        //        };
-        //    }
-        //}
-
-
-
-
     }
 }

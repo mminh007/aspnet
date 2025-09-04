@@ -8,8 +8,8 @@ namespace Backend.Store.Services
 
         Task<StoreResponseModel> UpdateStoreAsync(UpdateStoreModel model);
 
-        Task<StoreResponseModel> DeleteStoreAsync(Guid storeId);
-        Task<StoreResponseModel> GetStoreByIdAsync(Guid storeId);
+        Task<StoreResponseModel> DeleteStoreAsync(Guid UserId);
+        Task<StoreResponseModel> GetStoreByIdAsync(Guid UserId);
 
         Task<StoreResponseModel> ChangeActive(StoreActiveModel model);
 

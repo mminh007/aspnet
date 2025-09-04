@@ -29,13 +29,12 @@ namespace Backend.Authentication.Services
             _logger = logger;
         }
 
-        public async Task<OperationResult> RegisterAsync(RegisterRequestModel request, Guid UserId)
+        public async Task<LoginResponseModel> RegisterAsync(RegisterRequestModel request, Guid userId)
         {
-
             var newUser = new IdentityModel
             {
                 Id = Guid.NewGuid(),
-                UserId = UserId,
+                UserId = userId,
                 Email = request.Email,
                 Role = request.Role,
             };
@@ -45,16 +44,24 @@ namespace Backend.Authentication.Services
             try
             {
                 await _authRepository.CreateIdentityAsync(newUser);
-                return OperationResult.Success;
+                return new LoginResponseModel
+                {
+                    ErrorMessage = "Registration Successfully!",
+                    Message = OperationResult.Success
+                };
+
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while registering new user {Email}", request.Email);
-                return OperationResult.Failed;
+                return new LoginResponseModel
+                {
+                    ErrorMessage = "Registration failed",
+                    Message = OperationResult.Failed
+                };
             }
-
-
         }
+
 
 
         public async Task<LoginResponseModel> Authenticate(LoginRequestModel request)
@@ -245,6 +252,38 @@ namespace Backend.Authentication.Services
             
         }
 
-       
+        public string GenerateInternalServiceToken(string serviceName = "InternalService")
+        {
+            var jwt = _config.GetSection("Jwt");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var tokenExpiry = DateTime.UtcNow.AddMinutes(
+                int.Parse(jwt["InternalTokenExpiresMinutes"] ?? "5")
+            );
+
+            var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, serviceName),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role, "system")  
+        };
+
+            var token = new JwtSecurityToken(
+                issuer: jwt["Issuer"],
+                audience: jwt["Audience"],
+                claims: claims,
+                notBefore: DateTime.UtcNow,
+                expires: tokenExpiry,
+                signingCredentials: creds
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+            _logger.LogInformation("Generated internal token for {Service} with role=system", serviceName);
+
+            return tokenString;
+        }
+
+
     }
 }

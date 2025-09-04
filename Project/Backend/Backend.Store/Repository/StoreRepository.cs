@@ -20,6 +20,7 @@ namespace Backend.Store.Repository
             {
                 StoreId = Guid.NewGuid(),
                 UserId = model.UserId,
+                StoreName = $"Store_{Guid.NewGuid()}",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
             };
@@ -97,7 +98,7 @@ namespace Backend.Store.Repository
         }
 
         // ✅ New: Get all active stores
-        public async Task<IEnumerable<StoreDTO>> GetAllActiveStoresAsync()
+        public async Task<IEnumerable<StoreDTO>?> GetAllActiveStoresAsync()
         {
             return await _db.Stores
                 .Where(s => s.IsActive)
