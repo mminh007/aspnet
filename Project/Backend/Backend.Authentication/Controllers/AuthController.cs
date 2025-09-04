@@ -4,8 +4,8 @@ using Backend.Authentication.Models;
 using Backend.Authentication.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections;
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace Backend.Authentication.Controllers
 {
@@ -15,11 +15,16 @@ namespace Backend.Authentication.Controllers
     {
         private readonly UserApiService _userApiService;
         private readonly ITokenService _tokenService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(UserApiService userApiService, ITokenService tokenService)
+        public AuthController(
+            UserApiService userApiService,
+            ITokenService tokenService,
+            ILogger<AuthController> logger)
         {
             _userApiService = userApiService;
             _tokenService = tokenService;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -28,74 +33,90 @@ namespace Backend.Authentication.Controllers
         {
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Invalid model state while registering user: {@Model}", model);
                 return BadRequest(ModelState);
             }
 
-            CheckUserModel userCheck = new CheckUserModel()
+            _logger.LogInformation("Starting registration for {Email}", model.Email);
+
+            var userCheck = new CheckUserModel
             {
                 Email = model.Email,
                 Role = model.Role,
             };
 
-            // Get UserID
+            // Generate internal token for service-to-service call
+
             var response = await _userApiService.RegisterUserAsync(userCheck);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                var items = response.Content.ReadFromJsonAsync<RegisterUserResponseModel>().Result;
-                var userId = items.UserId;
+                var items = await response.Content.ReadFromJsonAsync<RegisterUserResponseModel>();
+                var userId = items!.UserId;
+
                 var result = await _tokenService.RegisterAsync(model, userId);
 
-                return result switch
-                {
-                    OperationResult.Success => Ok(new { message = "Register Successfully!" }),
-                    OperationResult.Failed => BadRequest(new { message = "Registration failed" }),
-                    OperationResult.NotFound => NotFound(new { message = "User Service unavailable!" }),
-                    _ => StatusCode(500, new { message = "Unexpected error!" })
-                };
-            }
-            else if (response.StatusCode == HttpStatusCode.Conflict)
-            {
-                return Conflict(new { message = "Email already exists!" }); // 409
-            }
-            else if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                return BadRequest(new { message = "Invalid request to user service" }); // 400
-            }
-            else if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return NotFound(new { message = "User service unavailable" }); // 404
-            }
-            else
-            {
-                return StatusCode(500, new { message = "Unexpected error!" }); // 500
+                return HandleResponse(result, "Register successfully!", "Registration failed");
             }
 
+            if (response.StatusCode == HttpStatusCode.Conflict)
+                return Conflict(new { message = "Email already exists!" });
 
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+                return BadRequest(new { message = "Invalid request to user service" });
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return NotFound(new { message = "User service unavailable" });
+
+            return StatusCode(500, new { message = "Unexpected error!" });
         }
 
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestModel model)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Invalid model state while logging in: {@Model}", model);
                 return BadRequest(ModelState);
             }
 
-            var result = await _tokenService.Authenticate(model);
+            _logger.LogInformation("Login attempt for {Email}", model.Email);
 
-            return result.Message switch
+            var result = await _tokenService.Authenticate(model);
+            return HandleResponse(result, "Login successfully!", "Invalid login credentials");
+        }
+
+        // ✅ Method dùng chung để trả response
+        private IActionResult HandleResponse(LoginResponseModel response, string? successMessage = null, string? failedMessage = null)
+        {
+            return response.Message switch
             {
-                OperationResult.Success => Ok(new { message = "Login Successfully!", access_token = result.AccessToken}),
-                OperationResult.Failed => BadRequest(new { message = result.ErrorMessage }),
-                OperationResult.NotFound => NotFound(new { message = result.ErrorMessage }),
+                OperationResult.Success => Ok(new
+                {
+                    message = successMessage ?? "Operation successful",
+                    access_token = response.AccessToken,
+                    refresh_token = response.RefreshToken?.RawToken,
+                    expires_in = response.ExpiresIn
+                }),
+
+                OperationResult.Failed => BadRequest(new
+                {
+                    message = failedMessage ?? response.ErrorMessage ?? "Operation failed"
+                }),
+
+                OperationResult.NotFound => NotFound(new
+                {
+                    message = response.ErrorMessage ?? "Not found"
+                }),
+
+                OperationResult.Error => StatusCode(500, new
+                {
+                    message = response.ErrorMessage ?? "Unexpected error!"
+                }),
+
                 _ => StatusCode(500, new { message = "Unexpected error!" })
             };
-
-
-
-
         }
     }
 }

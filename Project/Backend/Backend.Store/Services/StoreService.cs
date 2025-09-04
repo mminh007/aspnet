@@ -52,6 +52,7 @@ namespace Backend.Store.Services
 
         public async Task<StoreResponseModel> CreateStoreAsync(RegisterStoreModel model)
         {
+
             try
             {
                 await _storeRepository.CreateStoreAsync(model);

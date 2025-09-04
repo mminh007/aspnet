@@ -11,13 +11,11 @@ namespace Backend.User.Repository
     {
 
         public readonly UserDbContext _db;
-        //private readonly PasswordHasher<UserModel> _passwordHasher = new PasswordHasher<UserModel>();
 
         public UserRepository(UserDbContext db)
         {
             _db = db;
         }
-
 
         public async Task<UserResponseModel> CreateUserAsync(UserCheckModel user)
         {
@@ -64,7 +62,7 @@ namespace Backend.User.Repository
                 return new UserResponseModel
                 {
                     Success = false,
-                    Message = OperationResult.Error, // bạn có thể thêm enum OperationResult.Error
+                    Message = OperationResult.Error, 
                     ErrorMessage = ex.Message
                 };
             }

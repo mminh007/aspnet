@@ -14,7 +14,7 @@ namespace Backend.Store.Repository
 
         Task<StoreDTO> GetStoreByKeyword(string keyword);
 
-        Task<IEnumerable<StoreDTO>> GetAllActiveStoresAsync();
+        Task<IEnumerable<StoreDTO>?> GetAllActiveStoresAsync();
 
         Task<StoreDTO?> GetStoreDetailById(Guid storeId);
 

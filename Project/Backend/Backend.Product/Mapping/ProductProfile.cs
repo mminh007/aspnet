@@ -16,9 +16,18 @@ namespace Backend.Product.Mapping
                 .ForMember(dest => dest.Category.StoreId, opt => opt.MapFrom(src => src.Category.StoreId))
                 .ForMember(dest => dest.Category.CategoryId, opt => opt.MapFrom(src => src.Category.CategoryId));
                 
-            // Update mapping (chỉ map field khác null)
+            // Update mapping 
             CreateMap<UpdateProductModel, ProductModel>()
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+            
+            CreateMap<ProductModel, ProductSellerDTO>();
+
+            
+            CreateMap<ProductModel, ProductBuyerDTO>();
+
+            
+            CreateMap<CategoryModel, CategoryDTO>().ReverseMap();
         }
     }
 }

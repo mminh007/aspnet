@@ -7,7 +7,7 @@ namespace Backend.Authentication.Services
     public interface ITokenService
     {
 
-        Task<OperationResult> RegisterAsync(RegisterRequestModel request, Guid UserId);
+        Task<LoginResponseModel> RegisterAsync(RegisterRequestModel request, Guid UserId);
 
         Task<LoginResponseModel> Authenticate(LoginRequestModel model);
 
@@ -15,5 +15,7 @@ namespace Backend.Authentication.Services
         Task<RefreshTokenResponseModel> RefreshTokenAsync(IdentityModel user, int ResfreshTokenDays);
 
         Task<LoginResponseModel> ValidateRefreshTokenAsync(string rawToken);
+
+        string GenerateInternalServiceToken(string serviceName = "InternalService");
     }
 }

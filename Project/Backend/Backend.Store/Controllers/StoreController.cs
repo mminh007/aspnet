@@ -1,4 +1,5 @@
-﻿using Backend.Store.Enums;
+﻿using Backend.Shared.DTO.Products;
+using Backend.Store.Enums;
 using Backend.Store.Models;
 using Backend.Store.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -23,31 +24,17 @@ namespace Backend.Store.Controllers
         [Authorize(Roles = "system")]
         public async Task<IActionResult> CreateStore([FromBody] RegisterStoreModel model)
         {
-            
             var result = await _storeService.CreateStoreAsync(model);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(new { message = "Register Successfully!" }),
-                OperationResult.Failed => BadRequest(new { message = "Registration failed" }),
-                OperationResult.NotFound => NotFound(new { message = "Store service unavailable" }),
-                _ => StatusCode(500, new { message = "Unexpected error!" })
-            };
-
+            return HandleResponse(result);
         }
 
-        [HttpGet("{id:guid}")]
+
+        [HttpGet("{userId:guid}")]
         [Authorize(Roles = "seller, system")]
         public async Task<IActionResult> GetStoreById(Guid userId)
         {
             var result = await _storeService.GetStoreByIdAsync(userId);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(result.StoreInfo),
-                OperationResult.NotFound => NotFound(new { message = "Store not found" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
         [HttpPut]
@@ -55,36 +42,21 @@ namespace Backend.Store.Controllers
         public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreModel model)
         {
             var result = await _storeService.UpdateStoreAsync(model);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(new { message = "Update Successfully!" }),
-                OperationResult.NotFound => NotFound(new { message = "Store not found" }),
-                OperationResult.Failed => BadRequest(new { message = "Update failed" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
-        [HttpDelete("{userId:guid}")] // Optional: Send Event to Product, Order to IsActive = false;
+        [HttpDelete("{userId:guid}")]
         [Authorize(Roles = "seller, admin")]
         public async Task<IActionResult> DeleteStore(Guid userId)
         {
             var result = await _storeService.DeleteStoreAsync(userId);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(new { message = "Delete Successfully!" }),
-                OperationResult.NotFound => NotFound(new { message = "Store not found" }),
-                OperationResult.Failed => BadRequest(new { message = "Delete failed" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
         [HttpPatch("change-active")]
         [Authorize(Roles = "seller, system")]
         public async Task<IActionResult> ChangeActive([FromBody] StoreActiveModel model)
         {
-            // Nếu là seller thì ép UserId từ JWT claim
             if (User.IsInRole("seller"))
             {
                 var userIdFromToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -92,54 +64,47 @@ namespace Backend.Store.Controllers
             }
 
             var result = await _storeService.ChangeActive(model);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(new { message = "Store active status updated!" }),
-                OperationResult.NotFound => NotFound(new { message = "Store not found" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
         // ---------------------------
         // Buyer / Public APIs
         // ---------------------------
 
-        /// <summary>
-        /// Lấy danh sách tất cả store đang hoạt động
-        /// </summary>
         [HttpGet("all")]
-        [AllowAnonymous] // hoặc [Authorize(Roles = "buyer,seller,admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllStores()
         {
             var result = await _storeService.GetAllActiveStoresAsync();
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(result.StoreList),
-                OperationResult.NotFound => NotFound(new { message = "No stores found" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
-        /// <summary>
-        /// Lấy thông tin store theo StoreId
-        /// </summary>
         [HttpGet("detail/{storeId:guid}")]
-        [AllowAnonymous] // hoặc [Authorize(Roles = "buyer,seller,admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetStoreDetail(Guid storeId)
         {
             var result = await _storeService.GetStoreDetailByIdAsync(storeId);
-
-            return result.Message switch
-            {
-                OperationResult.Success => Ok(result.StoreInfo),
-                OperationResult.NotFound => NotFound(new { message = "Store not found" }),
-                _ => StatusCode(500, new { message = result.ErrorMessage ?? "Unexpected error!" })
-            };
+            return HandleResponse(result);
         }
 
-
+        private IActionResult HandleResponse(StoreResponseModel response)
+        {
+            return response.Message switch
+            {
+                OperationResult.Success => Ok(new
+                {
+                    data = response.StoreInfo != null
+                        ? response.StoreInfo
+                        : response.StoreList != null
+                            ? (object)response.StoreList
+                            : new { message = "Operation successful" }
+                }),
+                OperationResult.NotFound => NotFound(new { message = response.ErrorMessage ?? "Not found" }),
+                OperationResult.Failed => BadRequest(new { message = response.ErrorMessage ?? "Operation failed" }),
+                OperationResult.Error => StatusCode(500, new { message = response.ErrorMessage ?? "Unexpected error!" }),
+                _ => StatusCode(500, new { message = "Unexpected error!" })
+            };
+        }
 
     }
 }
