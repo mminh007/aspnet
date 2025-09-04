@@ -1,0 +1,73 @@
+﻿using Backend.Authentication.Databases;
+using Backend.Authentication.Enums;
+using Backend.Authentication.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace Backend.Authentication.Repository
+{
+    public class AuthRepository : IAuthRepository
+    {
+        private readonly AuthDbContext _db;
+
+        public AuthRepository(AuthDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<IdentityModel> AuthenticateAsynce(string Email)
+        {
+            return await _db.IdentityModels
+                    .FirstOrDefaultAsync(u => u.Email == Email);
+        }
+
+     
+
+        public async Task<Guid> CreateIdentityAsync(IdentityModel model)
+        {
+            await _db.IdentityModels.AddAsync(model);
+            await _db.SaveChangesAsync();
+            return model.Id;
+        }
+
+        public async Task<int> UpdateIdentityAsync(IdentityModel model)
+        {
+            _db.IdentityModels.Update(model);
+
+           return await _db.SaveChangesAsync();
+
+        }     
+
+        public async Task<Guid> CreateRefreshTokenAsync(RefreshTokenModel entity)
+        {
+
+            await _db.AddAsync(entity);
+            await _db.SaveChangesAsync();
+            return entity.RefreshTokenId;
+        }
+
+        public async Task<int> UpdateRefreshTokenAsync(RefreshTokenModel entity)
+        {
+            _db.refreshTokenModels.Update(entity);
+            return await _db.SaveChangesAsync();
+        }
+
+        public async Task<int> DeleteRefreshTokenAsync(RefreshTokenModel entity)
+        {
+            _db.refreshTokenModels.Remove(entity);
+            return await _db.SaveChangesAsync();
+        }
+
+        public async Task<RefreshTokenModel?> GetRefreshTokenAsync(byte[] hashingToken)
+        {
+            return await _db.refreshTokenModels
+                .FirstOrDefaultAsync(rt => rt.TokenHash.SequenceEqual(hashingToken));
+        }
+
+        public async Task<IdentityModel?> FindUserByTokenIdAsync(Guid tokenId)
+        {
+            return await _db.IdentityModels.FirstOrDefaultAsync(u => u.Id == tokenId);
+        }
+
+       
+    }
+}

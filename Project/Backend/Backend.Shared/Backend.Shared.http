@@ -1,0 +1,6 @@
+@Backend.Shared_HostAddress = http://localhost:5242
+
+GET {{Backend.Shared_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
