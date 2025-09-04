@@ -1,0 +1,34 @@
+﻿@page
+@{
+    ViewData["Title"] = "Log out";
+}
+
+<header>
+    <h1>@ViewData["Title"]</h1>
+    @{
+        if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/", new { area = "" })" method="post">
+                <button type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
+            </form>
+        }
+        else
+        {
+            <p>You have successfully logged out of the application.</p>
+        }
+    }
+</header>
+
+@* @{
+    ViewData["Title"] = "Logout";
+}
+
+<div class="container mt-5">
+    <div class="alert alert-info">
+        <h4 class="alert-heading">Đăng xuất</h4>
+        <p>Bạn đã đăng xuất thành công.</p>
+    </div>
+
+    <a asp-controller="Auth" asp-action="Login" class="btn btn-primary">Đăng nhập lại</a>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Về trang chủ</a>
+</div> *@
