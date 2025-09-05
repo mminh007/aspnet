@@ -60,15 +60,15 @@ namespace Backend.Authentication.Controllers
             }
 
             if (response.StatusCode == HttpStatusCode.Conflict)
-                return Conflict(new { message = "Email already exists!" });
+                return Conflict(new { statusCode = 409, message = "Email already exists!" });
 
             if (response.StatusCode == HttpStatusCode.BadRequest)
-                return BadRequest(new { message = "Invalid request to user service" });
+                return BadRequest(new { statusCode = 400, message = "Invalid request to user service" });
 
             if (response.StatusCode == HttpStatusCode.NotFound)
-                return NotFound(new { message = "User service unavailable" });
+                return NotFound(new { statusCode = 500, message = "User service unavailable" });
 
-            return StatusCode(500, new { message = "Unexpected error!" });
+            return StatusCode(500, new { statusCode = 500, message = "Unexpected error!" });
         }
 
         [AllowAnonymous]
@@ -87,6 +87,23 @@ namespace Backend.Authentication.Controllers
             return HandleResponse(result, "Login successfully!", "Invalid login credentials");
         }
 
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            var rawRefreshToken = Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(rawRefreshToken))
+            {
+                return BadRequest(new { statusCode = 400, message = "Refresh token is required" });
+            }
+
+            _logger.LogInformation("Refresh token attempt");
+
+            var result = await _tokenService.ValidateRefreshTokenAsync(rawRefreshToken);
+            return HandleResponse(result, "Token refreshed successfully!", "Invalid or expired refresh token");
+        }
+
+
         // ✅ Method dùng chung để trả response
         private IActionResult HandleResponse(LoginResponseModel response, string? successMessage = null, string? failedMessage = null)
         {
@@ -94,6 +111,7 @@ namespace Backend.Authentication.Controllers
             {
                 OperationResult.Success => Ok(new
                 {
+                    statusCode = 200,
                     message = successMessage ?? "Operation successful",
                     access_token = response.AccessToken,
                     refresh_token = response.RefreshToken?.RawToken,
@@ -102,21 +120,25 @@ namespace Backend.Authentication.Controllers
 
                 OperationResult.Failed => BadRequest(new
                 {
+                    statusCode = 400,
                     message = failedMessage ?? response.ErrorMessage ?? "Operation failed"
                 }),
 
                 OperationResult.NotFound => NotFound(new
                 {
+                    statusCode = 404,
                     message = response.ErrorMessage ?? "Not found"
                 }),
 
                 OperationResult.Error => StatusCode(500, new
                 {
+                    statusCode = 500,
                     message = response.ErrorMessage ?? "Unexpected error!"
                 }),
 
-                _ => StatusCode(500, new { message = "Unexpected error!" })
+                _ => StatusCode(500, new { statusCode = 500, message = "Unexpected error!" })
             };
         }
+
     }
 }

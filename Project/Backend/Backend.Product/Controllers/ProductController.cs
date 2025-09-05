@@ -25,9 +25,7 @@ namespace Backend.Product.Controllers
         // Product APIs
         // ---------------------------
 
-        /// <summary>
-        /// Lấy chi tiết sản phẩm theo Id
-        /// </summary>
+  
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(string id)
         {
@@ -36,9 +34,7 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Lấy toàn bộ sản phẩm theo StoreId
-        /// </summary>
+ 
         [HttpGet("store/{storeId}")]
         public async Task<IActionResult> GetProductsByStore(string storeId)
         {
@@ -47,9 +43,7 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Lấy sản phẩm theo StoreId + CategoryId
-        /// </summary>
+ 
         [HttpGet("store/{storeId}/category")]
         public async Task<IActionResult> GetProductsByStoreAndCategory(string storeId, string categoryId)
         {
@@ -60,9 +54,7 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Tìm kiếm sản phẩm trong Store
-        /// </summary>
+
         [HttpGet("store/{storeId}/search")]
         public async Task<IActionResult> SearchProductsByStore(string storeId, [FromQuery] string keyword)
         {
@@ -71,9 +63,7 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Tạo sản phẩm mới
-        /// </summary>
+    
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromBody] ProductDTOModel dto)
         {
@@ -83,9 +73,7 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Cập nhật sản phẩm
-        /// </summary>
+
         [HttpPut()]
         public async Task<IActionResult> UpdateProduct([FromBody] IEnumerable<UpdateProductModel> dto)
         {
@@ -93,9 +81,6 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Xóa (soft delete) sản phẩm
-        /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
@@ -107,9 +92,7 @@ namespace Backend.Product.Controllers
         // Category APIs
         // ---------------------------
 
-        /// <summary>
-        /// Tạo Category mới
-        /// </summary>
+
         [HttpPost("category")]
         public async Task<IActionResult> CreateCategory([FromBody] CategoryDTO category)
         {
@@ -117,9 +100,6 @@ namespace Backend.Product.Controllers
             return HandleResponse(response);
         }
 
-        /// <summary>
-        /// Tìm kiếm Category trong Store
-        /// </summary>
         [HttpGet("category/search")]
         public async Task<IActionResult> SearchCategories([FromQuery] string storeId)
         {

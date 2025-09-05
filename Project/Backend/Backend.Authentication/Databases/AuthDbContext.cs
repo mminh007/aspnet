@@ -1,20 +1,19 @@
 ﻿using Backend.Authentication.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 namespace Backend.Authentication.Databases
 {
     public class AuthDbContext : DbContext
     {
         public DbSet<IdentityModel> IdentityModels { get; set; }
-        public DbSet<RefreshTokenModel> refreshTokenModels { get; set; }
+        public DbSet<RefreshTokenModel> RefreshTokenModels { get; set; }
 
         public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
             base.OnModelCreating(modelBuilder);
+
             // IdentityModel
             modelBuilder.Entity<IdentityModel>(entity =>
             {
@@ -37,17 +36,18 @@ namespace Backend.Authentication.Databases
             {
                 entity.HasKey(e => e.RefreshTokenId);
 
-                entity.Property(e => e.TokenHash)
-                      .IsRequired();
+                entity.Property(e => e.TokenHash).IsRequired();
+                entity.Property(e => e.ExpiryDate).IsRequired();
+                entity.Property(e => e.SessionExpiry).IsRequired();
+                entity.Property(e => e.LastActivity).IsRequired();
 
-                entity.Property(e => e.ExpiryDate)
-                      .IsRequired();
-
-                // Quan hệ 1-1: IdentityModel ↔ RefreshTokenModel
+                // Quan hệ 1-n: Một user có nhiều refresh token
                 entity.HasOne<IdentityModel>()
-                      .WithOne()
-                      .HasForeignKey<RefreshTokenModel>(rt => rt.IdentityId)
+                      .WithMany()
+                      .HasForeignKey(rt => rt.IdentityId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(rt => rt.IdentityId);
             });
         }
     }

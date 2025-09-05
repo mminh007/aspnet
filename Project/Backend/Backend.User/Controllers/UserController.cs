@@ -1,9 +1,9 @@
-﻿using Backend.User.Enums;
-using Backend.User.HttpsClient;
+﻿using Backend.User.HttpsClients;
 using Backend.User.Models;
 using Backend.User.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Backend.User.Controllers
@@ -13,10 +13,10 @@ namespace Backend.User.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
-        private readonly StoreApiService _storeApi;
+        private readonly IStoreApiClient _storeApi;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(IUserRepository userRepository, ILogger<UserController> logger, StoreApiService storeApi)
+        public UserController(IUserRepository userRepository, ILogger<UserController> logger, StoreApiClient storeApi)
         {
             _userRepository = userRepository;
             _logger = logger;
@@ -30,106 +30,134 @@ namespace Backend.User.Controllers
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state while registering user: {@Model}", model);
-                return BadRequest(ModelState);
+                return BadRequest(new UserApiResponse<string>
+                {
+                    StatusCode = 400,
+                    Message = "Invalid input data"
+                });
             }
 
             _logger.LogInformation("Registering new user with email {Email}", model.Email);
 
             var result = await _userRepository.CreateUserAsync(model);
 
-            if (result.Message == OperationResult.Success)
+            if (!result.Success)
             {
-                var requestStore = new RegisterStoreModel()
+                return Conflict(new UserApiResponse<string>
                 {
-                    UserId = result.UserId,
-                };
-
-                _logger.LogInformation("User {UserId} created successfully. Attempting to create store...", result.UserId);
-
-                var storeResult = await _storeApi.RegisterStoreAsync(requestStore);
-
-                if (!storeResult.Success)
-                {
-                    _logger.LogWarning(
-                        "User {UserId} created but failed to register store. Error: {Error}",
-                        result.UserId,
-                        storeResult.ErrorMessage
-                    );
-
-                    return Ok(new
-                    {
-                        message = "User created successfully, but store creation failed. Please create store manually in admin panel.",
-                        userId = result.UserId
-                    });
-                }
-
-                _logger.LogInformation("Store created successfully for User {UserId}", result.UserId);
+                    StatusCode = 409,
+                    Message = result.ErrorMessage ?? "Email already exists"
+                });
             }
 
-            return HandleResponse(result, "Register successfully!", "Email already exists!");
+            // tạo store sau khi user được tạo
+            var storeResult = await _storeApi.RegisterStoreAsync(new RegisterStoreModel { UserId = result.UserId });
+
+            if (storeResult.StatusCode != 200)
+            {
+                return Ok(new UserApiResponse<object>
+                {
+                    StatusCode = 200,
+                    Message = "User created successfully, but store creation failed. Please create store manually in admin panel.",
+                    Data = new { userId = result.UserId }
+                });
+            }
+
+            return Ok(new UserApiResponse<Guid>
+            {
+                StatusCode = 200,
+                Message = "Register successfully!",
+                Data = result.UserId
+            });
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetUser()
+        {
+            var userId = Guid.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
+            var result = await _userRepository.GetUserByIdAsync(userId);
+
+            if (!result.Success)
+            {
+                return NotFound(new UserApiResponse<string>
+                {
+                    StatusCode = 404,
+                    Message = result.ErrorMessage ?? "User not found"
+                });
+            }
+
+            return Ok(new UserApiResponse<UserUpdateModel>
+            {
+                StatusCode = 200,
+                Message = "Get user success",
+                Data = result.UserInfo
+            });
         }
 
         [Authorize]
         [HttpPut("update")]
-        public async Task<IActionResult> Update([FromBody] UpdateUser model)
+        public async Task<IActionResult> Update([FromBody] UserUpdateModel model)
         {
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state while updating user: {@Model}", model);
-                return BadRequest(ModelState);
+                return BadRequest(new UserApiResponse<string>
+                {
+                    StatusCode = 400,
+                    Message = "Invalid input data"
+                });
             }
 
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            model.UserId = userId;
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
-            _logger.LogInformation("Updating user {UserId}", userId);
+            model.UserId = userId;
 
             var result = await _userRepository.UpdateUserAsync(model);
 
-            return HandleResponse(result, "User updated successfully!");
+            if (!result.Success)
+            {
+                return NotFound(new UserApiResponse<string>
+                {
+                    StatusCode = 404,
+                    Message = result.ErrorMessage ?? "User not found"
+                });
+            }
+
+            return Ok(new UserApiResponse<UserUpdateModel>
+            {
+                StatusCode = 200,
+                Message = "User updated successfully!",
+                Data = result.UserInfo
+            });
         }
 
         [Authorize]
         [HttpDelete("delete")]
         public async Task<IActionResult> Delete()
         {
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            _logger.LogInformation("Deleting user {UserId}", userId);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
             var result = await _userRepository.DeleteUserAsync(userId);
 
-            return HandleResponse(result, "User deleted successfully!");
-        }
-
-        // ✅ Handle response
-        private IActionResult HandleResponse(UserResponseModel response, string? successMessage = null, string? failedMessage = null)
-        {
-            return response.Message switch
+            if (!result.Success)
             {
-                OperationResult.Success => Ok(new
+                return NotFound(new UserApiResponse<string>
                 {
-                    message = successMessage ?? "Operation successful",
-                    userId = response.UserId
-                }),
+                    StatusCode = 404,
+                    Message = result.ErrorMessage ?? "User not found"
+                });
+            }
 
-                OperationResult.Failed => Conflict(new
-                {
-                    message = failedMessage ?? response.ErrorMessage ?? "Operation failed"
-                }),
-
-                OperationResult.NotFound => NotFound(new
-                {
-                    message = response.ErrorMessage ?? "Not found"
-                }),
-
-                OperationResult.Error => StatusCode(500, new
-                {
-                    message = response.ErrorMessage ?? "Unexpected error!"
-                }),
-
-                _ => StatusCode(500, new { message = "Unexpected error!" })
-            };
+            return Ok(new UserApiResponse<Guid>
+            {
+                StatusCode = 200,
+                Message = "User deleted successfully!",
+                Data = userId
+            });
         }
     }
 }

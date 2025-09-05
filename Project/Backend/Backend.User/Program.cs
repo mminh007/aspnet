@@ -1,6 +1,6 @@
 
 using Backend.User.Databases;
-using Backend.User.HttpsClient;
+using Backend.User.HttpsClients;
 using Backend.User.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -101,7 +101,7 @@ namespace Backend.User
                     };
                 });
 
-            builder.Services.AddHttpClient<StoreApiService>(client =>
+            builder.Services.AddHttpClient<StoreApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Store:BaseUrl"]);
                 client.DefaultRequestHeaders.Add("Store-Agent", "AuthService/1.0");

@@ -1,190 +1,104 @@
 ﻿using Backend.User.Databases;
 using Backend.User.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using Backend.User.Enums;
 
 namespace Backend.User.Repository
 {
     public class UserRepository : IUserRepository
     {
-
-        public readonly UserDbContext _db;
+        private readonly UserDbContext _db;
 
         public UserRepository(UserDbContext db)
         {
             _db = db;
         }
 
-        public async Task<UserResponseModel> CreateUserAsync(UserCheckModel user)
+        public async Task<(bool Success, Guid UserId, string? ErrorMessage)> CreateUserAsync(UserCheckModel user)
         {
             try
             {
-                // Check email tồn tại
-                var existed = await _db.Users
-                                       .FirstOrDefaultAsync(u => u.Email == user.Email);
-
+                var existed = await _db.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
                 if (existed != null)
-                {
-                    return new UserResponseModel
-                    {
-                        Success = false,
-                        Message = OperationResult.Failed,
-                        ErrorMessage = "Email already exists"
-                    };
-                }
+                    return (false, Guid.Empty, "Email already exists");
 
-                // Tạo user mới
                 var newUser = new UserModel
                 {
                     UserId = Guid.NewGuid(),
                     Email = user.Email,
-                    // Password = _passwordHasher.HashPassword(newUser, user.Password)
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 _db.Users.Add(newUser);
                 await _db.SaveChangesAsync();
 
-                return new UserResponseModel
-                {
-                    UserId = newUser.UserId,
-                    Success = true,
-                    Message = OperationResult.Success
-                };
+                return (true, newUser.UserId, null);
             }
             catch (Exception ex)
             {
-                // Log error
-                //_logger.LogError(ex, "Error creating user");
-
-                return new UserResponseModel
-                {
-                    Success = false,
-                    Message = OperationResult.Error, 
-                    ErrorMessage = ex.Message
-                };
+                return (false, Guid.Empty, ex.Message);
             }
         }
 
-
-        public async Task<UserResponseModel> DeleteUserAsync(Guid userId)
+        public async Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(Guid userId)
         {
             try
             {
-                var userCheck = await _db.Users
-                                         .FirstOrDefaultAsync(u => u.UserId == userId);
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                    return (false, "User not found");
 
-                if (userCheck == null)
-                {
-                    return new UserResponseModel
-                    {
-                        Success = false,
-                        Message = OperationResult.NotFound,
-                        ErrorMessage = "User not found"
-                    };
-                }
-
-                _db.Users.Remove(userCheck);
+                _db.Users.Remove(user);
                 await _db.SaveChangesAsync();
 
-                return new UserResponseModel
-                {
-                    UserId = userId,
-                    Success = true,
-                    Message = OperationResult.Success
-                };
+                return (true, null);
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "Error deleting user {UserId}", userId);
-
-                return new UserResponseModel
-                {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = ex.Message
-                };
+                return (false, ex.Message);
             }
         }
 
+        public async Task<(bool Success, string? ErrorMessage, UserUpdateModel? UserInfo)> GetUserByIdAsync(Guid userId)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+                return (false, "User does not exist", null);
 
-        public async Task<UserResponseModel> UpdateUserAsync(UpdateUser model)
+            return (true, null, new UserUpdateModel
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Address = user.Address,
+                PhoneNumber = user.PhoneNumber
+            });
+        }
+
+        public async Task<(bool Success, string? ErrorMessage, UserUpdateModel? UserInfo)> UpdateUserAsync(UserUpdateModel model)
         {
             try
             {
-                var userCheck = await _db.Users
-                                         .FirstOrDefaultAsync(u => u.UserId == model.UserId);
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == model.UserId);
+                if (user == null)
+                    return (false, "User not found", null);
 
-                if (userCheck == null)
-                {
-                    return new UserResponseModel
-                    {
-                        Success = false,
-                        Message = OperationResult.NotFound,
-                        ErrorMessage = "User not found"
-                    };
-                }
+                user.Address = model.Address;
+                user.PhoneNumber = model.PhoneNumber;
 
-                userCheck.PhoneNumber = model.PhoneNumber;
-                userCheck.Address = model.Address;
-
-                _db.Users.Update(userCheck);
+                _db.Users.Update(user);
                 await _db.SaveChangesAsync();
 
-                return new UserResponseModel
+                return (true, null, new UserUpdateModel
                 {
-                    UserId = userCheck.UserId,
-                    Success = true,
-                    Message = OperationResult.Success
-                };
+                    UserId = user.UserId,
+                    Email = user.Email,
+                    Address = user.Address,
+                    PhoneNumber = user.PhoneNumber
+                });
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "Error updating user {UserId}", model.UserId);
-
-                return new UserResponseModel
-                {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = ex.Message
-                };
+                return (false, ex.Message, null);
             }
         }
-
-
-        //public async Task<UserResponseModel> ValidateUserAsync(LoginModel user)
-        //{
-        //    var existingUser = await _db.Users
-        //                        .FirstOrDefaultAsync(u => u.Email == user.Email);
-
-        //    if (existingUser == null)
-        //    {
-        //        return new UserResponseModel { Success = false, Message = "Email not exists" };
-        //    }
-
-        //    var result = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.Password, user.Password);
-
-        //    if (result == PasswordVerificationResult.Success) 
-        //    {
-        //        return new UserResponseModel { Success = true,
-        //                                       Message = "Login Success!",
-        //                                       UserId = existingUser.UserId
-        //                                      };
-        //    }
-        //    else
-        //    {
-        //        return new UserResponseModel {
-        //                                        Success = false,
-        //                                        Message = "Invalid password!"
-        //                                     };
-
-        //    }
-
-
-        //}
     }
-
-
 }
