@@ -3,23 +3,23 @@ using System.Security.Claims;
 using Backend.User.Enums;
 using Backend.User.Models;
 
-namespace Backend.User.HttpsClient
+namespace Backend.User.HttpsClients
 {
-    public class StoreApiService
+    public class StoreApiClient : IStoreApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<StoreApiService> _logger;
+        private readonly ILogger<StoreApiClient> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
 
-        public StoreApiService(HttpClient httpClient, ILogger<StoreApiService> logger, IHttpContextAccessor httpContextAccessor)
+        public StoreApiClient(HttpClient httpClient, ILogger<StoreApiClient> logger, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<StoreResponseModel> RegisterStoreAsync(RegisterStoreModel model)
+        public async Task<UserApiResponse<object>> RegisterStoreAsync(RegisterStoreModel model)
         {
             try
             {
@@ -29,11 +29,11 @@ namespace Backend.User.HttpsClient
                 if (string.IsNullOrEmpty(token))
                 {
                     _logger.LogError("No JWT token found in ClaimsPrincipal");
-                    return new StoreResponseModel
+                    return new UserApiResponse<object>
                     {
-                        Success = false,
-                        Message = OperationResult.Error,
-                        ErrorMessage = "Missing JWT token"
+                        StatusCode = 401,
+                        Message = "Missing JWT token",
+                        Data = null
                     };
                 }
 
@@ -46,32 +46,32 @@ namespace Backend.User.HttpsClient
                 {
                     _logger.LogError("Store API returned error {StatusCode}", response.StatusCode);
 
-                    return new StoreResponseModel
+                    return new UserApiResponse<object>
                     {
-                        Success = false,
-                        Message = OperationResult.Failed,
-                        ErrorMessage = $"Store API returned {response.StatusCode}"
+                        StatusCode = (int)response.StatusCode,
+                        Message = $"Store API returned {response.StatusCode}",
+                        Data = null
                     };
                 }
 
-                var storeResponse = await response.Content.ReadFromJsonAsync<StoreResponseModel>();
+                var storeResponse = await response.Content.ReadFromJsonAsync<UserApiResponse<object>>();
 
-                return storeResponse ?? new StoreResponseModel
+                return storeResponse ?? new UserApiResponse<object>
                 {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = "Failed to parse store API response"
+                    StatusCode = 500,
+                    Message = "Failed to parse store API response",
+                    Data = null
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Store API");
 
-                return new StoreResponseModel
+                return new UserApiResponse<object>
                 {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = "Exception while calling Store API"
+                    StatusCode = 500,
+                    Message = "Exception while calling Store API",
+                    Data = null
                 };
             }
         }

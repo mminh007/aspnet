@@ -1,7 +1,11 @@
 ﻿@model Frontend.Models.LoginModel
 
-<div class="container d-flex justify-content-center min-vh-100">
 
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="container d-flex justify-content-center min-vh-100">
     <div class="w-50">
         <h2 class="text-center mb-4">Login</h2>
 
@@ -17,16 +21,18 @@
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
             <button type="submit" class="btn btn-primary mt-3">Login</button>
+
+            @if (ViewBag.Error != null)
+            {
+                <p style="color:red">@ViewBag.Error</p>
+            }
         </form>
     </div>
 
 </div>
 
 
-@if (ViewBag.Error != null)
-{
-    <p style="color:red">@ViewBag.Error</p>
-}
+
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

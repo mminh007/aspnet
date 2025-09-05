@@ -1,4 +1,4 @@
-﻿using Frontend.HttpsClient;
+﻿using Frontend.HttpsClients.Auths;
 using Frontend.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,9 +6,9 @@ namespace Frontend.Controllers
 {
     public class AuthenticationController : Controller
     {
-        private readonly AuthApiClient _authApi;
+        private readonly IAuthApiClient _authApi;
 
-        public AuthenticationController(AuthApiClient authApi)
+        public AuthenticationController(IAuthApiClient authApi)
         {
             _authApi = authApi;
         }
@@ -21,15 +21,36 @@ namespace Frontend.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var (success, token, message) = await _authApi.LoginAsync(model);
+            var (success, accessToken, refreshToken, expiresIn, message, statusCode) = await _authApi.LoginAsync(model);
 
-            if (!success || string.IsNullOrEmpty(token))
+            if (!success || string.IsNullOrEmpty(accessToken))
             {
-                ViewBag.Error = message ?? "Login Failed!";
+                SetErrorMessage(statusCode, $"{message} - {statusCode}", "Login");
                 return View(model);
             }
 
-            HttpContext.Session.SetString("Token", token);
+            // add Access Token in Cookie
+            Response.Cookies.Append("accessToken", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddSeconds(expiresIn)
+            });
+
+            // add Refresh Token in Cookie
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddDays(7)
+                });
+            }
+
+            // add user's info in Session
             HttpContext.Session.SetString("UserEmail", model.Email);
 
             TempData["Message"] = message ?? "Login Successfully!";
@@ -46,27 +67,46 @@ namespace Frontend.Controllers
 
             if (model.Password != model.ConfirmPassword)
             {
-                ViewBag.Error = "Password dont match!";
+                ViewBag.Error = "Password don't match!";
                 return View(model);
             }
 
-            var (success, message) = await _authApi.RegisterAsync(model);
+            var (success, message, statusCode) = await _authApi.RegisterAsync(model);
 
             if (!success)
             {
-                ViewBag.Error = message ?? "Register Failed!";
+                SetErrorMessage(statusCode, message, "Register");
                 return View(model);
             }
 
-            TempData["Message"] = message ?? "Register Sucessfully, Please Login!";
+            TempData["Message"] = message ?? "Register successfully, please login!";
             return RedirectToAction("Login");
         }
 
         public IActionResult Logout()
         {
+            // Clear session
             HttpContext.Session.Clear();
+
+            // Clear token cookies
+            Response.Cookies.Delete("accessToken");
+            Response.Cookies.Delete("refreshToken");
+
             TempData["Message"] = "Logout Successfully!";
-            return RedirectToAction("Login");
+            return RedirectToAction("Login", "Authentication");
+        }
+
+
+        private void SetErrorMessage(int statusCode, string? message, string action)
+        {
+            ViewBag.Error = statusCode switch
+            {
+                400 => message ??  (action == "login" ? "Invalid email or password!" : "Bad request - Invalid input data!"),
+                401 => "401 - Unauthorized - You don't have permission to access this resource.",
+                409 => "409 - Conflict - Email address already exists in the system!",
+                500 => "500 - Internal server error - Please try again later!",
+                _ => message ?? $"{action} operation failed!"
+            };
         }
     }
 }

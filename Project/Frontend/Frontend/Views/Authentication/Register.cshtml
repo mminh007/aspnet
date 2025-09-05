@@ -36,14 +36,15 @@
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Register</button>
             </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <p class="text-danger text-center">@ViewBag.Error</p>
+            }
         </form>
     </div>
 </div>
 
-@if (ViewBag.Error != null)
-{
-    <p class="text-danger text-center">@ViewBag.Error</p>
-}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

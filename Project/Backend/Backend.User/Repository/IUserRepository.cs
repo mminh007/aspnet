@@ -4,12 +4,14 @@ using Backend.User.Models;
 namespace Backend.User.Repository
 {
     public interface IUserRepository
-    {   
-        Task<UserResponseModel> UpdateUserAsync(UpdateUser model);
+    {
+        Task<(bool Success, string? ErrorMessage, UserUpdateModel? UserInfo)> UpdateUserAsync(UserUpdateModel model);
 
-        Task<UserResponseModel> DeleteUserAsync(Guid UserId);
+        Task<(bool Success, string? ErrorMessage)> DeleteUserAsync(Guid UserId);
 
-        Task<UserResponseModel> CreateUserAsync(UserCheckModel user);
+        Task<(bool Success, Guid UserId, string? ErrorMessage)> CreateUserAsync(UserCheckModel user);
+
+        Task<(bool Success, string? ErrorMessage, UserUpdateModel? UserInfo)> GetUserByIdAsync(Guid UserId);
 
     }
 }

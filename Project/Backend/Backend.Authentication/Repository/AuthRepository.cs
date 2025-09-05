@@ -1,5 +1,4 @@
 ﻿using Backend.Authentication.Databases;
-using Backend.Authentication.Enums;
 using Backend.Authentication.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,11 +15,8 @@ namespace Backend.Authentication.Repository
 
         public async Task<IdentityModel> AuthenticateAsynce(string Email)
         {
-            return await _db.IdentityModels
-                    .FirstOrDefaultAsync(u => u.Email == Email);
+            return await _db.IdentityModels.FirstOrDefaultAsync(u => u.Email == Email);
         }
-
-     
 
         public async Task<Guid> CreateIdentityAsync(IdentityModel model)
         {
@@ -32,14 +28,11 @@ namespace Backend.Authentication.Repository
         public async Task<int> UpdateIdentityAsync(IdentityModel model)
         {
             _db.IdentityModels.Update(model);
-
-           return await _db.SaveChangesAsync();
-
-        }     
+            return await _db.SaveChangesAsync();
+        }
 
         public async Task<Guid> CreateRefreshTokenAsync(RefreshTokenModel entity)
         {
-
             await _db.AddAsync(entity);
             await _db.SaveChangesAsync();
             return entity.RefreshTokenId;
@@ -47,27 +40,25 @@ namespace Backend.Authentication.Repository
 
         public async Task<int> UpdateRefreshTokenAsync(RefreshTokenModel entity)
         {
-            _db.refreshTokenModels.Update(entity);
+            _db.RefreshTokenModels.Update(entity);
             return await _db.SaveChangesAsync();
         }
 
         public async Task<int> DeleteRefreshTokenAsync(RefreshTokenModel entity)
         {
-            _db.refreshTokenModels.Remove(entity);
+            _db.RefreshTokenModels.Remove(entity);
             return await _db.SaveChangesAsync();
         }
 
         public async Task<RefreshTokenModel?> GetRefreshTokenAsync(byte[] hashingToken)
         {
-            return await _db.refreshTokenModels
+            return await _db.RefreshTokenModels
                 .FirstOrDefaultAsync(rt => rt.TokenHash.SequenceEqual(hashingToken));
         }
 
-        public async Task<IdentityModel?> FindUserByTokenIdAsync(Guid tokenId)
+        public async Task<IdentityModel?> FindUserByTokenIdAsync(Guid identityId)
         {
-            return await _db.IdentityModels.FirstOrDefaultAsync(u => u.Id == tokenId);
+            return await _db.IdentityModels.FirstOrDefaultAsync(u => u.Id == identityId);
         }
-
-       
     }
 }

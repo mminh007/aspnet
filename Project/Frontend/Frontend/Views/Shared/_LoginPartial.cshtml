@@ -1,13 +1,14 @@
 ﻿
 @{
-    var token = Context.Session.GetString("Token");
+    var token = Context.Request.Cookies["accessToken"];
+    var email = Context.Session.GetString("UserEmail"); 
 } 
 
 <ul class="navbar-nav">
     @if (!string.IsNullOrEmpty(token))
     {
         <li class="nav-item">
-            <a class="nav-link text-dark">Xin chào, user!</a>
+            <a class="nav-link text-dark" asp-controller="User" asp-action="Profile">Hello, @email!</a>
         </li>
         <li class="nav-item">
             <a class="nav-link text-dark" asp-controller="Authentication" asp-action="Logout">Đăng xuất</a>

@@ -106,58 +106,6 @@ namespace Backend.Authentication.Services
 
         }
 
-        public async Task<LoginResponseModel> ValidateRefreshTokenAsync(string rawToken)
-
-        {
-            try
-            {
-                var hashingToken = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
-
-                var refreshToken = await _authRepository.GetRefreshTokenAsync(hashingToken);
-
-                if (refreshToken == null || refreshToken.IsRevoked || refreshToken.ExpiryDate < DateTime.UtcNow)
-                {
-                    return new LoginResponseModel
-                    {
-                        ErrorMessage = "Invalid or expired refresh token",
-                        Message = OperationResult.Failed
-                    };
-                }
-
-                var user = await _authRepository.FindUserByTokenIdAsync(refreshToken.IdentityId);
-                if (user == null)
-                {
-                    return new LoginResponseModel
-                    {
-                        ErrorMessage = "User not found",
-                        Message = OperationResult.NotFound
-                    };
-                }
-
-                // revoke old refresh token
-                refreshToken.IsRevoked = true;
-                await _authRepository.UpdateRefreshTokenAsync(refreshToken);
-
-                //await _db.refreshTokenModels
-                //       .Where(rt => rt.IsRevoked && rt.ExpiryDate < DateTime.UtcNow)
-                //       .ExecuteDelete();
-
-                var newAccessToken = await GenerateTokenAsync(user);
-                return newAccessToken;
-            }
-
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error validating refresh token");
-                return new LoginResponseModel
-                {
-                    ErrorMessage = "Internal server error",
-                    Message = OperationResult.Error
-                };
-            }
-
-
-        }
 
         public async Task<LoginResponseModel> GenerateTokenAsync(IdentityModel identity)
         {
@@ -210,14 +158,13 @@ namespace Backend.Authentication.Services
         }
 
 
-
-        public async Task<RefreshTokenResponseModel> RefreshTokenAsync(IdentityModel identity, int ResfreshTokenDays)
+        public async Task<RefreshTokenResponseModel> RefreshTokenAsync(IdentityModel identity, int refreshTokenDays)
         {
             try
             {
-                var RefreshTokenExpries = DateTime.UtcNow.AddDays(ResfreshTokenDays);
+                var refreshTokenExpiry = DateTime.UtcNow.AddDays(refreshTokenDays);
+                var sessionExpiry = DateTime.UtcNow.AddHours(8); // session 8 hour
                 var rawToken = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(64));
-
                 var hash = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
 
                 var refreshToken = new RefreshTokenModel
@@ -225,9 +172,11 @@ namespace Backend.Authentication.Services
                     RefreshTokenId = Guid.NewGuid(),
                     IdentityId = identity.Id,
                     TokenHash = hash,
-                    ExpiryDate = RefreshTokenExpries,
+                    ExpiryDate = refreshTokenExpiry,
+                    SessionExpiry = sessionExpiry,
+                    LastActivity = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
-                    IsRevoked = false,
+                    IsRevoked = false
                 };
 
                 await _authRepository.CreateRefreshTokenAsync(refreshToken);
@@ -235,11 +184,10 @@ namespace Backend.Authentication.Services
                 return new RefreshTokenResponseModel
                 {
                     RawToken = rawToken,
-                    ExpiresIn = (int)RefreshTokenExpries.Subtract(DateTime.UtcNow).TotalSeconds,
+                    ExpiresIn = (int)refreshTokenExpiry.Subtract(DateTime.UtcNow).TotalSeconds,
                     Message = OperationResult.Success
                 };
             }
-
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating refresh token for {UserId}", identity.UserId);
@@ -249,7 +197,6 @@ namespace Backend.Authentication.Services
                     Message = OperationResult.Error
                 };
             }
-            
         }
 
         public string GenerateInternalServiceToken(string serviceName = "InternalService")
@@ -282,6 +229,64 @@ namespace Backend.Authentication.Services
             _logger.LogInformation("Generated internal token for {Service} with role=system", serviceName);
 
             return tokenString;
+        }
+
+
+        public async Task<LoginResponseModel> ValidateRefreshTokenAsync(string rawToken)
+        {
+            try
+            {
+                var hashingToken = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+                var refreshToken = await _authRepository.GetRefreshTokenAsync(hashingToken);
+
+                if (refreshToken == null || refreshToken.IsRevoked || refreshToken.ExpiryDate < DateTime.UtcNow)
+                {
+                    return new LoginResponseModel
+                    {
+                        ErrorMessage = "Invalid or expired refresh token",
+                        Message = OperationResult.Failed
+                    };
+                }
+
+                // check session absolute/sliding
+                if (refreshToken.SessionExpiry < DateTime.UtcNow)
+                {
+                    return new LoginResponseModel
+                    {
+                        ErrorMessage = "Session expired",
+                        Message = OperationResult.Failed
+                    };
+                }
+
+                var user = await _authRepository.FindUserByTokenIdAsync(refreshToken.IdentityId);
+                if (user == null)
+                {
+                    return new LoginResponseModel
+                    {
+                        ErrorMessage = "User not found",
+                        Message = OperationResult.NotFound
+                    };
+                }
+
+                // revoke old token
+                refreshToken.IsRevoked = true;
+                refreshToken.RevokedAt = DateTime.UtcNow;
+                await _authRepository.UpdateRefreshTokenAsync(refreshToken);
+
+                // cấp mới và extend session
+                var newAccessToken = await GenerateTokenAsync(user);
+
+                return newAccessToken;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating refresh token");
+                return new LoginResponseModel
+                {
+                    ErrorMessage = "Internal server error",
+                    Message = OperationResult.Error
+                };
+            }
         }
 
 

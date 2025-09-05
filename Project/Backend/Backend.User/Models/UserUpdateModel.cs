@@ -2,15 +2,16 @@
 
 namespace Backend.User.Models
 {
-    public class UpdateUser
+    public class UserUpdateModel
     {
         [Required]
         public Guid UserId { get; set; }
 
-        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+       
         public string Address { get; set; }
-
-        [Required] 
+ 
         [Phone]
         public string PhoneNumber { get; set; }
     }

@@ -72,7 +72,10 @@ namespace Backend.Store.Repository
             {
                 StoreName = store.StoreName,
                 Description = store.Description,
-                IsActive = store.IsActive
+                IsActive = store.IsActive,
+                Adress = store.Address,
+                Phone = store.Phone
+                
             };
 
             return info;
@@ -93,7 +96,9 @@ namespace Backend.Store.Repository
             {
                 StoreName = store.StoreName,
                 Description = store.Description,
-                IsActive = store.IsActive
+                IsActive = store.IsActive,
+                Adress = store.Address,
+                Phone = store.Phone
             };
         }
 
@@ -106,7 +111,10 @@ namespace Backend.Store.Repository
                 {
                     StoreName = s.StoreName,
                     Description = s.Description,
-                    IsActive = s.IsActive
+                    IsActive = s.IsActive,
+                    Adress = s.Address,
+                    Phone = s.Phone
+                    
                 })
                 .ToListAsync();
         }

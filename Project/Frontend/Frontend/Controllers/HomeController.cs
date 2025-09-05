@@ -1,15 +1,19 @@
-using System.Diagnostics;
+using Frontend.HttpsClients.Stores;
 using Frontend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace Frontend.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IStoreApiClient _storeApiClient;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IStoreApiClient storeApiClient, ILogger<HomeController> logger)
         {
+            _storeApiClient = storeApiClient;
             _logger = logger;
         }
 
@@ -18,15 +22,14 @@ namespace Frontend.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        [HttpGet("all")]
+        [AllowAnonymous]
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public async Task<IActionResult> GetAllStores()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var results = await _storeApiClient.GetStoresAsync();
+
+            return View(results);
         }
     }
 }

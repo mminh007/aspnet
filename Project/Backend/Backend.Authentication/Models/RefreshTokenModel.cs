@@ -11,10 +11,16 @@ namespace Backend.Authentication.Models
 
         public byte[] TokenHash { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
+        public DateTime ExpiryDate { get; set; }      
+
+        public DateTime SessionExpiry { get; set; }  
+
+        public DateTime LastActivity { get; set; }    
 
         public bool IsRevoked { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public DateTime? RevokedAt { get; set; }
     }
 }

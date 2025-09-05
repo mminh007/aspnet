@@ -1,4 +1,5 @@
 
+using Gateway.Middlewares;
 using Microsoft.IdentityModel.Tokens;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
@@ -59,6 +60,7 @@ namespace Gateway
             app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseTokenRefresh();
 
             app.MapControllers();
 
