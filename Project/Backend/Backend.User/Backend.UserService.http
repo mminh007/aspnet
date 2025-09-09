@@ -1,6 +1,0 @@
-@Backend.User_HostAddress = http://localhost:5091
-
-GET {{Backend.User_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

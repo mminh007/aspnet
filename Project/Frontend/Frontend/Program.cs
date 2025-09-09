@@ -1,3 +1,4 @@
+using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
 using Frontend.HttpsClients.Stores;
 
@@ -9,6 +10,8 @@ namespace Frontend
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Setting Helper
+            SettingsHelper.Configure(builder.Configuration);
 
             // Connect Auth Service
             builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
@@ -22,10 +25,7 @@ namespace Frontend
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
-            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            });
+            
 
             builder.Services.AddSession(options =>
             {

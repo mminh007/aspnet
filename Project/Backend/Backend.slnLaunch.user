@@ -3,27 +3,23 @@
     "Name": "New Profile",
     "Projects": [
       {
-        "Path": "Backend.Authentication\\Backend.Authentication.csproj",
+        "Path": "Backend.Authentication\\API\\API.csproj",
         "Action": "Start"
       },
       {
-        "Path": "Backend.Shared\\Backend.Shared.csproj",
+        "Path": "Backend.User\\API\\API.csproj",
         "Action": "Start"
       },
       {
-        "Path": "Gateway\\Gateway.csproj",
+        "Path": "Backend.Store\\API\\API.csproj",
         "Action": "Start"
       },
       {
-        "Path": "Backend.Product\\Backend.Product.csproj",
+        "Path": "Backend.Product\\API\\API.csproj",
         "Action": "Start"
       },
       {
-        "Path": "Backend.Store\\Backend.Store.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "Backend.User\\Backend.User.csproj",
+        "Path": "Gateway\\API\\API.csproj",
         "Action": "Start"
       }
     ]
