@@ -21,7 +21,8 @@ namespace Frontend.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var (success, accessToken, refreshToken, expiresIn, message, statusCode) = await _authApi.LoginAsync(model);
+            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role) 
+                = await _authApi.LoginAsync(model);
 
             if (!success || string.IsNullOrEmpty(accessToken))
             {
@@ -34,7 +35,7 @@ namespace Frontend.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddSeconds(expiresIn)
             });
 
@@ -45,13 +46,14 @@ namespace Frontend.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
             }
 
             // add user's info in Session
             HttpContext.Session.SetString("UserEmail", model.Email);
+            HttpContext.Session.SetString("UserRole", role);
 
             TempData["Message"] = message ?? "Login Successfully!";
             return RedirectToAction("Index", "Home");
