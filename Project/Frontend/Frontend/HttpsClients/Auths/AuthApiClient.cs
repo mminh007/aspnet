@@ -1,4 +1,4 @@
-﻿using Frontend.Models;
+﻿using Frontend.Models.Auth;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;

@@ -1,8 +1,10 @@
 
 using API.Middlewares;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
+using System.Security.Claims;
 using System.Text;
 
 namespace API
@@ -22,7 +24,10 @@ namespace API
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gateway", Version = "v1" });
+            });
 
             builder.Services.AddOcelot(builder.Configuration.AddJsonFile("ocelotsettings.json").Build());
             // Add services to the container.
@@ -42,7 +47,8 @@ namespace API
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = jwt["Issuer"],
                         ValidAudience = jwt["Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(key)
+                        IssuerSigningKey = new SymmetricSecurityKey(key),
+                        RoleClaimType = ClaimTypes.Role,
                     };
                 });
 

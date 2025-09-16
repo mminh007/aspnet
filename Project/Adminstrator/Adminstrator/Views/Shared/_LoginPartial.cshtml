@@ -11,9 +11,9 @@
         userId = authInfo.userId;
     }
 
-    var adminBase = SettingsHelper.GetAdminUrl("Base");
-    var adminUser = $"{adminBase}{SettingsHelper.GetAdminUrl("UserManagement")}/{userId}";
-    var adminStore = $"{adminBase}{SettingsHelper.GetAdminUrl("StoreManagement")}/{userId}";
+    // var adminBase = SettingsHelper.GetAdminUrl("Base");
+    // var adminUser = $"{adminBase}{SettingsHelper.GetAdminUrl("UserManagement")}/{userId}";
+    // var adminStore = $"{adminBase}{SettingsHelper.GetAdminUrl("StoreManagement")}/{userId}";
 
 }
 
@@ -26,13 +26,9 @@
                 <li>
                     <a class="dropdown-item" asp-controller="User" asp-action="Management">Quản lý tài khoản</a>
                 </li>
-
-                @if (role == "seller")
-                {
-                    <li>
-                        <a class="dropdown-item" asp-controller="Store" asp-action="Management">Quản lý cửa hàng</a>
-                    </li>
-                }
+                <li>
+                    <a class="dropdown-item" asp-controller="Store" asp-action="Management">Quản lý cửa hàng</a>
+                </li>
             </ul>
         </li>
 

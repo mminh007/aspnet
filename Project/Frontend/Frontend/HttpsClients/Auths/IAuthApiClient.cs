@@ -1,4 +1,4 @@
-﻿using Frontend.Models;
+﻿using Frontend.Models.Auth;
 
 namespace Frontend.HttpsClients.Auths
 {

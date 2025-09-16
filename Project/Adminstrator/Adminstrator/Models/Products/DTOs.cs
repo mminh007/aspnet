@@ -1,0 +1,55 @@
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Adminstrator.Models.Products
+{
+    public class DTOs
+    {
+        public class ProductDTO
+        {
+            public string ProductName { get; set; }
+
+            public string Description { get; set; }
+
+            [Column(TypeName = "decimal(18,2)")]
+            public decimal SalePrice { get; set; }
+
+            [Column(TypeName = "decimal(18,2)")]
+            public decimal ImportPrice { get; set; }
+
+            public int Quantity { get; set; }
+
+            public string Supplier { get; set; }
+
+            public CategoryDTO Category { get; set; }
+            public bool IsActive { get; set; } = true;
+        }
+
+        public class ProductSellerDTO
+        {
+            public Guid ProductId { get; set; }
+            public Guid StoreId { get; set; }
+            public Guid CategoryId { get; set; }
+
+            public string ProductName { get; set; }
+            public string? Description { get; set; }
+
+            public decimal SalePrice { get; set; }
+            public decimal ImportPrice { get; set; }
+            public int Quantity { get; set; }
+
+            public string? Supplier { get; set; }
+            public bool IsActive { get; set; } = true;
+
+            public DateTime CreatedAt { get; set; }
+            public DateTime UpdatedAt { get; set; }
+        }
+
+        public class CategoryDTO
+        {
+            public Guid CategoryId { get; set; }
+            public string CategoryName { get; set; }
+
+            public Guid StoreId { get; set; }
+        }
+    }
+}
