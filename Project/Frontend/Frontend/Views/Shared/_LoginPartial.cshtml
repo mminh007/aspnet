@@ -1,4 +1,5 @@
-﻿@using Frontend.Helpers;
+﻿
+@using Frontend.Helpers;
 @{
     var token = Context.Request.Cookies["accessToken"];
     var email = Context.Session.GetString("UserEmail");
@@ -11,9 +12,9 @@
         userId = authInfo.userId;
     }
 
-    var adminBase = SettingsHelper.GetAdminUrl("Base");
-    var adminUser = $"{adminBase}{SettingsHelper.GetAdminUrl("UserManagement")}/{userId}";
-    var adminStore = $"{adminBase}{SettingsHelper.GetAdminUrl("StoreManagement")}/{userId}";
+    // var adminBase = SettingsHelper.GetAdminUrl("Base");
+    // var adminUser = $"{adminBase}{SettingsHelper.GetAdminUrl("UserManagement")}/{userId}";
+    // var adminStore = $"{adminBase}{SettingsHelper.GetAdminUrl("StoreManagement")}/{userId}";
     
 }
 
@@ -24,15 +25,15 @@
             <a class="nav-link text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Hello, @email!</a>
             <ul class="dropdown-menu" aria-labelledby="userDropdown">
                 <li>
-                    <a class="dropdown-item" href=@adminUser>Quản lý tài khoản</a>
+                    <a class="dropdown-item" href=# asp-controller="User" asp-action="Index" ">Quản lý tài khoản</a>
                 </li>
 
-                @if (role == "seller")
+                @* @if (role == "seller")
                 {
                     <li>
                         <a class="dropdown-item" href=@adminStore>Quản lý cửa hàng</a>
                     </li>
-                }
+                } *@
             </ul>
         </li>
 

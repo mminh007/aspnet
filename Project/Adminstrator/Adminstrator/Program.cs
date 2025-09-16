@@ -1,6 +1,10 @@
 using Adminstrator.Helpers;
 using Adminstrator.HttpsClients;
 using Adminstrator.HttpsClients.Interfaces;
+using Adminstrator.Middlewares;
+using Adminstrator.Services;
+using Adminstrator.Services.Interfaces;
+
 
 namespace Adminstrator
 {
@@ -11,13 +15,36 @@ namespace Adminstrator
             var builder = WebApplication.CreateBuilder(args);
 
             SettingsHelper.Configure(builder.Configuration);
+            builder.Services.AddHttpContextAccessor();
+            
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            // Connect API Product Backend Service
+            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            });
+
+            // Connect API Store Backend Service
             builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
+
+            // Connect API Auth Backend Service
+            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]); // Ocelot Gateway
+            });
+
+            // Connect Auth Service
+
+            builder.Services.AddScoped<IStoreServices, StoreServices>();
+            builder.Services.AddScoped<IAuthServices, AuthServices>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+            // Connect Service
+
 
             builder.Services.AddSession(options =>
             {
@@ -25,6 +52,9 @@ namespace Adminstrator
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
+
+            builder.Services.AddAuthorization();
 
             //builder.Services.AddAuthorization();
 
@@ -44,13 +74,15 @@ namespace Adminstrator
             app.UseRouting();
             app.UseSession();
 
+            app.UseTokenToHeader();
+
             app.UseAuthentication();
 
             app.UseAuthorization();
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Authentication}/{action=Login}/{id?}");
 
             app.Run();
         }

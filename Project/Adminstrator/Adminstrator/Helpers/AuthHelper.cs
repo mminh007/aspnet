@@ -47,5 +47,26 @@ namespace Adminstrator.Helpers
             }
             catch { return false; }
         }
+
+        public static (bool isAuth, string userId) ParseUserIdFromToken(string token)
+        {
+            if (string.IsNullOrEmpty(token)) return (false, "");
+
+            try
+            {
+                var jwtHandler = new JwtSecurityTokenHandler();
+                var jwtToken = jwtHandler.ReadJwtToken(token);
+
+                if (jwtToken.ValidTo <= DateTime.UtcNow)
+                    return (false, "");
+
+                var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? "";
+                return (!string.IsNullOrEmpty(userId), userId);
+            }
+            catch
+            {
+                return (false, "");
+            }
+        }
     }
 }

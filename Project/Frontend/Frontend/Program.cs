@@ -1,6 +1,10 @@
 using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
 using Frontend.HttpsClients.Stores;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 namespace Frontend
 {
@@ -25,14 +29,16 @@ namespace Frontend
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
-            
-
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30); // session timeout
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
+            //JWT Authentication
+
+            builder.Services.AddAuthorization();
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();

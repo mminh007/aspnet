@@ -1,16 +1,17 @@
 ﻿using Frontend.HttpsClients.Auths;
-using Frontend.Models;
+using Frontend.Models.Auth;
+using Frontend.Services;
+using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Frontend.Controllers
 {
     public class AuthenticationController : Controller
     {
-        private readonly IAuthApiClient _authApi;
-
-        public AuthenticationController(IAuthApiClient authApi)
+        private readonly IAuthService _authService;
+        public AuthenticationController(IAuthService authService)
         {
-            _authApi = authApi;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -21,8 +22,8 @@ namespace Frontend.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role) 
-                = await _authApi.LoginAsync(model);
+            var (success, accessToken, refreshToken, expiresIn, role, userId, message, statusCode)
+               = await _authService.Login(model);
 
             if (!success || string.IsNullOrEmpty(accessToken))
             {
@@ -73,7 +74,9 @@ namespace Frontend.Controllers
                 return View(model);
             }
 
-            var (success, message, statusCode) = await _authApi.RegisterAsync(model);
+            //model.Role = "buyer"; // Default role
+
+            var (success, message, statusCode) = await _authService.Register(model);
 
             if (!success)
             {
