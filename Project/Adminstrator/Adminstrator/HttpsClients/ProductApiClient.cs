@@ -9,7 +9,6 @@ namespace Adminstrator.HttpsClients
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<ProductApiClient> _logger;
 
         private readonly string _getByStoreEndpoint;
@@ -18,12 +17,10 @@ namespace Adminstrator.HttpsClients
 
         public ProductApiClient(HttpClient httpClient,
                                 IConfiguration configuration,
-                                IHttpContextAccessor httpContextAccessor,
                                 ILogger<ProductApiClient> logger)
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
 
             var endpoints = _configuration.GetSection("ServiceUrls:Product:Endpoints");
@@ -37,19 +34,6 @@ namespace Adminstrator.HttpsClients
         // ---------------------------
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.ProductSellerDTO>? Data)> GetByStoreAsync(Guid storeId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
             var url = _getByStoreEndpoint.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
@@ -73,24 +57,8 @@ namespace Adminstrator.HttpsClients
             }
         }
 
-        // ---------------------------
-        // Get product by Id
-        // ---------------------------
         public async Task<(bool Success, string? Message, int statusCode, DTOs.ProductSellerDTO? Data)> GetByIdAsync(Guid productId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
             var url = _getByIdEndpoint.Replace("{id}", productId.ToString());
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
@@ -114,25 +82,8 @@ namespace Adminstrator.HttpsClients
             }
         }
 
-        // ---------------------------
-        // Search categories by storeId
-        // ---------------------------
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.CategoryDTO>? Data)> SearchCategoriesAsync(Guid storeId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            // Endpoint dạng: "product/store/{storeId}/category"
             var url = _searchCategoriesEndpoint.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
@@ -156,17 +107,11 @@ namespace Adminstrator.HttpsClients
             }
         }
 
-        // ✅ Private generic response wrapper
         private class ProductApiResponse<T>
         {
-            [JsonPropertyName("statusCode")]
-            public int StatusCode { get; set; }
-
-            [JsonPropertyName("message")]
-            public string? Message { get; set; }
-
-            [JsonPropertyName("data")]
-            public T? Data { get; set; }
+            [JsonPropertyName("statusCode")] public int StatusCode { get; set; }
+            [JsonPropertyName("message")] public string? Message { get; set; }
+            [JsonPropertyName("data")] public T? Data { get; set; }
         }
     }
 }

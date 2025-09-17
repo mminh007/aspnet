@@ -251,7 +251,7 @@
     },
 
     {
-      "DownstreamPathTemplate": "/api/store/detail/buyer/{storeId}",
+      "DownstreamPathTemplate": "/api/store/public",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -259,7 +259,7 @@
           "Port": 7153
         }
       ],
-      "UpstreamPathTemplate": "/store/detail/buyer/{storeId}",
+      "UpstreamPathTemplate": "/store/public",
       "UpstreamHttpMethod": [ "GET" ]
       // AllowAnonymous
     },
@@ -418,7 +418,7 @@
     // BUYER PRODUCT SERVICE (Public/Buyer)
     // -------------------------
     {
-      "DownstreamPathTemplate": "/api/buyerproduct/search/store/{storeId}",
+      "DownstreamPathTemplate": "/api/buyerproduct/search/store",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -426,7 +426,19 @@
           "Port": 7038
         }
       ],
-      "UpstreamPathTemplate": "/buyerproduct/search/store/{storeId}",
+      "UpstreamPathTemplate": "/buyerproduct/search/store",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/buyerproduct/search/categories",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7038
+        }
+      ],
+      "UpstreamPathTemplate": "/buyerproduct/search/categories",
       "UpstreamHttpMethod": [ "GET" ]
     },
     // -------------------------

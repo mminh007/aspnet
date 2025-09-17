@@ -46,6 +46,14 @@ namespace Store.API.Controllers
             return HandleResponse(result);
         }
 
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> PublicGetStoreDetail([FromQuery] Guid storeId)
+        {
+            var result = await _storeService.GetStoreDetailByIdAsync(storeId);
+            return HandleResponse(result);
+        }
+
         [HttpPut("{storId}")]
         [Authorize(Roles = "seller")]
         public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreModel model, string storeId)
@@ -87,19 +95,83 @@ namespace Store.API.Controllers
 
         [HttpGet("all")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllStores()
+        public async Task<IActionResult> GetStoresList([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _storeService.GetAllActiveStoresAsync();
+            // Validate query parameters
+            if (page < 1)
+            {
+                return BadRequest(new
+                {
+                    statusCode = 400,
+                    message = "Page number must be greater than 0"
+                });
+            }
+
+            if (pageSize < 1 || pageSize > 100)
+            {
+                return BadRequest(new
+                {
+                    statusCode = 400,
+                    message = "Page size must be between 1 and 100"
+                });
+            }
+
+            var result = await _storeService.GetActiveStoresAsync(page, pageSize);
             return HandleResponse(result);
         }
 
-        [HttpGet("detail/buyer/{storeId:guid}")]
+        [HttpGet("all-paginated")]
         [AllowAnonymous]
-        public async Task<IActionResult> BuyerGetStoreDetail(Guid storeId)
+        public async Task<IActionResult> GetStoresListWithPagination([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _storeService.GetStoreDetailByIdAsync(storeId);
-            return HandleResponse(result);
+            // Validate query parameters
+            if (page < 1)
+            {
+                return BadRequest(new
+                {
+                    statusCode = 400,
+                    message = "Page number must be greater than 0"
+                });
+            }
+
+            if (pageSize < 1 || pageSize > 100)
+            {
+                return BadRequest(new
+                {
+                    statusCode = 400,
+                    message = "Page size must be between 1 and 100"
+                });
+            }
+
+            var result = await _storeService.GetActiveStoresWithPaginationAsync(page, pageSize);
+
+            if (result.Message == OperationResult.Success)
+            {
+                return Ok(new
+                {
+                    statusCode = 200,
+                    message = "Operation successful",
+                    data = result.Data.Stores,
+                    pagination = new
+                    {
+                        currentPage = result.Data.CurrentPage,
+                        pageSize = result.Data.PageSize,
+                        totalRecords = result.Data.TotalRecords,
+                        totalPages = result.Data.TotalPages,
+                        hasNextPage = result.Data.HasNextPage,
+                        hasPreviousPage = result.Data.HasPreviousPage
+                    }
+                });
+            }
+
+            return HandleResponse(new StoreResponseModel<IEnumerable<StoreDTO>>
+            {
+                Message = result.Message,
+                ErrorMessage = result.ErrorMessage
+            });
         }
+
+        
 
         private IActionResult HandleResponse<T>(StoreResponseModel<T> response)
         {

@@ -1,10 +1,10 @@
 using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
+using Frontend.HttpsClients.Products;
 using Frontend.HttpsClients.Stores;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using System.Text;
+using Frontend.Services;
+using Frontend.Services.Interfaces;
+
 
 namespace Frontend
 {
@@ -16,19 +16,30 @@ namespace Frontend
 
             // Setting Helper
             SettingsHelper.Configure(builder.Configuration);
+            builder.Services.AddHttpContextAccessor();
 
             // Connect Auth Service
-            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]); // Ocelot Gateway
-            });
+            builder.Services.AddScoped<HeaderHandler>();
 
-            // Connect Store Service
-            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
+            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
+            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IStoreService, StoreService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+            
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30); // session timeout

@@ -124,7 +124,7 @@ namespace User.BLL.Services
                 return new UserApiResponse<UserDto>
                 {
                     Message = OperationResult.NotFound,
-                    ErrorMessage = "User not found"
+                    ErrorMessage = "Cannot find User for Update"
                 };
             }
 

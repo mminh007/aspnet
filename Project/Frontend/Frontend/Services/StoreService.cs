@@ -11,9 +11,9 @@ namespace Frontend.Services
         {
             _storeApiClient = storeApiClient;
         }
-        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetAllStoresActiveAsync()
+        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoresPagedAsync(int page, int pageSize)
         {
-            var (success, message, statusCode, data) = await _storeApiClient.GetAllStoresActiveAsync();
+            var (success, message, statusCode, data) = await _storeApiClient.GetStoresPagedAsync(page, pageSize);
 
             if (!success)
             {
@@ -23,9 +23,14 @@ namespace Frontend.Services
             return (message, statusCode, data);
         }
 
-        public Task<(string message, int statusCode, StoreDto?)> GetStoresDetailAsync(Guid storeId)
+        public async Task<(string message, int statusCode, StoreDto?)> GetStoresDetailAsync(Guid storeId)
         {
-            throw new NotImplementedException();
+            var (success, message, statusCode, data) = await _storeApiClient.GetStoreByIdAsync(storeId);
+            if (!success)
+            {
+                return (message, statusCode, (StoreDto?)null);
+            }
+            return (message, statusCode, data);
         }
     }
 }

@@ -1,0 +1,26 @@
+﻿@model IEnumerable<Frontend.Models.Stores.StoreDto>
+
+@foreach (var item in Model)
+{
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title fw-bold">@item.StoreName</h6>
+                <p class="card-text text-muted">@item.Address</p>
+                <span class="badge bg-success">@item.Description</span>
+                <p>
+                    @if (item.IsActive)
+                    {
+                        <span class="text-success">Đang mở cửa</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger">Đóng cửa</span>
+                    }
+                </p>
+                <a href="@Url.Action("Index", "Product", new { storeId = item.StoreId })"
+                   class="stretched-link btn btn-primary">Xem cửa hàng</a>
+            </div>
+        </div>
+    </div>
+}

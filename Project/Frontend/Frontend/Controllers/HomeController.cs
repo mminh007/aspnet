@@ -1,8 +1,12 @@
-﻿using Frontend.HttpsClients.Stores;
+﻿using Frontend.HttpsClients.Products;
+using Frontend.HttpsClients.Stores;
 using Frontend.Models;
+using Frontend.Models.Products;
+using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Diagnostics;
 
 namespace Frontend.Controllers
@@ -20,31 +24,30 @@ namespace Frontend.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var results = await _storeService.GetAllStoresActiveAsync();
+            var (message, statusCode, data) = await _storeService.GetStoresPagedAsync(1, 9);
+            if (statusCode != 200)
+            {
+                _logger.LogWarning("⚠️ Failed to retrieve active stores: {Message}", message);
+                ViewBag.Message = $"Error {statusCode}: {message}";
+                return View(Enumerable.Empty<StoreDto>());
+            }
 
-            return View(results);
+            return View(data);
         }
 
-        [Route("Store/{storeId}")]
-        public async Task<IActionResult> StoreDetail(Guid storeId)
+        [HttpGet]
+        public async Task<IActionResult> LoadMoreStores(int page, int pageSize = 9)
         {
-            _logger.LogInformation("✅ Retrieved store for StoreId={StoreId}", storeId);
-
-            if (storeId == Guid.Empty)
+            var (message, statusCode, data) = await _storeService.GetStoresPagedAsync(page, pageSize);
+            if (statusCode != 200 || data == null)
             {
-                _logger.LogWarning("⚠️ storeId EMPTY khi gọi Store");
-                return BadRequest("storeId is required");
+                return Json(new { success = false, message });
             }
 
-            var (message, statusCode, store) = await _storeService.GetStoresDetailAsync(storeId);
-            if (store == null)
-            {
-                TempData["ErrorMessage"] = $"Error {statusCode}: {message}";
-                return RedirectToAction("Index");
-            }
-            return View(store);
+            return PartialView("_StoreCardPartial", data); // trả về HTML partial
         }
 
+        
 
     }
 }

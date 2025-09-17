@@ -23,7 +23,7 @@ namespace Store.BLL.Services
         {
             try
             {
-                var result = await _storeRepository.StoreActiveAsync(model.UserId, model.IsActive);
+                var result = await _storeRepository.ChangeActiveStoreAsync(model.UserId, model.IsActive);
                 if (result == 0)
                 {
                     return new StoreResponseModel<object>
@@ -188,17 +188,37 @@ namespace Store.BLL.Services
         }
 
         // ✅ New: Get all active stores
-        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> GetAllActiveStoresAsync()
+        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> GetActiveStoresAsync(int page, int pageSize)
         {
             try
             {
-                var storesList = await _storeRepository.GetAllActiveStoresAsync();
-                if (!storesList.Any())
+                // Validate input parameters
+                if (page < 1)
+                {
+                    return new StoreResponseModel<IEnumerable<StoreDTO>>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Page number must be greater than 0"
+                    };
+                }
+
+                if (pageSize < 1 || pageSize > 100)
+                {
+                    return new StoreResponseModel<IEnumerable<StoreDTO>>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Page size must be between 1 and 100"
+                    };
+                }
+
+                var storesList = await _storeRepository.GetActiveStoresAsync(page, pageSize);
+
+                if (storesList == null || !storesList.Any())
                 {
                     return new StoreResponseModel<IEnumerable<StoreDTO>>
                     {
                         Message = OperationResult.NotFound,
-                        ErrorMessage = "No stores found",
+                        ErrorMessage = "No stores found for the requested page"
                     };
                 }
 
@@ -210,14 +230,77 @@ namespace Store.BLL.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while getting all active stores");
+                _logger.LogError(ex, "Error while getting active stores (Page: {Page}, PageSize: {PageSize})", page, pageSize);
                 return new StoreResponseModel<IEnumerable<StoreDTO>>
                 {
                     Message = OperationResult.Error,
                     ErrorMessage = "Unexpected error while getting store list"
                 };
             }
+        }
 
+        public async Task<StoreResponseModel<PaginatedStoreResponse>> GetActiveStoresWithPaginationAsync(int page, int pageSize)
+        {
+            try
+            {
+                // Validate input parameters
+                if (page < 1)
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Page number must be greater than 0"
+                    };
+                }
+
+                if (pageSize < 1 || pageSize > 100)
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Page size must be between 1 and 100"
+                    };
+                }
+
+                var storesList = await _storeRepository.GetActiveStoresAsync(page, pageSize);
+                var totalRecords = await _storeRepository.GetActiveStoresCountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                if (storesList == null || !storesList.Any())
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "No stores found for the requested page"
+                    };
+                }
+
+                var paginatedResponse = new PaginatedStoreResponse
+                {
+                    Stores = storesList,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Success,
+                    Data = paginatedResponse
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting active stores with pagination (Page: {Page}, PageSize: {PageSize})", page, pageSize);
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Unexpected error while getting store list"
+                };
+            }
         }
     }
 }

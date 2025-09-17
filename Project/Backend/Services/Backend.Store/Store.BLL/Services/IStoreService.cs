@@ -14,7 +14,9 @@ namespace Store.BLL.Services
 
         Task<StoreResponseModel<object>> ChangeActive(StoreActiveModel model);
 
-        Task<StoreResponseModel<IEnumerable<StoreDTO>>> GetAllActiveStoresAsync();
+        Task<StoreResponseModel<IEnumerable<StoreDTO>>> GetActiveStoresAsync(int page, int pageSize);
+
+        Task<StoreResponseModel<PaginatedStoreResponse>> GetActiveStoresWithPaginationAsync(int page, int pageSize);
 
         Task<StoreResponseModel<StoreDTO>> GetStoreDetailByIdAsync(Guid storeId);
     }

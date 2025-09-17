@@ -1,4 +1,5 @@
 ﻿using Frontend.Models.Products;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -8,7 +9,6 @@ namespace Frontend.HttpsClients.Products
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<ProductApiClient> _logger;
 
         private readonly string _getByStoreEndpoint;
@@ -17,12 +17,10 @@ namespace Frontend.HttpsClients.Products
 
         public ProductApiClient(HttpClient httpClient,
                                 IConfiguration configuration,
-                                IHttpContextAccessor httpContextAccessor,
                                 ILogger<ProductApiClient> logger)
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
 
             var endpoints = _configuration.GetSection("ServiceUrls:Product:Endpoints");
@@ -33,19 +31,6 @@ namespace Frontend.HttpsClients.Products
 
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.ProductBuyerDTO>? Data)> GetByStoreAsync(Guid storeId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
             var url = _getByStoreEndpoint.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
@@ -69,60 +54,8 @@ namespace Frontend.HttpsClients.Products
             }
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, DTOs.ProductBuyerDTO? Data)> GetByIdAsync(Guid productId)
-        {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var url = _getByIdEndpoint.Replace("{id}", productId.ToString());
-            var response = await _httpClient.GetAsync(url);
-            var content = await response.Content.ReadAsStringAsync();
-
-            try
-            {
-                var result = JsonSerializer.Deserialize<ProductApiResponse<DTOs.ProductBuyerDTO>>(content,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (!response.IsSuccessStatusCode || result == null)
-                {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
-                }
-
-                return (true, result.Message, result.StatusCode, result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Exception while parsing response");
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
-            }
-        }
-
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.CategoryDTO>? Data)> SearchCategoriesAsync(Guid storeId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                            .ToString()
-                            .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            // Endpoint dạng: "product/store/{storeId}/category"
             var url = _searchCategoriesEndpoint.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
@@ -145,17 +78,38 @@ namespace Frontend.HttpsClients.Products
                 return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
             }
         }
-
+      
         private class ProductApiResponse<T>
         {
-            [JsonPropertyName("statusCode")]
-            public int StatusCode { get; set; }
-
-            [JsonPropertyName("message")]
-            public string? Message { get; set; }
-
-            [JsonPropertyName("data")]
-            public T? Data { get; set; }
+            [JsonPropertyName("statusCode")] public int StatusCode { get; set; }
+            [JsonPropertyName("message")] public string? Message { get; set; }
+            [JsonPropertyName("data")] public T? Data { get; set; }
         }
     }
 }
+
+
+//public async Task<(bool Success, string? Message, int statusCode, DTOs.ProductBuyerDTO? Data)> GetByIdAsync(Guid productId)
+//{
+//    var url = _getByIdEndpoint.Replace("{productId}", productId.ToString());
+//    var response = await _httpClient.GetAsync(url);
+//    var content = await response.Content.ReadAsStringAsync();
+
+//    try
+//    {
+//        var result = JsonSerializer.Deserialize<ProductApiResponse<DTOs.ProductBuyerDTO>>(content,
+//            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+//        if (!response.IsSuccessStatusCode || result == null)
+//        {
+//            return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
+//        }
+
+//        return (true, result.Message, result.StatusCode, result.Data);
+//    }
+//    catch (Exception ex)
+//    {
+//        _logger.LogError(ex, "❌ Exception while parsing response");
+//        return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
+//    }
+//}
