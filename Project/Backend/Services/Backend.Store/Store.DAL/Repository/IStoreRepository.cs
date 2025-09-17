@@ -15,12 +15,13 @@ namespace Store.DAL.Repository
 
         Task<StoreDTO> GetStoreByKeyword(string keyword);
 
-        Task<IEnumerable<StoreDTO>?> GetAllActiveStoresAsync();
+        Task<IEnumerable<StoreDTO>?> GetActiveStoresAsync(int page, int pageSize);
+        Task<int> GetActiveStoresCountAsync();
 
         Task<StoreDTO?> GetStoreDetailById(Guid storeId);
 
 
-        Task<int> StoreActiveAsync(Guid userId, bool IsActive);
+        Task<int> ChangeActiveStoreAsync(Guid userId, bool IsActive);
 
 
     }

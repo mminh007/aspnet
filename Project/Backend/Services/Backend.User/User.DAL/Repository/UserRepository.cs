@@ -82,6 +82,7 @@ namespace User.DAL.Repository
 
             user.Address = model.Address;
             user.PhoneNumber = model.PhoneNumber;
+            user.StoreId = model.StoreId;
 
             _db.Users.Update(user);
             await _db.SaveChangesAsync();

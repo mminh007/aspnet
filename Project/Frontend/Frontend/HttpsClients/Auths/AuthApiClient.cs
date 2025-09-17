@@ -37,15 +37,9 @@ namespace Frontend.HttpsClients.Auths
                 result.Data.Roles);
         }
 
-
         public async Task<(bool Success, string? Message, int statusCode)> RegisterAsync(RegisterModel model)
         {
-            var payload = new
-            {
-                Email = model.EmailAddress,
-                model.Password,
-                model.Role
-            };
+            var payload = new { Email = model.EmailAddress, model.Password, model.Role };
 
             var response = await _httpClient.PostAsJsonAsync("/auth/register", payload);
             var content = await response.Content.ReadAsStringAsync();
@@ -64,30 +58,17 @@ namespace Frontend.HttpsClients.Auths
 
         private class TokenData
         {
-            [JsonPropertyName("accessToken")]
-            public string AccessToken { get; set; }
-
-            [JsonPropertyName("refreshToken")]
-            public string RefreshToken { get; set; }
-
-            [JsonPropertyName("expiresIn")]
-            public int ExpiresIn { get; set; }
-
-            [JsonPropertyName("Roles")]
-            public string Roles { get; set; }
+            [JsonPropertyName("accessToken")] public string AccessToken { get; set; }
+            [JsonPropertyName("refreshToken")] public string RefreshToken { get; set; }
+            [JsonPropertyName("expiresIn")] public int ExpiresIn { get; set; }
+            [JsonPropertyName("Roles")] public string Roles { get; set; }
         }
 
         private class AuthApiResponse<T>
         {
-            [JsonPropertyName("statusCode")]
-            public int StatusCode { get; set; }
-
-            [JsonPropertyName("message")]
-            public string? Message { get; set; }
-
-            [JsonPropertyName("data")]
-            public T? Data { get; set; }
+            [JsonPropertyName("statusCode")] public int StatusCode { get; set; }
+            [JsonPropertyName("message")] public string? Message { get; set; }
+            [JsonPropertyName("data")] public T? Data { get; set; }
         }
-
     }
 }

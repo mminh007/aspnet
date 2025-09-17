@@ -30,19 +30,28 @@ namespace API.Controllers
 
         // Get Price for Order Service
         [HttpPost("order/prices")]
-        public async Task<IActionResult> OrderGetProductInfo([FromBody] Guid productIds)
+        public async Task<IActionResult> OrderGetProductInfo([FromQuery] Guid productIds)
         {
             var response = await _service.OrderGetProductInfo(productIds);
             return HandleResponse(response);
         }
 
-        [HttpGet("search/store/{storeId}")]
+        [HttpGet("search/store")]
         [AllowAnonymous]
-        public async Task<IActionResult> SearchProducts(string storeId)
+        public async Task<IActionResult> SearchProducts([FromQuery] Guid storeId)
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            var id = Guid.Parse(storeId);
-            var response = await _service.GetProductsByStoreAsync(id, userRole);
+            //var id = Guid.Parse(storeId);
+            var response = await _service.GetProductsByStoreAsync(storeId, userRole);
+            return HandleResponse(response);
+        }
+
+        [HttpGet("search/categories")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchCategories([FromQuery] Guid storeId)
+        {
+            //var StoreId = Guid.Parse(storeId);
+            var response = await _service.SearchCategoriesAsync(storeId);
             return HandleResponse(response);
         }
 

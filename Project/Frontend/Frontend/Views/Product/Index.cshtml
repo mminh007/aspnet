@@ -1,0 +1,141 @@
+﻿@using Frontend.Models.Products;
+@using Frontend.Models.Stores;
+
+@model (StoreDto Store, List<DTOs.CategoryDTO> Categories, List<DTOs.ProductBuyerDTO> Products)
+
+@{
+    ViewData["Title"] = "Store Menu";
+}
+
+<div class="container mt-4">
+    <!-- Store Info -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h3 class="card-title">@Model.Store.StoreName</h3>
+                    <p class="text-muted">@Model.Store.Description</p>
+                    <ul class="list-unstyled mb-2">
+                        <li><strong>Địa chỉ:</strong> @Model.Store.Address</li>
+                        <li><strong>Điện thoại:</strong> @Model.Store.Phone</li>
+                        <li>
+                            <strong>Trạng thái:</strong>
+                            @if (Model.Store.IsActive)
+                            {
+                                <span class="badge bg-success">Mở cửa</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Tạm ngưng</span>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu -->
+    <div class="row">
+        <!-- Category Sidebar -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 mb-3 position-sticky" style="top: 20px;">
+                <div class="card-body p-2">
+                    <h5 class="card-title mb-3">Danh mục sản phẩm</h5>
+                    <ul class="list-group" id="categoryList">
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <li class="list-group-item list-group-item-action category-link"
+                                data-target="cat-@cat.CategoryId">
+                                @cat.CategoryName
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product List -->
+        <div class="col-md-9">
+            <div class="row">
+                @foreach (var cat in Model.Categories)
+                {
+                    <div id="cat-@cat.CategoryId" class="mb-4 category-section">
+                        <h4 class="border-bottom pb-2">@cat.CategoryName</h4>
+
+                        @foreach (var product in Model.Products.Where(p => p.CategoryId == cat.CategoryId))
+                        {
+                            <div class="card mb-3 shadow-sm border-0">
+                                <div class="row g-0 align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="card-body py-2">
+                                            <h5 class="card-title mb-1">@product.ProductName</h5>
+                                            <p class="card-text text-muted small mb-1">@product.Description</p>
+                                            <span class="badge @(product.IsActive ? "bg-success" : "bg-secondary") mb-2">
+                                                @(product.IsActive ? "Đang bán" : "Ngừng bán")
+                                            </span>
+                                            <p class="card-text text-muted small mb-1">Số lượng: @product.Quantity</p>
+                                            <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-end pe-3">
+                                        <button class="btn btn-primary btn-sm">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Hình ảnh -->
+@* <div class="col-md-2 text-center">
+                                    <img src="@product.ImageUrl"
+                                         class="img-fluid rounded-start"
+                                         alt="@product.ProductName"
+                                         style="width:100px; height:100px; object-fit:cover;" />
+                                </div> *@
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const links = document.querySelectorAll(".category-link");
+            const sections = document.querySelectorAll(".category-section");
+
+            // Scroll khi click
+            links.forEach(link => {
+                link.addEventListener("click", function () {
+                    const targetId = this.getAttribute("data-target");
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        window.scrollTo({
+                            top: targetEl.offsetTop - 80,
+                            behavior: "smooth"
+                        });
+                    }
+                });
+            });
+
+            // Highlight khi scroll
+            window.addEventListener("scroll", () => {
+                let scrollPos = window.scrollY || document.documentElement.scrollTop;
+                let current = "";
+
+                sections.forEach(section => {
+                    if (section.offsetTop - 150 <= scrollPos) {
+                        current = section.id;
+                    }
+                });
+
+                links.forEach(link => {
+                    link.classList.remove("active");
+                    if (link.getAttribute("data-target") === current) {
+                        link.classList.add("active");
+                    }
+                });
+            });
+
+        });
+    </script>
+}

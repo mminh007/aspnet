@@ -9,13 +9,12 @@ namespace Adminstrator.HttpsClients
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<StoreApiClient> _logger; //= LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<StoreApiClient>();
 
         private readonly string _getByUserIdEndpoint;
         private readonly string _getByIdEndpoint;
 
-        public StoreApiClient(HttpClient httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, ILogger<StoreApiClient> logger )
+        public StoreApiClient(HttpClient httpClient, IConfiguration configuration, ILogger<StoreApiClient> logger )
         {
             _httpClient = httpClient;
             _configuration = configuration;
@@ -25,26 +24,11 @@ namespace Adminstrator.HttpsClients
             _getByUserIdEndpoint = endpoints["GetByUserId"];
             _getByIdEndpoint = endpoints["GetById"];
 
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
         public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)> GetByUserIdAsync(Guid userId)
         {
-
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                    .ToString()
-                    .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var url = _getByUserIdEndpoint.Replace("{userId}", userId.ToString());
             var response = await _httpClient.GetAsync(url);
@@ -72,18 +56,6 @@ namespace Adminstrator.HttpsClients
 
         public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)> GetByIdAsync(Guid storeId)
         {
-            var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
-                    .ToString()
-                    .Replace("Bearer ", "");
-
-            if (string.IsNullOrEmpty(token))
-            {
-                _logger.LogError("❌ No JWT token found in request headers");
-                return (false, "No JWT token found in request headers", 401, null);
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var url = _getByIdEndpoint.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);

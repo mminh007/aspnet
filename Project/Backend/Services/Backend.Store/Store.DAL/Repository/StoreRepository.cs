@@ -1,8 +1,9 @@
-﻿using Store.DAL.Databases;
+﻿using Microsoft.EntityFrameworkCore;
 using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
+using Store.DAL.Databases;
 using Store.DAL.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace Store.DAL.Repository
 {
@@ -131,10 +132,18 @@ namespace Store.DAL.Repository
         //}
 
         // ✅ New: Get all active stores
-        public async Task<IEnumerable<StoreDTO>?> GetAllActiveStoresAsync()
+        public async Task<IEnumerable<StoreDTO>?> GetActiveStoresAsync(int page, int pageSize)
         {
+            // Validate input parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100; // Limit max page size to prevent performance issues
+
             return await _db.Stores
                 .Where(s => s.IsActive)
+                .OrderBy(s => s.CreatedAt) // Add ordering for consistent pagination
+                .Skip((page - 1) * pageSize) // Skip records for previous pages
+                .Take(pageSize) // Take only the required number of records
                 .Select(s => new StoreDTO
                 {
                     StoreId = s.StoreId,
@@ -143,13 +152,18 @@ namespace Store.DAL.Repository
                     IsActive = s.IsActive,
                     Address = s.Address,
                     Phone = s.Phone
-                    
                 })
                 .ToListAsync();
         }
 
+        public async Task<int> GetActiveStoresCountAsync()
+        {
+            return await _db.Stores
+                .Where(s => s.IsActive)
+                .CountAsync();
+        }
 
-        public async Task<int> StoreActiveAsync(Guid userId, bool IsActive)
+        public async Task<int> ChangeActiveStoreAsync(Guid userId, bool IsActive)
         {
             var store = await _db.Stores.FirstOrDefaultAsync(
                 s => s.UserId == userId);

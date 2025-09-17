@@ -2,8 +2,6 @@
 using Adminstrator.Models.Products;
 using Adminstrator.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Adminstrator.Controllers
 {
@@ -14,7 +12,6 @@ namespace Adminstrator.Controllers
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(
-            IStoreApiClient storeApiClient,
             IProductService productService,
             IStoreServices storeService,
             ILogger<ProductController> logger)

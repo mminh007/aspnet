@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Frontend.Models.Stores.StoreResponseModel>
+﻿@model IEnumerable<Frontend.Models.Stores.StoreDto>
 @{
     ViewData["Title"] = "Homepage";
 }
@@ -21,13 +21,7 @@
             <div class="categories mt-4 d-flex flex-wrap justify-content-center gap-2">
                 <!--<button class="btn btn-outline-light btn-sm">All</button>-->
                 <button class="btn btn-outline-light btn-sm">Đồ ăn</button>
-                <!--<button class="btn btn-outline-light btn-sm">Đồ uống</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Bánh kem</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Tráng miệng</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Món lẩu</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Sushi</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Mì phở</button>-->
-                <!--<button class="btn btn-outline-light btn-sm">Cơm hộp</button>-->
+       
             </div>
         </div>
     </div>
@@ -35,32 +29,62 @@
     <!-- Promotions -->
     <div class="container my-5">
         <h4 class="mb-3">Ưu đãi</h4>
-        <div class="row">
+        <div class="row" id="store-list">
             @if (Model != null && Model.Any())
             {
-                foreach (var item in Model)
-                {
-                    <div class="col-md-3 mb-4">
-                        <div class="card h-100 shadow-sm">
-                            <img src="@item.ImageUrl" class="card-img-top" alt="@item.Name">
-                            <div class="card-body">
-                                <h6 class="card-title fw-bold">@item.Name</h6>
-                                <p class="card-text text-muted">@item.Address</p>
-                                <span class="badge bg-success">@item.Description</span>
-                            </div>
-                        </div>
-                    </div>
-                }
+                @Html.Partial("_StoreCardPartial", Model)
             }
             else
             {
                 <div class="col-12">
-                    <p class="text-muted fst-italic">None</p>
+                    <div class="alert alert-warning text-center">
+                        @ViewBag.Message ?? "Không có cửa hàng nào được tìm thấy."
+                    </div>
                 </div>
             }
         </div>
-        <div class="text-end">
-            <a href="#" class="btn btn-link">Xem thêm &raquo;</a>
+        <div class="text-end text-center">
+            <a href="#" class="btn btn-link text-decoration-none" id="loadMore">Xem thêm &raquo;</a>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 9;
+        let isLoading = false;
+        let hasMoreStores = true;
+
+        document.getElementById("loadMore").addEventListener("click", async function (e) {
+            e.preventDefault();
+
+            if (isLoading || !hasMoreStores) return;
+
+            isLoading = true;
+            this.innerText = "Đang tải...";
+
+            currentPage++;
+
+            try {
+                const response = await fetch(`/Home/LoadMoreStores?page=${currentPage}&pageSize=${pageSize}`);
+                const html = await response.text();
+
+                if (html.trim() === "" || html.includes("No stores found")) {
+                    hasMoreStores = false;
+                    this.innerText = "Hết cửa hàng rồi!";
+                    this.disabled = true;
+                    return;
+                }
+
+                document.getElementById("store-list").insertAdjacentHTML("beforeend", html);
+                this.innerText = "Xem thêm";
+            } catch (err) {
+                console.error(err);
+                this.innerText = "Lỗi tải dữ liệu";
+            } finally {
+                isLoading = false;
+            }
+        });
+    </script>
+}

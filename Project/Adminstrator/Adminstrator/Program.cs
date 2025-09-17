@@ -1,5 +1,6 @@
 using Adminstrator.Helpers;
 using Adminstrator.HttpsClients;
+using Adminstrator.HttpsClients.Auths;
 using Adminstrator.HttpsClients.Interfaces;
 using Adminstrator.Middlewares;
 using Adminstrator.Services;
@@ -15,28 +16,29 @@ namespace Adminstrator
             var builder = WebApplication.CreateBuilder(args);
 
             SettingsHelper.Configure(builder.Configuration);
+
             builder.Services.AddHttpContextAccessor();
-            
+
+            builder.Services.AddScoped<HeaderHandler>();
+
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
             // Connect API Product Backend Service
-            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
+            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
-            // Connect API Store Backend Service
             builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            });
+            }).AddHttpMessageHandler<HeaderHandler>();
 
-            // Connect API Auth Backend Service
-            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
+            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]); // Ocelot Gateway
-            });
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
 
             // Connect Auth Service
 

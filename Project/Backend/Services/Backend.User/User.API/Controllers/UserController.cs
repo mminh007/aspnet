@@ -33,7 +33,7 @@ namespace User.API.Controllers
             }
 
             var response = await _userService.RegisterAsync(model);
-            return HandleResponse(response, "Register successfully!", "Registration failed");
+            return HandleResponse(response, "Register successfully!");
         }
 
         [Authorize]
@@ -41,7 +41,7 @@ namespace User.API.Controllers
         public async Task<IActionResult> GetStoreByUserID(Guid id)
         {
             var response = await _userService.GetStoreIdByUserId(id);
-            return HandleResponse(response, "Get storeId successfully!", "User or store not found");
+            return HandleResponse(response, "Get storeId successfully!");
         }
 
         [Authorize]
@@ -52,7 +52,7 @@ namespace User.API.Controllers
                                     ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
             var response = await _userService.GetUserAsync(userId);
-            return HandleResponse(response, "Get user successfully!", "User not found");
+            return HandleResponse(response, "Get user successfully!");
         }
 
         [Authorize]
@@ -69,7 +69,7 @@ namespace User.API.Controllers
                                     ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
             var response = await _userService.UpdateUserAsync(model, userId);
-            return HandleResponse(response, "Update user successfully!", "User update failed");
+            return HandleResponse(response, "Update user successfully!");
         }
 
         [Authorize]

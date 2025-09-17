@@ -16,7 +16,7 @@ namespace Frontend.Services
 
         public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, string UserId, string Message, int StatusCode)> Login(LoginModel model)
         {
-            model.ClientType = "admin";
+            model.ClientType = "frontend";
 
             var (success, accessToken, refreshToken, expiresIn, message, statusCode, role)
                 = await _authApi.LoginAsync(model);
