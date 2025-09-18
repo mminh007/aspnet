@@ -57,7 +57,7 @@ namespace Frontend.Controllers
             HttpContext.Session.SetString("UserRole", role);
 
             TempData["Message"] = message ?? "Login Successfully!";
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Home", new {id = userId});
         }
 
         [HttpGet]

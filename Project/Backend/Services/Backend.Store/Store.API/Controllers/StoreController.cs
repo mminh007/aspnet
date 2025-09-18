@@ -48,9 +48,9 @@ namespace Store.API.Controllers
 
         [HttpGet("public")]
         [AllowAnonymous]
-        public async Task<IActionResult> PublicGetStoreDetail([FromQuery] Guid storeId)
+        public async Task<IActionResult> PublicGetStoreDetail([FromQuery] Guid store)
         {
-            var result = await _storeService.GetStoreDetailByIdAsync(storeId);
+            var result = await _storeService.GetStoreDetailByIdAsync(store);
             return HandleResponse(result);
         }
 

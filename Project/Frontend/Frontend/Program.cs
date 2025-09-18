@@ -1,9 +1,13 @@
+﻿using Frontend.Cache;
+using Frontend.Cache.Interfaces;
 using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
+using Frontend.HttpsClients.Orders;
 using Frontend.HttpsClients.Products;
 using Frontend.HttpsClients.Stores;
 using Frontend.Services;
 using Frontend.Services.Interfaces;
+using StackExchange.Redis;
 
 
 namespace Frontend
@@ -20,6 +24,11 @@ namespace Frontend
 
             // Connect Auth Service
             builder.Services.AddScoped<HeaderHandler>();
+
+            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
 
             builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
             {
@@ -39,13 +48,24 @@ namespace Frontend
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IStoreService, StoreService>();
             builder.Services.AddScoped<IProductService, ProductService>();
-            
+            builder.Services.AddScoped<IOrderService, OrderService>();  
+
             builder.Services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(30); // session timeout
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
+            // Redis Cache
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var configuration = builder.Configuration.GetConnectionString("Redis");
+                return ConnectionMultiplexer.Connect(configuration);
+            });
+
+            // Đăng ký RedisCacheService
+            builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 
             //JWT Authentication
 

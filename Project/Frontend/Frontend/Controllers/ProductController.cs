@@ -20,6 +20,8 @@ namespace Frontend.Controllers
         [HttpGet]
         public async Task<IActionResult> Index([FromQuery] Guid storeId )
         {
+            var tempCount = TempData["CountItemsInCart"];
+            _logger.LogInformation($"From ProductController => TempData['CountItemsInCart']: {tempCount}");
             _logger.LogInformation("✅ Retrieved store for StoreId={StoreId}", storeId);
 
             if (storeId == Guid.Empty)
@@ -62,8 +64,19 @@ namespace Frontend.Controllers
             return View(model);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> AddProductToCart(Guid productId, Guid userId)
+        {
+            if (productId == Guid.Empty || userId == Guid.Empty)
+            {
+                return BadRequest("ProductId and UserId are required.");
+            }
+            // Logic to add product to cart would go here.
+            // This is a placeholder for demonstration purposes.
+            _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", productId, userId);
+            TempData["Message"] = "Product added to cart successfully!";
+            return View();
 
-       
 
     }
 }

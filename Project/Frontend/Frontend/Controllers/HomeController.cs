@@ -15,15 +15,51 @@ namespace Frontend.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IStoreService _storeService;
+        private readonly IOrderService _orderService;
 
-        public HomeController(IStoreService storeService, ILogger<HomeController> logger)
+        public HomeController(IStoreService storeService, IOrderService orderService, ILogger<HomeController> logger)
         {
             _storeService = storeService;
+            _orderService = orderService;
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index()
-        {
+        public async Task<IActionResult> Index(Guid id)
+        {   
+            if(id == Guid.Empty)
+            {
+                _logger.LogWarning("⚠️ userId EMPTY");
+                TempData["CountItemsInCart"] = 0;
+                ViewBag.CountItems = TempData["CountItemsInCart"];
+
+                //var tempCount = TempData["CountItemsInCart"];
+                //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
+            }
+            else
+            {
+                var (messageOrder, statusCodeOrder, dataOrder) = await _orderService.CountingItemsInCart(id);
+                if (statusCodeOrder != 200)
+                {
+                    _logger.LogWarning("⚠️ Failed to retrieve cart item count: {Message}", messageOrder);
+                    ViewBag.Message = $"Error {statusCodeOrder}: {messageOrder}";
+                    TempData["CountItemsInCart"] = 0;
+                    ViewBag.CountItems = TempData["CountItemsInCart"];
+
+                    //var tempCount = TempData["CountItemsInCart"];
+                    //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
+                }
+                else
+                {
+                    TempData["CountItemsInCart"] = dataOrder?.CountItems ?? 0;
+                    ViewBag.CountItems = TempData["CountItemsInCart"];
+
+                    //var tempCount = TempData["CountItemsInCart"];
+                    //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
+                }
+            }
+
+            
+
             var (message, statusCode, data) = await _storeService.GetStoresPagedAsync(1, 9);
             if (statusCode != 200)
             {

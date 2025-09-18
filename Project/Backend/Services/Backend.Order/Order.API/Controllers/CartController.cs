@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Oder.BLL.Services.Interfaces;
 using Order.BLL.Services;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
-using static Order.Common.Models.DTOs;
 
 namespace Order.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "buyer,system")]
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
@@ -29,17 +30,60 @@ namespace Order.API.Controllers
             return HandleResponse(result);
         }
 
+        [HttpGet("counting-items/{userId}")]
+        public async Task<IActionResult> GetCountItems(Guid userId)
+        {
+            var result = await _cartService.CountItemsInCartAsync(userId);
+            return HandleResponse(result);
+        }
+
         /// <summary>
         /// Thêm item vào giỏ hàng
         /// </summary>
-        [HttpPost("{userId:guid}/items")]
-        public async Task<IActionResult> AddItem(Guid userId, [FromBody] RequestItemToCartModel item)
+        [HttpPost("add-items")]
+        public async Task<IActionResult> AddItem([FromQuery] Guid buyer, [FromQuery] Guid cart, [FromBody] RequestItemToCartModel item)
         {
             if (item == null)
                 return BadRequest("Invalid item data");
 
-            var result = await _cartService.AddItemToCartAsync(userId, item);
+            var result = await _cartService.AddItemToCartAsync(buyer, cart, item);
             return HandleResponse(result);
+        }
+
+        /// <summary>
+        /// Cập nhật quantity của một item trong giỏ hàng
+        /// </summary>
+        [HttpPut("{userId:guid}/items/{productId:guid}/quantity")]
+        public async Task<IActionResult> UpdateItemQuantity(Guid userId, Guid productId, [FromBody] UpdateQuantityRequest request)
+        {
+            if (request == null || request.Quantity <= 0)
+                return BadRequest(request);
+
+            // Lấy giỏ hàng hiện tại
+            var cartResponse = await _cartService.GetCartAsync(userId);
+            if (!cartResponse.Success || cartResponse.Data == null)
+                return HandleResponse(cartResponse);
+
+            var cartId = cartResponse.Data.CartId;
+            // Tìm item cần update
+            var item = cartResponse.Data.Items.FirstOrDefault(i => i.ProductId == productId);
+            if (item == null)
+                return NotFound("Item not found in cart");
+
+            // Xóa item cũ và thêm lại với quantity mới
+            await _cartService.RemoveItemFromCartAsync(userId, productId);
+
+            var newItem = new RequestItemToCartModel
+            {
+                ProductId = item.ProductId,
+                StoreId = item.StoreId,
+                Quantity = request.Quantity,
+            };
+
+            item.Quantity = request.Quantity;
+            var addResult = await _cartService.AddItemToCartAsync(userId, cartId, newItem);
+
+            return HandleResponse(addResult);
         }
 
         /// <summary>
@@ -63,7 +107,6 @@ namespace Order.API.Controllers
         }
 
 
-
         /// <summary>
         /// Lấy các items trong giỏ hàng theo store
         /// </summary>
@@ -72,41 +115,6 @@ namespace Order.API.Controllers
         {
             var result = await _cartService.GetCartItemsByStoreAsync(userId, storeId);
             return HandleResponse(result);
-        }
-
-        /// <summary>
-        /// Cập nhật quantity của một item trong giỏ hàng
-        /// </summary>
-        [HttpPut("{userId:guid}/items/{productId:guid}/quantity")]
-        public async Task<IActionResult> UpdateItemQuantity(Guid userId, Guid productId, [FromBody] UpdateQuantityRequest request)
-        {
-            if (request == null || request.Quantity <= 0)
-                return BadRequest(request);
-
-            // Lấy giỏ hàng hiện tại
-            var cartResponse = await _cartService.GetCartAsync(userId);
-            if (!cartResponse.Success || cartResponse.Data == null)
-                return HandleResponse(cartResponse);
-
-            // Tìm item cần update
-            var item = cartResponse.Data.Items.FirstOrDefault(i => i.ProductId == productId);
-            if (item == null)
-                return NotFound("Item not found in cart");
-
-            // Xóa item cũ và thêm lại với quantity mới
-            await _cartService.RemoveItemFromCartAsync(userId, productId);
-
-            var newItem = new RequestItemToCartModel
-            {
-                ProductId = item.ProductId,
-                StoreId = item.StoreId,
-                Quantity = request.Quantity,
-            };
-
-            item.Quantity = request.Quantity;
-            var addResult = await _cartService.AddItemToCartAsync(userId, newItem);
-
-            return HandleResponse(addResult);
         }
 
         private IActionResult HandleResponse<T>(OrderResponseModel<T> response)

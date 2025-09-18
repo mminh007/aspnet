@@ -41,6 +41,9 @@ namespace Order.DAL.Models.Entities
         [NotMapped]
         public decimal LineTotal => Quantity * Price;
 
+        [NotMapped]
+        public string ErrorMessag { get; set; }
+
         // Navigation properties
         [ForeignKey("CartId")]
         public virtual CartModel? Cart { get; set; }

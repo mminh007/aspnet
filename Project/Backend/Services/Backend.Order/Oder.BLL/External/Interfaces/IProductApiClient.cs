@@ -10,6 +10,6 @@ namespace Order.BLL.External.Interfaces
 {
     public interface IProductApiClient
     {
-        Task<OrderResponseModel<DTOs.CartProductDTO>> GetProductInfoAsync(Guid productId);
+        Task<OrderResponseModel<List<DTOs.CartProductDTO>>> GetProductInfoAsync(List<Guid> productId);
     }
 }

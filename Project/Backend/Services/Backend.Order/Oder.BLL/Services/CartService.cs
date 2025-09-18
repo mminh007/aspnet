@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using Order.BLL.External.Interfaces;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
 using Order.DAL.Models.Entities;
 using Order.DAL.UnitOfWork.Interfaces;
+using System.Net.WebSockets;
 using static Order.Common.Models.DTOs;
 
 namespace Order.BLL.Services
@@ -14,110 +16,127 @@ namespace Order.BLL.Services
         private readonly IUnitOfWork _uow;
         private readonly IMapper _mapper;
         private readonly IProductApiClient _productService;
+        private readonly ILogger<CartService> _logger;
 
-        public CartService(IUnitOfWork uow, IMapper mapper, IProductApiClient productApiClient)
+        public CartService(IUnitOfWork uow, IMapper mapper, IProductApiClient productApiClient, ILogger<CartService> logger)
         {
             _uow = uow;
             _mapper = mapper;
             _productService = productApiClient;
+            _logger = logger;
         }
 
         public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId)
         {
-            var dbCart = await _uow.Carts.GetCartByUserIdAsync(userId);
-            if (dbCart != null)
+            var cart = await _uow.Carts.GetCartByUserIdAsync(userId);
+
+            if (cart == null)
             {
-                var dto = _mapper.Map<CartDTO>(dbCart);
                 return new OrderResponseModel<CartDTO?>
                 {
-                    Success = true,
-                    Message = OperationResult.Success,
+                    Success = false,
+                    Message = OperationResult.NotFound,
+                    ErrorMessage = "Cart not found"
+                };
+            }
+
+            var dto = _mapper.Map<CartDTO>(cart);
+
+            // Lấy danh sách productId trong cart
+            var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
+
+            // Gọi batch API sang ProductService
+            var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+            if (!productResponse.Success  || productResponse.Data == null)
+            {
+                // Nếu API fail → gắn error message cho toàn bộ items
+                foreach (var item in dto.Items)
+                {
+                    item.ErrorMessage = "Cannot fetch product info";
+                }
+
+                return new OrderResponseModel<CartDTO?>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Cannot fetch product info",
                     Data = dto
                 };
             }
 
+            // Map product info vào cart items
+            var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
+
+            foreach (var item in dto.Items)
+            {
+                if (productDict.TryGetValue(item.ProductId, out var product) && product.IsActive)
+                {
+                    item.ProductName = product.ProductName;
+                    item.Price = product.SalePrice;
+                    item.ErrorMessage = null;
+                }
+                else
+                {
+                    item.ErrorMessage = "Product out of stock or unavailable";
+                }
+            }
+
             return new OrderResponseModel<CartDTO?>
             {
-                Success = false,
-                Message = OperationResult.NotFound,
-                ErrorMessage = "Cart not found"
+                Success = true,
+                Message = OperationResult.Success,
+                Data = dto
             };
         }
 
-        public async Task<OrderResponseModel<Guid>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto)
+
+
+
+        public async Task<OrderResponseModel<Guid>> AddItemToCartAsync(Guid userId, Guid cartId, RequestItemToCartModel itemDto)
         {
-            // Lấy cart hiện tại hoặc tạo mới
-            var dbCart = await _uow.Carts.GetCartByUserIdAsync(userId);
-            var isNewCart = dbCart == null;
-
-            var cartItem = _mapper.Map<CartItemModel>(itemDto);
-
-            // Kiểm tra sản phẩm có tồn tại và active không
-            var productResponse = await _productService.GetProductInfoAsync(itemDto.ProductId);
-            if (productResponse.Message != OperationResult.Success || productResponse.Data == null || !productResponse.Data.IsActive)
+            // Lấy cart từ DB
+            var dbCart = await _uow.Carts.GetCartByIdAsync(cartId);
+            if (dbCart == null)
             {
                 return new OrderResponseModel<Guid>
                 {
                     Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = productResponse.ErrorMessage 
+                    Message = OperationResult.NotFound,
+                    ErrorMessage = "Cart not found"
                 };
             }
 
-            cartItem.Price = productResponse.Data.SalePrice;
-            cartItem.ProductName = productResponse.Data.ProductName;
-
-            if (isNewCart)
-            {
-                dbCart = new CartModel
-                {
-                    CartId = Guid.NewGuid(),
-                    UserId = userId,
-                    Items = new List<CartItemModel>(),
-                    CreatedAt = DateTime.UtcNow
-                };
-            }
-
-            // Tìm item đã tồn tại (theo cả ProductId + StoreId)
+            // Tìm item đã tồn tại (theo ProductId + StoreId)
             var existingItem = dbCart.Items.FirstOrDefault(i =>
                 i.ProductId == itemDto.ProductId && i.StoreId == itemDto.StoreId);
 
             if (existingItem != null)
             {
-                // Cập nhật quantity cho item đã tồn tại
                 existingItem.Quantity += itemDto.Quantity;
                 existingItem.UpdatedAt = DateTime.UtcNow;
                 await _uow.Carts.UpdateCartItemAsync(existingItem);
             }
             else
             {
-                // Thêm item mới
                 var newItem = new CartItemModel
                 {
                     CartItemId = Guid.NewGuid(),
                     CartId = dbCart.CartId,
                     ProductId = itemDto.ProductId,
                     StoreId = itemDto.StoreId,
-                    ProductName = productResponse.Data.ProductName,
-                    Price = productResponse.Data.SalePrice,
                     Quantity = itemDto.Quantity,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Price = 0,
+                    ProductName = string.Empty,
                 };
 
                 dbCart.Items.Add(newItem);
                 await _uow.Carts.AddCartItemAsync(newItem);
             }
 
-            // Lưu cart
-            if (isNewCart)
-            {
-                await _uow.Carts.CreateCartAsync(dbCart);
-            }
-            else
-            {
-                await _uow.Carts.UpdateCartAsync(dbCart);
-            }
-
+            await _uow.Carts.UpdateCartAsync(dbCart);
             await _uow.SaveChangesAsync();
 
             return new OrderResponseModel<Guid>
@@ -127,6 +146,8 @@ namespace Order.BLL.Services
                 Data = dbCart.CartId
             };
         }
+
+
 
         public async Task<OrderResponseModel<string>> RemoveItemFromCartAsync(Guid userId, Guid productId)
         {
@@ -188,33 +209,42 @@ namespace Order.BLL.Services
         }
 
         // Validate & enrich product info
-        private async Task<(bool IsValid, string ErrorMessage, List<CartItemModel> ValidItems)> ValidateCartItemsAsync(List<CartItemModel> items)
+        private async Task<(bool IsValid, string ErrorMessage, List<CartItemModel> ValidItems)>
+    ValidateCartItemsAsync(List<CartItemModel> items)
         {
             var validItems = new List<CartItemModel>();
+            var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+
+            // Gọi batch API
+            var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+            if (!productResponse.Success || productResponse.Data == null)
+            {
+                return (false, "Cannot fetch product info", validItems);
+            }
+
+            var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
 
             foreach (var item in items)
             {
-                var productResponse = await _productService.GetProductInfoAsync(item.ProductId);
-                if (productResponse.Message != OperationResult.Success || productResponse.Data == null || !productResponse.Data.IsActive)
+                if (!productDict.TryGetValue(item.ProductId, out var product) || !product.IsActive)
                 {
                     return (false, $"Product {item.ProductId} not found or inactive", validItems);
                 }
 
-                if (item.Quantity > productResponse.Data.Quantity)
+                if (item.Quantity > product.Quantity)
                 {
-                    return (false, $"Not enough stock for {productResponse.Data.ProductName}. Available: {productResponse.Data.Quantity}, Requested: {item.Quantity}", validItems);
+                    return (false, $"Not enough stock for {product.ProductName}. " +
+                                   $"Available: {product.Quantity}, Requested: {item.Quantity}", validItems);
                 }
 
-                // Cập nhật thông tin sản phẩm nếu có thay đổi
-                var hasChanges = false;
-                if (item.Price != productResponse.Data.SalePrice ||
-                    item.ProductName != productResponse.Data.ProductName)
+                // Update cartItem info nếu có thay đổi
+                if (item.Price != product.SalePrice || item.ProductName != product.ProductName)
                 {
-                    item.Price = productResponse.Data.SalePrice;
-                    item.ProductName = productResponse.Data.ProductName;
+                    item.Price = product.SalePrice;
+                    item.ProductName = product.ProductName;
                     item.UpdatedAt = DateTime.UtcNow;
                     await _uow.Carts.UpdateCartItemAsync(item);
-                    hasChanges = true;
                 }
 
                 validItems.Add(item);
@@ -222,6 +252,7 @@ namespace Order.BLL.Services
 
             return (true, string.Empty, validItems);
         }
+
 
         // Checkout
         public async Task<OrderResponseModel<List<CartItemDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds)
@@ -309,6 +340,52 @@ namespace Order.BLL.Services
             };
         }
 
-        
+        public async Task<OrderResponseModel<CountItemsDTO>> CountItemsInCartAsync(Guid userId)
+        {
+            var cart = await _uow.Carts.GetCartByUserIdAsync(userId);
+
+            if (cart == null)
+            {
+                var newCart = new CartModel
+                {
+                    UserId = userId,
+                    CartId = Guid.NewGuid(),
+                    Items = new List<CartItemModel>(),
+                    UpdatedAt = DateTime.UtcNow,
+                };
+
+                await _uow.Carts.CreateCartAsync(newCart);
+                await _uow.SaveChangesAsync();
+
+                var dto = new CountItemsDTO
+                {
+                    UserId = userId,
+                    CartId = newCart.CartId,
+                    CountItems = 0
+                };
+
+                return new OrderResponseModel<CountItemsDTO>
+                {
+                    Success = true,
+                    Message = OperationResult.Success,
+                    Data = dto
+                };
+            }   
+            
+            var count = cart?.Items.Count ?? 0;
+
+            return new OrderResponseModel<CountItemsDTO>
+            {
+                Success = true,
+                Message = OperationResult.Success,
+                Data = new CountItemsDTO
+                {
+                    UserId = userId,
+                    CartId = cart.CartId,
+                    CountItems = count
+                }
+            };
+
+        }
     }
 }

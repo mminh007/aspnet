@@ -248,6 +248,71 @@ namespace BLL.Services
         //---------------------------
         // Order Product Info
         //---------------------------
+        public async Task<ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>> OrderGetProductInfo2(List<Guid> productIds)
+        {
+            try
+            {
+                if (productIds == null || !productIds.Any())
+                {
+                    return new ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>
+                    {
+                        Success = false,
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "ProductIds list is empty"
+                    };
+                }
+
+                // Lấy toàn bộ sản phẩm trong list
+                var products = new List<ProductModel>();
+                var notFound = new List<Guid>();
+
+                foreach (var id in productIds)
+                {
+                    var product = await _repo.GetByIdAsync(id);
+                    if (product != null)
+                    {
+                        products.Add(product);
+                    }
+                    else
+                    {
+                        notFound.Add(id);
+                    }
+                }
+
+                if (!products.Any())
+                {
+                    return new ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>
+                    {
+                        Success = false,
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "No products found",
+                        NotFoundProductIds = notFound
+                    };
+                }
+
+                // Map sang DTO
+                var dtos = _mapper.Map<IEnumerable<DTOs.OrderProductDTO>>(products);
+
+                return new ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>
+                {
+                    Success = true,
+                    Message = OperationResult.Success,
+                    Data = dtos,
+                    NotFoundProductIds = notFound.Any() ? notFound : null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = ex.Message
+                };
+            }
+        }
+
+
         public async Task<ProductResponseModel<DTOs.OrderProductDTO>> OrderGetProductInfo(Guid productId)
         {
             var product = await _repo.GetByIdAsync(productId);
