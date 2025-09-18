@@ -2,6 +2,7 @@
 using Order.DAL.Databases;
 using Order.DAL.Models.Entities;
 using Order.DAL.Repository.Interfaces;
+using static Order.Common.Models.DTOs;
 
 namespace Order.DAL.Repositories
 {
@@ -86,5 +87,7 @@ namespace Order.DAL.Repositories
                 _context.CartItems.RemoveRange(cart.Items);
             }
         }
+
+       
     }
 }

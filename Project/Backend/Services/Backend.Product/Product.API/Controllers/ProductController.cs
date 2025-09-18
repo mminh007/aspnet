@@ -26,7 +26,7 @@ namespace API.Controllers
         // ---------------------------
         // Product APIs
         // ---------------------------
-
+        
 
         [HttpGet("search/{id:guid}")]
         public async Task<IActionResult> GetProductById(Guid id)

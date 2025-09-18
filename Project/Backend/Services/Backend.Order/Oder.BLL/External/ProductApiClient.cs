@@ -28,7 +28,7 @@ namespace Order.BLL.External
         /// <summary>
         /// Lấy thông tin product cho Order (giá, số lượng, trạng thái)
         /// </summary>
-        public async Task<OrderResponseModel<DTOs.CartProductDTO>> GetProductInfoAsync(Guid productId)
+        public async Task<OrderResponseModel<List<DTOs.CartProductDTO>>> GetProductInfoAsync(List<Guid> productId)
         {
             try
             {
@@ -40,8 +40,9 @@ namespace Order.BLL.External
                 if (string.IsNullOrEmpty(token))
                 {
                     _logger.LogError("❌ No JWT token found in request headers");
-                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    return new OrderResponseModel<List<DTOs.CartProductDTO>>
                     {
+                        Success = false,
                         Message = OperationResult.Error,
                         ErrorMessage = "Missing JWT token"
                     };
@@ -63,20 +64,22 @@ namespace Order.BLL.External
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    return new OrderResponseModel<List<DTOs.CartProductDTO>>
                     {
+                        Success = false,
                         Message = MapStatusCodeToResult((int)response.StatusCode),
                         ErrorMessage = $"Product API returned {(int)response.StatusCode} - {response.ReasonPhrase}"
                     };
                 }
 
-                var productResponse = await response.Content.ReadFromJsonAsync<ExternalResponse<DTOs.CartProductDTO>>();
+                var productResponse = await response.Content.ReadFromJsonAsync<ExternalResponse<List<DTOs.CartProductDTO>>>();
 
                 if (productResponse == null)
                 {
                     _logger.LogError("❌ Failed to parse Product API response");
-                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    return new OrderResponseModel<List<DTOs.CartProductDTO>>
                     {
+                        Success = false,
                         Message = OperationResult.Error,
                         ErrorMessage = "Failed to parse Product API response"
                     };
@@ -84,8 +87,9 @@ namespace Order.BLL.External
 
                 _logger.LogInformation($"productResponse Data: {productResponse.Data}");
 
-                return new OrderResponseModel<DTOs.CartProductDTO>
+                return new OrderResponseModel<List<DTOs.CartProductDTO>>
                 {
+                    Success = true,
                     Message = OperationResult.Success,
                     Data = productResponse.Data
                 };
@@ -94,8 +98,9 @@ namespace Order.BLL.External
             {
                 _logger.LogError(ex, "❌ Exception while calling Product API");
 
-                return new OrderResponseModel<DTOs.CartProductDTO>
+                return new OrderResponseModel<List<DTOs.CartProductDTO>>
                 {
+                    Success = false,
                     Message = OperationResult.Error,
                     ErrorMessage = "Exception while calling Product API"
                 };

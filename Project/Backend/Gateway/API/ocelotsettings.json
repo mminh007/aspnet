@@ -532,7 +532,7 @@
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/{userId}/items",
+      "DownstreamPathTemplate": "/api/cart/counting-items/{userId}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -540,7 +540,19 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/{userId}/items",
+      "UpstreamPathTemplate": "/cart/counting-items/{userId}",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/cart/add-items",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7070
+        }
+      ],
+      "UpstreamPathTemplate": "/cart/add-items",
       "UpstreamHttpMethod": [ "POST" ]
     },
     {

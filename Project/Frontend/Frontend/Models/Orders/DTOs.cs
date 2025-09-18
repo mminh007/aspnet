@@ -1,10 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Order.Common.Models
+namespace Frontend.Models.Orders
 {
     public class DTOs
     {
-        // DTO cho item trong giỏ hàng
+        public class CountItemsDTO
+        {
+            public Guid UserId { get; set; }
+            public Guid CartId { get; set; }
+            public int CountItems { get; set; }
+        }
+
         public class CartItemDTO
         {
             public Guid ProductId { get; set; }
@@ -14,8 +20,6 @@ namespace Order.Common.Models
 
             [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
             public int Quantity { get; set; }
-
-            public string ErrorMessage { get; set; }
 
             public decimal Price { get; set; } // lấy từ ProductService
         }
@@ -53,21 +57,8 @@ namespace Order.Common.Models
             public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         }
 
-        public class CartProductDTO
+        public class AddItemToCartRequest
         {
-            public Guid ProductId { get; set; }
-            public string ProductName { get; set; }
-            public decimal SalePrice { get; set; }
-            public int Quantity { get; set; }
-            public bool IsActive { get; set; } = true;
-
-        }
-
-        public class  CountItemsDTO
-        {
-            public Guid UserId { get; set; }
-            public Guid CartId { get; set; }
-            public int CountItems { get; set; }
         }
     }
 }

@@ -18,6 +18,7 @@ namespace BLL.Services.Interfaces
         Task<ProductResponseModel<string>> DeleteProductAsync(Guid productId);
 
         Task<ProductResponseModel<DTOs.OrderProductDTO>> OrderGetProductInfo(Guid productId);
+        Task<ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>> OrderGetProductInfo2(List<Guid> productId);
 
         // ---------------------------
         // Category 

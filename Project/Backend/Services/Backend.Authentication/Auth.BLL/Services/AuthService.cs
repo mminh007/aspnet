@@ -6,7 +6,6 @@ using Auth.DAL.Models.Entities;
 using Auth.Common.Models.Requests;
 using Auth.Common.Models.Responses;
 using Microsoft.AspNetCore.Identity;
-using System.Net;
 using static Auth.Common.Models.DTOs;
 using Microsoft.Extensions.Logging;
 

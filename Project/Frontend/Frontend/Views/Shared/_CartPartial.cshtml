@@ -26,7 +26,7 @@
             </svg>
             <span id="cartBadge"
                   class="position-absolute bottom-0 start-50 ms-n1 badge rounded-pill @(isLoggedIn ? "bg-danger" : "bg-secondary")">
-                0
+                @ViewBag.CountItems
             </span>
         </a>
     </li>
