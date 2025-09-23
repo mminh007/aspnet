@@ -11,7 +11,9 @@ namespace Order.API.Mapping
         {
             // Cart
             CreateMap<CartDTO, CartModel>().ReverseMap();
-            CreateMap<CartItemDTO, CartItemModel>().ReverseMap();
+            CreateMap<CartItemDTO, CartItemModel>()
+                                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                                .ReverseMap();
             CreateMap<RequestItemToCartModel, CartItemModel>().ReverseMap();
 
             // Order

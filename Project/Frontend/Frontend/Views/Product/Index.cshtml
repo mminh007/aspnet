@@ -1,7 +1,13 @@
-﻿@using Frontend.Models.Products;
+﻿@using static Frontend.Models.Products.DTOs;
 @using Frontend.Models.Stores;
+@using Frontend.Helpers;
 
-@model (StoreDto Store, List<DTOs.CategoryDTO> Categories, List<DTOs.ProductBuyerDTO> Products)
+@{
+    var AuthHeader = AuthHelper.GetUserInfo(Context);
+    var userId = AuthHeader.userId;
+}
+
+@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products)
 
 @{
     ViewData["Title"] = "Store Menu";
@@ -79,7 +85,13 @@
                                         </div>
                                     </div>
                                     <div class="col-md-2 text-end pe-3">
-                                        <button class="btn btn-primary btn-sm" asp-action="AddToCart" asp-controller="Cart">+</button>
+                                        <div class="cart-actions" id="cart-actions-@product.ProductId">
+                                            <button class="btn btn-primary btn-sm add-to-cart"
+                                                    data-product-id="@product.ProductId"
+                                                    data-store-id="@product.StoreId">
+                                                +
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -90,52 +102,147 @@
         </div>
     </div>
 </div>
-<!-- Hình ảnh -->
-@* <div class="col-md-2 text-center">
-                                    <img src="@product.ImageUrl"
-                                         class="img-fluid rounded-start"
-                                         alt="@product.ProductName"
-                                         style="width:100px; height:100px; object-fit:cover;" />
-                                </div> *@
+
+<!-- Floating Cart Button -->
+<a href=""
+   class="floating-cart-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+         class="bi bi-cart" viewBox="0 0 16 16">
+        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5
+                 0 0 1 .485.379L2.89 3H14.5a.5.5
+                 0 0 1 .491.592l-1.5 8A.5.5
+                 0 0 1 13 12H4a.5.5
+                 0 0 1-.491-.408L2.01
+                 3.607 1.61 2H.5a.5.5
+                 0 0 1-.5-.5zM3.102
+                 4l1.313 7h8.17l1.313-7H3.102zM5
+                 12a2 2 0 1 0 0 4 2 2 0 0
+                 0 0-4zm7 0a2 2 0 1 0 0 4
+                 2 2 0 0 0 0-4zm-7 1a1 1
+                 0 1-1 .001-2.001A1 1 0 0 1
+                 5 13zm7-1a1 1 0 1-1
+                 .001-2.001A1 1 0 0 1 12 12z" />
+    </svg>
+    <span id="cartBadgeFloating"
+          class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+        0
+    </span>
+</a>
+
+
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const links = document.querySelectorAll(".category-link");
-            const sections = document.querySelectorAll(".category-section");
+        document.addEventListener("DOMContentLoaded", () => {
+            // click (+) lần đầu
+            document.querySelectorAll(".add-to-cart").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const productId = btn.dataset.productId;
+                    const storeId = btn.dataset.storeId;
+                    const userId = "@userId";
 
-            // Scroll khi click
-            links.forEach(link => {
-                link.addEventListener("click", function () {
-                    const targetId = this.getAttribute("data-target");
-                    const targetEl = document.getElementById(targetId);
-                    if (targetEl) {
-                        window.scrollTo({
-                            top: targetEl.offsetTop - 80,
-                            behavior: "smooth"
+                    if (!userId || userId === "0") {
+                        const currentUrl = window.location.pathname + window.location.search;
+                        window.location.href = `/Authentication/Login?returnUrl=${encodeURIComponent(currentUrl)}`;
+                        return;
+                    }
+
+                    const dto = { storeId, productId, quantity: 1 };
+
+                    try {
+                        const response = await fetch(`/Product/AddProductToCart?buyer=${userId}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(dto)
                         });
+
+                        if (response.ok) {
+                            const result = await response.json();
+
+                            // thay đổi UI thành (- qty +)
+                            const container = document.getElementById(`cart-actions-${productId}`);
+                            container.innerHTML = `
+                                <div class="d-flex justify-content-end align-items-center">
+                                    <button class="btn btn-sm btn-light border decrease"
+                                            data-product-id="${productId}" data-store-id="${storeId}">-</button>
+                                    <span class="mx-2 fw-bold quantity-value" id="qty-${productId}">1</span>
+                                    <button class="btn btn-sm btn-light border increase"
+                                            data-product-id="${productId}" data-store-id="${storeId}">+</button>
+                                </div>`;
+
+                            // cập nhật badge
+                            const cartBadge = document.getElementById("cartBadge");
+                            if (cartBadge) {
+                                cartBadge.textContent = result.countItems;
+                                cartBadge.classList.remove("bg-secondary");
+                                cartBadge.classList.add("bg-danger");
+                            }
+
+                            bindQuantityButtons(productId, storeId, userId);
+                        } else {
+                            alert("❌ Lỗi thêm giỏ hàng");
+                        }
+                    } catch (err) {
+                        console.error("Network error:", err);
                     }
                 });
             });
+                 
 
-            // Highlight khi scroll
-            window.addEventListener("scroll", () => {
-                let scrollPos = window.scrollY || document.documentElement.scrollTop;
-                let current = "";
+            // bind lại nút + -
+            function bindQuantityButtons(productId, storeId, userId) {
+                const container = document.getElementById(`cart-actions-${productId}`);
+                const qtySpan = document.getElementById(`qty-${productId}`);
 
-                sections.forEach(section => {
-                    if (section.offsetTop - 150 <= scrollPos) {
-                        current = section.id;
-                    }
+                container.querySelectorAll(".increase, .decrease").forEach(btn => {
+                    btn.addEventListener("click", async () => {
+                        let currentQty = parseInt(qtySpan.textContent);
+
+                        if (btn.classList.contains("increase")) {
+                            currentQty++;
+                        } else if (btn.classList.contains("decrease") && currentQty > 1) {
+                            currentQty--;
+                        } else if (btn.classList.contains("decrease") && currentQty === 1) {
+                            //nếu giảm về 0 thì quay lại nút (+)
+                            container.innerHTML = `
+                                <button class="btn btn-primary btn-sm add-to-cart"
+                                        data-product-id="${productId}" data-store-id="${storeId}">+</button>`;
+                            container.querySelector(".add-to-cart").addEventListener("click", () => {
+                                document.querySelector(`#cart-actions-${productId} .add-to-cart`).click();
+                            });
+                            return;
+                        }
+
+                        //disable tránh spam
+                        btn.disabled = true;
+                        qtySpan.textContent = "...";
+
+                        try {
+                            const response = await fetch(`/Order/UpdateQuantity?userId=${userId}&productId=${productId}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ productId, quantity: currentQty })
+                            });
+
+                            if (response.ok) {
+                                const result = await response.json();
+                                qtySpan.textContent = currentQty;
+
+                                //cập nhật badge
+                                const cartBadge = document.getElementById("cartBadge");
+                                if (cartBadge) cartBadge.textContent = result.data.totalItems;
+                            } else {
+                                qtySpan.textContent = currentQty; rollback
+                                alert("❌ Lỗi cập nhật số lượng");
+                            }
+                        } catch (err) {
+                            console.error("Network error:", err);
+                            qtySpan.textContent = currentQty;
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
                 });
-
-                links.forEach(link => {
-                    link.classList.remove("active");
-                    if (link.getAttribute("data-target") === current) {
-                        link.classList.add("active");
-                    }
-                });
-            });
-
+            }
         });
     </script>
 }

@@ -36,6 +36,13 @@ namespace API.Controllers
             return HandleResponse(response);
         }
 
+        [HttpPost("order/validate-product")]
+        public async Task<IActionResult> OrderValidateProduct(Guid id)
+        {
+            var response = await _service.OrderGetProductInfo(id);
+            return HandleResponse(response);
+        }
+
         [HttpGet("search/store")]
         [AllowAnonymous]
         public async Task<IActionResult> SearchProducts([FromQuery] Guid store)
@@ -51,7 +58,7 @@ namespace API.Controllers
         public async Task<IActionResult> SearchCategories([FromQuery] Guid store)
         {
             //var StoreId = Guid.Parse(storeId);
-            var response = await _service.SearchCategoriesAsync(storeId);
+            var response = await _service.SearchCategoriesAsync(store);
             return HandleResponse(response);
         }
 

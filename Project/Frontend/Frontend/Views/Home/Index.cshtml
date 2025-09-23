@@ -3,51 +3,246 @@
     ViewData["Title"] = "Homepage";
 }
 
-<div class="homepage">
+<div class="mt-5 homepage-banner">
+   <div class="overlay">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-5 homepage-left ">
+                    <!-- Banner Search -->
+                    <div class="search-banner text-white d-flex align-items-center">
+                        <div class="w-100 text-center p-4">
+                            <h2 class="fw-bold">Đặt Đồ ăn, giao hàng từ 20'</h2>
+                            <p>Có hàng chục ngàn địa điểm ở TP. HCM từ 00:00 - 23:59</p>
 
-    <!-- Banner Search -->
-    <div class="search-banner text-white d-flex align-items-center"
-         style="background: url('/images/banner.jpg') no-repeat center center; background-size: cover; min-height: 400px;">
-        <div class="container text-center">
-            <h2 class="fw-bold">Đặt Đồ ăn, giao hàng từ 20'</h2>
-            <p>Có hàng chục ngàn địa điểm ở TP. HCM từ 00:00 - 23:59</p>
+                            <!-- Thanh Search -->
+                            <form asp-controller="Home" asp-action="Search" method="get" class="d-flex justify-content-center mt-3">
+                                <input type="text" name="keyword" class="form-control w-75"
+                                       placeholder="Tìm địa điểm, món ăn, địa chỉ..." />
+                                <button type="submit" class="btn btn-primary ms-2">Tìm</button>
+                            </form>
 
-            <form asp-controller="Home" asp-action="Search" method="get" class="d-flex justify-content-center mt-3">
-                <input type="text" name="keyword" class="form-control w-50" placeholder="Tìm địa điểm, món ăn, địa chỉ..." />
-                <button type="submit" class="btn btn-primary ms-2">Tìm</button>
-            </form>
+                            <!-- Categories -->
+                            <div class="categories mt-4 d-flex flex-wrap justify-content-center gap-2">
+                                <button class="btn btn-outline-light btn-sm">All</button>
+                                <button class="btn btn-outline-light btn-sm">Đồ ăn</button>
+                                <button class="btn btn-outline-light btn-sm">Đồ uống</button>
+                                <button class="btn btn-outline-light btn-sm">Pizza/Burger</button>
+                                <button class="btn btn-outline-light btn-sm">Bánh kem</button>
+                                <button class="btn btn-outline-light btn-sm">Tráng miệng</button>
+                                <button class="btn btn-outline-light btn-sm">Sushi</button>
+                                <button class="btn btn-outline-light btn-sm">Món lẩu</button>
+                                <button class="btn btn-outline-light btn-sm">Mì phở</button>
+                                <button class="btn btn-outline-light btn-sm">Cơm hộp</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Categories -->
-            <div class="categories mt-4 d-flex flex-wrap justify-content-center gap-2">
-                <!--<button class="btn btn-outline-light btn-sm">All</button>-->
-                <button class="btn btn-outline-light btn-sm">Đồ ăn</button>
-       
+                <div class="col-lg-7 homepage-right">
+
+                    <!-- Thanh nhập địa chỉ -->
+                    <div class="location-search">
+                        <button type="button" class="btn w-100 text-start border rounded bg-white" data-bs-toggle="modal" data-bs-target="#addressModal">
+                            <strong class="text-primary">Đồ ăn</strong> &nbsp; → &nbsp; Chọn địa chỉ giao hàng
+                        </button>
+                    </div>
+
+                    <div class="now-list-stores">
+                        <h4 class="mb-3">Ưu đãi</h4>
+                        <div class="row" id="store-list">
+                            @if (Model != null && Model.Any())
+                            {
+                                @Html.Partial("_StoreCardPartial", Model)
+                            }
+                            else
+                            {
+                                <div class="col-12">
+                                    <div class="alert alert-warning text-center">
+                                        @ViewBag.Message ?? "Không có cửa hàng nào được tìm thấy."
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="text-center">
+                            <a href="#" class="btn btn-link text-decoration-none" id="loadMore">Xem thêm &raquo;</a>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+   </div>
+    
+</div>
+
+<div class="container">
+    <!-- Block 1 -->
+    <div class="container-coporation stacked">
+        <h4 class="title">Đơn hàng của bạn được bảo quản như thế nào?</h4>
+        <p>ShopeeFood sẽ bảo quản đơn hàng của bạn bằng túi & thùng để chống nắng mưa, giữ nhiệt,... trên đường đi một cách tốt nhất.</p>
+        <div >
+            <img src="~/images/background/Box-food-preservation-footer.png" asp-append-version="true" alt="Preservation" />
         </div>
     </div>
 
-    <!-- Promotions -->
-    <div class="container my-5">
-        <h4 class="mb-3">Ưu đãi</h4>
-        <div class="row" id="store-list">
-            @if (Model != null && Model.Any())
-            {
-                @Html.Partial("_StoreCardPartial", Model)
-            }
-            else
-            {
-                <div class="col-12">
-                    <div class="alert alert-warning text-center">
-                        @ViewBag.Message ?? "Không có cửa hàng nào được tìm thấy."
-                    </div>
-                </div>
-            }
+    <!-- Block 2 -->
+    <div class="container-coporation img-right">
+        <h4>Ứng dụng Shopee Partner</h4>
+        <p>- <b>Ứng dụng Shopee Partner</b> là ứng dụng quản lý đơn hàng cho các nhà hàng đối tác của dịch vụ đặt món tận nơi.</p>
+        <p>- <b>ShopeeFood.vn</b> luôn sẵn sàng hợp tác với các nhà hàng, quán ăn, cafe,... để mở rộng kinh doanh cũng như gia tăng khách hàng. Hãy kết nối vào hệ thống đặt, giao hàng để giảm bớt chi phí quản lý, vận hành, marketing, công nghệ,...</p>
+        <div class="bg-cop">
+            <img src="~/images/background/banner-phone-reg-merchant.png" asp-append-version="true" alt="NowMerchant App" style="width:270px;" />
         </div>
-        <div class="text-end text-center">
-            <a href="#" class="btn btn-link text-decoration-none" id="loadMore">Xem thêm &raquo;</a>
+    </div>
+
+    <!-- Block 3 -->
+    <div class="container-coporation">
+        <h4>
+            <span style="color:#EE4D2D; font-weight: bold;">ShopeeFood.vn</span>
+            Hợp tác nhân viên giao nhận - ShopeeFood Driver
+        </h4>
+        <p>Giúp bạn tăng thu nhập trong thời gian rảnh rỗi.</p>
+        <p>
+            <span style="color:#EE4D2D; font-weight: bold;">ShopeeFood</span>
+            tìm kiếm hợp tác với các cá nhân để thực hiện việc giao hàng. Chúng tôi sẽ cung cấp ứng dụng (app), một số dụng cụ cần thiết để bạn có thể tiếp nhận & giao hàng, kiếm thêm thu nhập.<br />
+            Đăng ký tham gia <a href="#" style="color:#4D77A2; font-weight:bold;">tại đây</a> hoặc gửi email qua
+            <a href="mailto:tuyendung@support.shopeefood.vn" style="color:#4D77A2; font-weight:bold;">tuyendung@support.shopeefood.vn</a> - hoặc gọi (028) 7109 9179.
+        </p>
+        <div class="bg-cop">
+            <img src="~/images/background/bg-deliverynow-dat-mon-truc-tuyen-giao-hang-tan-noi.png" asp-append-version="true" alt="ShopeeFood Driver" style="width:170px;"/>
         </div>
     </div>
 </div>
+
+<div class="seo-footer">
+    <p>DANH MỤC</p>
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Thuốc</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Hóa Mỹ Phẫm</a>
+            <a href="#" class="sub-item">BCS</a>
+            <a href="#" class="sub-item">Thiết Bị</a>
+            <a href="#" class="sub-item">Vitamins</a>
+            <a href="#" class="sub-item">Thuốc Tây</a>
+            <a href="#" class="sub-item">Khẩu trang</a>
+            <a href="#" class="sub-item">Khẩn cấp</a>
+        </ul>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Thú cưng</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Thú cưng</a>
+        </ul>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Đồ ăn Homepage</p>
+        </a>
+        <ul class="sub-item-wrapper"></ul>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Đồ ăn</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Vỉa hè</a>
+            <a href="#" class="sub-item">Món lẩu</a>
+            <a href="#" class="sub-item">Cơm hộp</a>
+            <a href="#" class="sub-item">Đồ uống</a>
+            <a href="#" class="sub-item">Đồ chay</a>
+            <a href="#" class="sub-item">Bánh kem</a>
+            <a href="#" class="sub-item">Tráng miệng</a>
+            <a href="#" class="sub-item">homemade</a>
+            <a href="#" class="sub-item">Sushi</a>
+            <a href="#" class="sub-item">Mì phở</a>
+            <a href="#" class="sub-item">Đồ ăn</a>
+            <a href="#" class="sub-item">Pizza/Burger</a>
+            <a href="#" class="sub-item">Món gà</a>
+        </ul>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Sản phẩm</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Mỹ phẩm</a>
+            <a href="#" class="sub-item">Đồ chơi</a>
+            <a href="#" class="sub-item">Sữa</a>
+            <a href="#" class="sub-item">Tã bỉm</a>
+            <a href="#" class="sub-item">Dụng cụ</a>
+            <a href="#" class="sub-item">Quần áo</a>
+            <a href="#" class="sub-item">Giày dép</a>
+            <a href="#" class="sub-item">Điện tử</a>
+            <a href="#" class="sub-item">Trang sức</a>
+            <a href="#" class="sub-item">Sản phẩm - TPHCM</a>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Thực phẩm</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Ăn chay</a>
+            <a href="#" class="sub-item">Trái cây</a>
+            <a href="#" class="sub-item">Gia vị</a>
+            <a href="#" class="sub-item">Đặc sản</a>
+            <a href="#" class="sub-item">Thịt/trứng</a>
+            <a href="#" class="sub-item">Hải sản</a>
+            <a href="#" class="sub-item">Rau củ</a>
+            <a href="#" class="sub-item">Gạo mì</a>
+            <a href="#" class="sub-item">Đồ uống/Ăn vặt</a>
+            <a href="#" class="sub-item">Thực phẩm - TPHCM</a>
+    </div>
+
+    <div class="seo-footer-item">
+        <a href="#">
+            <p>Hoa</p>
+        </a>
+        <ul class="sub-item-wrapper">
+            <a href="#" class="sub-item">Chia buồn</a>
+            <a href="#" class="sub-item">Cây cảnh</a>
+            <a href="#" class="sub-item">Chúc mừng</a>
+            <a href="#" class="sub-item">Sinh nhật</a>
+            <a href="#" class="sub-item">Tình yêu</a>
+
+    </div>
+
+</div>
+
+<div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addressModalLabel">Bạn muốn giao đến đâu?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Thanh search địa chỉ -->
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                    <input type="text" class="form-control" id="deliveryAddress" placeholder="Nhập địa chỉ giao hàng">
+                </div>
+
+                <div class="mt-3">
+                    <a href="#" class="text-primary"><i class="bi bi-map"></i> Tìm trên bản đồ</a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="saveAddress">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 @section Scripts {
     <script>
@@ -73,17 +268,43 @@
                 if (html.trim() === "" || html.includes("No stores found")) {
                     hasMoreStores = false;
                     this.innerText = "Hết cửa hàng rồi!";
-                    this.disabled = true;
+                    this.classList.add("disabled");
                     return;
                 }
 
                 document.getElementById("store-list").insertAdjacentHTML("beforeend", html);
-                this.innerText = "Xem thêm";
+                this.innerText = "Xem thêm »";
             } catch (err) {
                 console.error(err);
                 this.innerText = "Lỗi tải dữ liệu";
             } finally {
                 isLoading = false;
+            }
+        });
+    </script>
+
+    <script>
+        document.getElementById("saveAddress").addEventListener("click", function () {
+            const address = document.getElementById("deliveryAddress").value.trim();
+            if (address) {
+                // Lưu vào SessionStorage (hoặc Cookie)
+                sessionStorage.setItem("deliveryAddress", address);
+
+                // Đóng modal
+                bootstrap.Modal.getInstance(document.getElementById("addressModal")).hide();
+
+                // Hiển thị lại trên nút
+                document.querySelector('[data-bs-target="#addressModal"]').innerHTML =
+                    `<strong class="text-primary">Đồ ăn</strong> → ${address}`;
+            }
+        });
+
+        // Nếu đã có địa chỉ trong sessionStorage -> hiển thị lại
+        document.addEventListener("DOMContentLoaded", function () {
+            const savedAddress = sessionStorage.getItem("deliveryAddress");
+            if (savedAddress) {
+                document.querySelector('[data-bs-target="#addressModal"]').innerHTML =
+                    `<strong class="text-primary">Đồ ăn</strong> → ${savedAddress}`;
             }
         });
     </script>

@@ -7,6 +7,7 @@ namespace Order.Common.Models
         // DTO cho item trong giỏ hàng
         public class CartItemDTO
         {
+            public Guid CartItemId { get; set; }
             public Guid ProductId { get; set; }
             public Guid StoreId { get; set; }
 
@@ -15,8 +16,8 @@ namespace Order.Common.Models
             [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
             public int Quantity { get; set; }
 
-            public string ErrorMessage { get; set; }
-
+            public string ErrorMessage { get; set; } = string.Empty;
+            public bool IsAvailable { get; set; } = true;
             public decimal Price { get; set; } // lấy từ ProductService
         }
 

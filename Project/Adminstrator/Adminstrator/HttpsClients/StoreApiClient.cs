@@ -29,11 +29,36 @@ namespace Adminstrator.HttpsClients
 
         public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)> GetByUserIdAsync(Guid userId)
         {
-
             var url = _getByUserIdEndpoint.Replace("{userId}", userId.ToString());
-            var response = await _httpClient.GetAsync(url);
 
+            // 🔍 Debug: Log request details
+            _logger.LogInformation("🔍 Making request to: {Url}", url);
+
+            // Log Authorization header
+            var authHeader = _httpClient.DefaultRequestHeaders.Authorization;
+            if (authHeader != null)
+            {
+                _logger.LogInformation("🔍 HttpClient Authorization header: {Scheme} {Token}",
+                    authHeader.Scheme, authHeader.Parameter?[..10] + "...");
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ No Authorization header set on HttpClient");
+            }
+
+            // Log all headers
+            _logger.LogInformation("🔍 All HttpClient headers:");
+            foreach (var header in _httpClient.DefaultRequestHeaders)
+            {
+                _logger.LogInformation("  {Key}: {Value}", header.Key, string.Join(", ", header.Value));
+            }
+
+            var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
+
+            // 🔍 Debug: Log response
+            _logger.LogInformation("🔍 Response Status: {StatusCode}", response.StatusCode);
+            _logger.LogInformation("🔍 Response Content Length: {Length}", content?.Length ?? 0);
 
             try
             {
@@ -42,13 +67,17 @@ namespace Adminstrator.HttpsClients
 
                 if (!response.IsSuccessStatusCode || result == null)
                 {
+                    _logger.LogWarning("⚠️ Request failed. Status: {Status}, Content: {Content}",
+                        response.StatusCode, content?[..200]);
                     return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
                 }
 
+                _logger.LogInformation("✅ Request successful. Message: {Message}", result.Message);
                 return (true, result.Message, result.StatusCode, result.Data);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "❌ Exception while parsing response: {Message}", ex.Message);
                 return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
             }
         }
@@ -56,11 +85,14 @@ namespace Adminstrator.HttpsClients
 
         public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)> GetByIdAsync(Guid storeId)
         {
-
             var url = _getByIdEndpoint.Replace("{storeId}", storeId.ToString());
-            var response = await _httpClient.GetAsync(url);
 
+            _logger.LogInformation("🔍 Making request to: {Url}", url);
+
+            var response = await _httpClient.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
+
+            _logger.LogInformation("🔍 Response Status: {StatusCode}", response.StatusCode);
 
             try
             {
@@ -76,10 +108,10 @@ namespace Adminstrator.HttpsClients
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "❌ Exception while parsing response: {Message}", ex.Message);
                 return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
             }
         }
-
 
 
         // ✅ Private generic response wrapper

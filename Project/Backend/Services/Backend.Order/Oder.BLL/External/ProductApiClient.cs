@@ -107,6 +107,86 @@ namespace Order.BLL.External
             }
         }
 
+        public async Task<OrderResponseModel<DTOs.CartProductDTO>> ValidateProduct(Guid productId)
+        {
+            try
+            {
+                // ✅ Lấy JWT từ request gốc
+                var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"]
+                    .ToString()
+                    .Replace("Bearer ", "");
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    _logger.LogError("❌ No JWT token found in request headers");
+                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    {
+                        Success = false,
+                        Message = OperationResult.Error,
+                        ErrorMessage = "Missing JWT token"
+                    };
+                }
+
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var baseUrl = _configuration["ServiceUrls:Product:BaseUrl"];
+                var endpoint = _configuration["ServiceUrls:Product:Endpoints:ValidateProduct"]
+                                                    .Replace("productId", productId.ToString());
+                var url = $"{baseUrl}/{endpoint}";
+
+                // ✅ Gọi sang Product API
+                var response = await _httpClient.PostAsJsonAsync(url, productId);
+
+                var raw = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("👉 Product API raw response ({StatusCode}): {Raw}",
+                    (int)response.StatusCode, raw);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    {
+                        Success = false,
+                        Message = MapStatusCodeToResult((int)response.StatusCode),
+                        ErrorMessage = $"Product API returned {(int)response.StatusCode} - {response.ReasonPhrase}"
+                    };
+                }
+
+                var productResponse = await response.Content.ReadFromJsonAsync<ExternalResponse<DTOs.CartProductDTO>>();
+
+                if (productResponse == null)
+                {
+                    _logger.LogError("❌ Failed to parse Product API response");
+                    return new OrderResponseModel<DTOs.CartProductDTO>
+                    {
+                        Success = false,
+                        Message = OperationResult.Error,
+                        ErrorMessage = "Failed to parse Product API response"
+                    };
+                }
+
+                _logger.LogInformation($"productResponse Data: {productResponse.Data}");
+
+                return new OrderResponseModel<DTOs.CartProductDTO>
+                {
+                    Success = true,
+                    Message = OperationResult.Success,
+                    Data = productResponse.Data
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Exception while calling Product API");
+
+                return new OrderResponseModel<DTOs.CartProductDTO>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Exception while calling Product API"
+                };
+            }
+        }
+
         private OperationResult MapStatusCodeToResult(int statusCode) => statusCode switch
         {
             200 => OperationResult.Success,

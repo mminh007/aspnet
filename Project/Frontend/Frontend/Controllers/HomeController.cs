@@ -1,13 +1,7 @@
-﻿using Frontend.HttpsClients.Products;
-using Frontend.HttpsClients.Stores;
-using Frontend.Models;
-using Frontend.Models.Products;
+﻿using Frontend.HttpsClients.Stores;
 using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Diagnostics;
 
 namespace Frontend.Controllers
 {
@@ -15,51 +9,15 @@ namespace Frontend.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IStoreService _storeService;
-        private readonly IOrderService _orderService;
 
-        public HomeController(IStoreService storeService, IOrderService orderService, ILogger<HomeController> logger)
+        public HomeController(IStoreService storeService, ILogger<HomeController> logger)
         {
             _storeService = storeService;
-            _orderService = orderService;
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index(Guid id)
-        {   
-            if(id == Guid.Empty)
-            {
-                _logger.LogWarning("⚠️ userId EMPTY");
-                TempData["CountItemsInCart"] = 0;
-                ViewBag.CountItems = TempData["CountItemsInCart"];
-
-                //var tempCount = TempData["CountItemsInCart"];
-                //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
-            }
-            else
-            {
-                var (messageOrder, statusCodeOrder, dataOrder) = await _orderService.CountingItemsInCart(id);
-                if (statusCodeOrder != 200)
-                {
-                    _logger.LogWarning("⚠️ Failed to retrieve cart item count: {Message}", messageOrder);
-                    ViewBag.Message = $"Error {statusCodeOrder}: {messageOrder}";
-                    TempData["CountItemsInCart"] = 0;
-                    ViewBag.CountItems = TempData["CountItemsInCart"];
-
-                    //var tempCount = TempData["CountItemsInCart"];
-                    //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
-                }
-                else
-                {
-                    TempData["CountItemsInCart"] = dataOrder?.CountItems ?? 0;
-                    ViewBag.CountItems = TempData["CountItemsInCart"];
-
-                    //var tempCount = TempData["CountItemsInCart"];
-                    //_logger.LogInformation($"TempData['CountItemsInCart']: {tempCount}");
-                }
-            }
-
-            
-
+        public async Task<IActionResult> Index()
+        {
             var (message, statusCode, data) = await _storeService.GetStoresPagedAsync(1, 9);
             if (statusCode != 200)
             {
@@ -82,8 +40,5 @@ namespace Frontend.Controllers
 
             return PartialView("_StoreCardPartial", data); // trả về HTML partial
         }
-
-        
-
     }
 }

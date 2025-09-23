@@ -35,6 +35,9 @@ namespace Order.DAL.Repositories
             return cart?.Items.Where(i => i.StoreId == storeId).ToList() ?? new List<CartItemModel>();
         }
 
+        public Task<CartItemModel?> GetCartItemByIdAsync(Guid cartItemId) =>
+            _context.CartItems.FirstOrDefaultAsync(c => c.CartItemId == cartItemId);
+
         public async Task CreateCartAsync(CartModel cart)
         {
             cart.CreatedAt = DateTime.UtcNow;
@@ -62,6 +65,7 @@ namespace Order.DAL.Repositories
 
         public Task UpdateCartItemAsync(CartItemModel item)
         {
+            item.UpdatedAt = DateTime.UtcNow;
             _context.CartItems.Update(item);
             return Task.CompletedTask;
         }

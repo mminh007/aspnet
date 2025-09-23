@@ -1,16 +1,21 @@
-﻿@using Frontend.Helpers;
+﻿@model int
+@using Frontend.Helpers;
+
 @{
     var token = Context.Request.Cookies["accessToken"];
     var isLoggedIn = !string.IsNullOrEmpty(token);
+
+    var AuthHeader = AuthHelper.GetUserInfo(Context);
+    var userId = AuthHeader.userId;
 }
 
 <ul class="navbar-nav">
     <li class="nav-item">
         <a id="cartLink"
            class="nav-link position-relative text-dark"
-           href="@(isLoggedIn? Url.Action("Index", "Cart") : "#")"
+           href="@(isLoggedIn? Url.Action("CreateCart", "Order", new {id = userId} ) : "#")"
            data-loggedin="@(isLoggedIn.ToString().ToLower())">
-            <svg id="cartIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
                  class="bi bi-cart" viewBox="0 0 16 16">
                 <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1
                         .485.379L2.89 3H14.5a.5.5 0 0 1
@@ -26,25 +31,25 @@
             </svg>
             <span id="cartBadge"
                   class="position-absolute bottom-0 start-50 ms-n1 badge rounded-pill @(isLoggedIn ? "bg-danger" : "bg-secondary")">
-                @ViewBag.CountItems
+                @Model
             </span>
         </a>
     </li>
 </ul>
 
+<script>
+    const cartLink = document.getElementById("cartLink");
+    if (cartLink) {
+        cartLink.addEventListener("click", function (e) {
+            const isLoggedIn = cartLink.getAttribute("data-loggedin") === "true";
+            if (!isLoggedIn) {
+                e.preventDefault();
+                alert("⚠ Vui lòng đăng nhập để xem giỏ hàng!");
+            }
+        });
+    }
+</script>
+
 @section Scripts {
-    <script>
-        const cartLink = document.getElementById("cartLink");
-
-        if (cartLink) {
-            cartLink.addEventListener("click", function (e) {
-                const isLoggedIn = cartLink.getAttribute("data-loggedin") === "true";
-
-                if (!isLoggedIn) {
-                    e.preventDefault(); // chặn chuyển trang
-                    alert("⚠ Vui lòng đăng nhập để xem giỏ hàng!");
-                }
-            });
-        }
-    </script>
+    <partial name="_ValidationScriptsPartial" />
 }

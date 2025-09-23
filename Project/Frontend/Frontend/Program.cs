@@ -5,9 +5,11 @@ using Frontend.HttpsClients.Auths;
 using Frontend.HttpsClients.Orders;
 using Frontend.HttpsClients.Products;
 using Frontend.HttpsClients.Stores;
+using Frontend.Middlewares;
 using Frontend.Services;
 using Frontend.Services.Interfaces;
 using StackExchange.Redis;
+using System.Text.Json;
 
 
 namespace Frontend
@@ -74,6 +76,13 @@ namespace Frontend
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            });
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -84,11 +93,14 @@ namespace Frontend
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
             app.UseRouting();
             app.UseSession();
+
+            app.UseMiddleware<SessionRestoreMiddleware>();
+            app.UseMiddleware<RefreshTokenMiddleware>();
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
 
             app.UseAuthentication();
             app.UseAuthorization();

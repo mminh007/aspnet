@@ -15,10 +15,18 @@ namespace Frontend.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login() => View();
+        public IActionResult Login(string? returnUrl = null)
+        {
+            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+            {
+                returnUrl = Url.Action("Index", "Home");
+            }
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Login(LoginModel model)
+        public async Task<IActionResult> Login(LoginModel model, string? returnUrl = null)
         {
             if (!ModelState.IsValid) return View(model);
 
@@ -28,6 +36,7 @@ namespace Frontend.Controllers
             if (!success || string.IsNullOrEmpty(accessToken))
             {
                 SetErrorMessage(statusCode, $"{message} - {statusCode}", "Login");
+                ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
             }
 
@@ -53,11 +62,18 @@ namespace Frontend.Controllers
             }
 
             // add user's info in Session
-            HttpContext.Session.SetString("UserEmail", model.Email);
             HttpContext.Session.SetString("UserRole", role);
+            HttpContext.Session.SetString("UserEmail", model.Email);
+            HttpContext.Session.SetString("UserId", userId);
 
             TempData["Message"] = message ?? "Login Successfully!";
-            return RedirectToAction("Index", "Home", new {id = userId});
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl); 
+            }
+
+            return RedirectToAction("Index", "Home", new { id = userId });
         }
 
         [HttpGet]
@@ -88,7 +104,7 @@ namespace Frontend.Controllers
             return RedirectToAction("Login");
         }
 
-        public IActionResult Logout()
+        public IActionResult Logout(string? returnUrl = null)
         {
             // Clear session
             HttpContext.Session.Clear();
@@ -98,6 +114,12 @@ namespace Frontend.Controllers
             Response.Cookies.Delete("refreshToken");
 
             TempData["Message"] = "Logout Successfully!";
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
             return RedirectToAction("Login", "Authentication");
         }
 

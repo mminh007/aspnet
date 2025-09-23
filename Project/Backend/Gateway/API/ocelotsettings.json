@@ -520,7 +520,7 @@
     // CART SERVICE
     // -------------------------
     {
-      "DownstreamPathTemplate": "/api/cart/{userId}",
+      "DownstreamPathTemplate": "/api/cart/get-cart",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -528,11 +528,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/{userId}",
+      "UpstreamPathTemplate": "/cart/get-cart",
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/counting-items/{userId}",
+      "DownstreamPathTemplate": "/api/cart/counting-item",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -540,11 +540,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/counting-items/{userId}",
+      "UpstreamPathTemplate": "/cart/counting-item",
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/add-items",
+      "DownstreamPathTemplate": "/api/cart/add-item",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -552,11 +552,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/add-items",
+      "UpstreamPathTemplate": "/cart/add-item",
       "UpstreamHttpMethod": [ "POST" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/{userId}/items/{productId}",
+      "DownstreamPathTemplate": "/api/cart/delete-item",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -564,11 +564,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/{userId}/items/{productId}",
+      "UpstreamPathTemplate": "/cart/delete-item",
       "UpstreamHttpMethod": [ "DELETE" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/{userId}",
+      "DownstreamPathTemplate": "/api/cart/delete-cart",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -576,7 +576,7 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/{userId}",
+      "UpstreamPathTemplate": "/cart/delete-cart",
       "UpstreamHttpMethod": [ "DELETE" ]
     },
     {
@@ -592,7 +592,7 @@
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/cart/{userId}/items/{productId}/quantity",
+      "DownstreamPathTemplate": "/api/cart/update-item",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -600,7 +600,7 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/cart/{userId}/items/{productId}/quantity",
+      "UpstreamPathTemplate": "/cart/update-item",
       "UpstreamHttpMethod": [ "PUT" ]
     }
 
