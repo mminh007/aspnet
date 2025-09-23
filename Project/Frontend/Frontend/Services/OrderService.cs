@@ -3,6 +3,8 @@ using Frontend.HttpsClients.Orders;
 using Frontend.Models.Orders;
 using Frontend.Models.Orders.Requests;
 using Frontend.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using System.Net.NetworkInformation;
 
 namespace Frontend.Services
 {
@@ -21,61 +23,108 @@ namespace Frontend.Services
             _cache = cache;
         }
 
-        public Task<(string Message, int CountItems)> AddProductToCache(Guid userId, Guid cartId, Guid productId)
+        public async Task<(string Message, int StatusCode, int CountItems)> AddProductToCart(Guid userId, RequestItemsToCartModel dto)
         {
-            var listProductIds = new List<Guid>();
-            string cacheKey = $"productList:userId:{userId}";
+            var (success, message, statusCode, totalItems) = await _client.AddItemsToCart(userId, dto);
 
-            var checkData = _cache.GetAsync<List<Guid>>(cacheKey);
-            if (checkData != null)
+            if (!success)
             {
-                checkData.Result.Add(productId);
-                _cache.SetAsync(cacheKey, checkData.Result, _cacheDuration);
+                _logger.LogWarning("❌ AddItemsToCart fail for userId={UserId}, statusCode={StatusCode}, message={Message}",
+                    userId, statusCode, message);
 
-                var newCartItem = new RequestItemsToCartModel
-                {
-                    ProductId = productId,
-                    Quantity = 1,
+                // Giữ cache cũ nếu có
+                var (msg, sttCode, dtoCount) = await CountingItemsInCart(userId);
 
-                },
-
+                return ($"Message from API CountingItems: {msg}", sttCode, dtoCount.CountItems);
             }
 
-            listProductIds.Add(productId);
-            _cache.SetAsync(cacheKey, listProductIds, _cacheDuration);
+            // ✅ Luôn update cache bằng kết quả từ API
+            string cacheKey = $"cart:countItems:{userId}";
+            await _cache.SetAsync(cacheKey, new DTOs.CountItemsDTO { CountItems = totalItems }, _cacheDuration);
 
-            // Get Counting Items
-            var countItems = _cache.GetAsync<DTOs.CountItemsDTO>($"cart:countItems:{userId}");
-            if (countItems != null) 
-            {
+            _logger.LogInformation("✅ Cart updated for userId={UserId}, totalItems={TotalItems}", userId, totalItems);
 
-            } 
+            var(_, _, _) = await GetCartByUserId(userId, "add");
+
+            return (message, statusCode, totalItems);
         }
 
-        public async Task<(string Message, int StatusCode, DTOs.CountItemsDTO? dto)> CountingItemsInCart(Guid userId)
+
+        public async Task<(string Message, int StatusCode, DTOs.CountItemsDTO data)> CountingItemsInCart(Guid userId)
         {
             string cacheKey = $"cart:countItems:{userId}";
 
-            // Check cache first
-            var checkData = await _cache.GetAsync<DTOs.CountItemsDTO?>(cacheKey);
+            // ✅ Check cache first
+            var checkData = await _cache.GetAsync<DTOs.CountItemsDTO>(cacheKey);
             if (checkData != null)
             {
-                _logger.LogInformation($"Redis Cache CountItems: {checkData.CountItems}");
-                _logger.LogInformation($"Load Data from Redis for userId: {userId}");
+                _logger.LogInformation("📦 Redis Cache Hit - userId={UserId}, countItems={CountItems}", userId, checkData.CountItems);
                 return ("OK (from cache)", 200, checkData);
             }
 
-            // Call API if not in cache
+            // ❌ Not in cache → Call API
             var (success, message, statusCode, dto) = await _client.GetCountItemsToCart(userId);
-            if (!success)
+
+            if (!success || dto == null)
             {
-                return (message, statusCode, null);
+                _logger.LogWarning("⚠️ CountingItems API fail for userId={UserId}, statusCode={StatusCode}, message={Message}",
+                    userId, statusCode, message);
+
+                // Trả về CountItems=0 thay vì null để tránh NullReference
+                return (message, statusCode, new DTOs.CountItemsDTO { CountItems = 0 });
             }
 
-            // Store in cache
+            // ✅ Store in cache
             await _cache.SetAsync(cacheKey, dto, _cacheDuration);
-            return (message, statusCode, dto);
+            _logger.LogInformation("✅ Cache refreshed for userId={UserId}, countItems={CountItems}", userId, dto.CountItems);
 
+            return (message, statusCode, dto);
+        }
+
+        public async Task<(string Message, int StatusCode, DTOs.CartDTO? data)> GetCartByUserId(Guid userId, string status = "add")
+        {
+            string cacheKey = $"cart:Bagde:{userId}";
+            if (status == null)
+            {
+
+                var checkData = await _cache.GetAsync<DTOs.CartDTO>(cacheKey);
+
+                if (checkData != null)
+                {
+                    return ("From Cache (200)", 200, checkData);
+                }
+
+                var (success, message, statusCode, data) = await _client.GetCart(userId);
+
+                if (!success)
+                {
+                    return (message, statusCode, data);
+                }
+
+                await _cache.SetAsync(cacheKey, data, _cacheDuration);
+                return (message, statusCode, data);
+            }
+
+            else
+            {
+                var (success, message, statusCode, data) = await _client.GetCart(userId);
+
+                if (!success)
+                {
+                    return (message, statusCode, data);
+                }
+
+                await _cache.SetAsync(cacheKey, data, _cacheDuration);
+                return (message, statusCode, data);
+            }
+     
+        }
+
+        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid cartItemId, UpdateQuantityModel request)
+        {
+            var result = await _client.UpdateItemQuantity(userId, cartItemId, request);
+
+            return (result.Message, result.statusCode, result.data);
         }
     }
 }

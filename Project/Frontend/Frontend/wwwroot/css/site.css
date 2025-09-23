@@ -1,4 +1,4 @@
-html {
+﻿html {
   font-size: 14px;
 }
 
@@ -17,9 +17,215 @@ html {
   min-height: 100%;
 }
 
+html, body {
+    max-width: 100%;
+    overflow-x: hidden; /* tránh tràn ngang */
+}
+
+.navbar-nav .nav-link {
+    white-space: nowrap; /* giữ chữ không xuống dòng */
+}
+
+.navbar-brand {
+    font-size: 1.3rem;
+}
+
+.cart-login {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* khoảng cách giữa cart và login */
+}
+
+/*Home page*/
+.homepage-banner {
+    background: url('/images/background/main-banner.jpg') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+/* Thêm lớp overlay nếu muốn làm tối ảnh nền */
+.homepage-banner .overlay {
+    background: rgba(0,0,0,0.4); /* chỉnh độ tối */
+    width: 100%;
+    height: 100%;
+    padding: 40px 0;
+}
+
+.homepage-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    margin-top: 100px; 
+}
+
+.location-search button {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.now-list-stores {
+    background-color: #fff; /* nền trắng */
+    border-radius: 8px; /* bo góc */
+    padding: 20px; /* khoảng cách bên trong */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); /* bóng đổ nhẹ */
+    height: auto; /* chỉ cao vừa nội dung */
+}
 body {
   margin-bottom: 60px;
 }
+
+/* Search Home Page*/
+.search-banner h2 {
+    font-size: 28px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+}
+
+.search-banner p {
+    font-size: 16px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ---------------- Giỏ hàng + Login ---------------- */
+
+.cart-login {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* khoảng cách giữa giỏ hàng và login */
+}
+
+/* Icon giỏ hàng */
+#cartLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* Badge số lượng */
+#cartBadge {
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    line-height: 1;
+    position: absolute;
+    right: -10px; /* nhích sang phải */
+}
+
+/* Khi màn hình nhỏ: giỏ hàng + login xuống dòng */
+@media (max-width: 768px) {
+    .cart-login {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 10px;
+        gap: 8px;
+    }
+
+    #cartLink {
+        justify-content: flex-start;
+    }
+
+    #cartBadge {
+        top: -3px;
+        right: -8px;
+    }
+}
+
+
+/*----------------------------------------------------*/
+
+/*Store Card*/
+
+.item-restaurant {
+    position: relative; /* làm cha để absolute hoạt động */
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+}
+
+.item-restaurant:hover {
+    transform: translateY(-3px);
+}
+
+.item-content {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.img-restaurant img {
+    width: 100%;
+    height: 175px;
+    object-fit: cover;
+    display: block;
+}
+
+.info-restaurant {
+    padding: 10px;
+}
+
+.name-res {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 5px;
+    color: #333;
+}
+
+.address-res {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 5px;
+}
+
+.content-promotion {
+    font-size: 13px;
+    color: #e53935;
+    margin: 0;
+}
+
+.opentime-status {
+    position: absolute;
+    top: 2px; /* khoảng cách từ trên */
+    left: 0px; /* khoảng cách từ trái */
+    z-index: 1;
+}
+
+.opentime-status .stt {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff; /* thêm viền trắng để nổi trên ảnh */
+}
+
+.opentime-status .online {
+    background-color: rgb(35, 152, 57);
+}
+
+.opentime-status .offline {
+    background-color: rgb(200, 50, 50);
+}
+
+/*---------------------------------------------------------------*/
+
+/*Store Detail (Product List)*/
+
+.categories .btn {
+    border-radius: 20px;
+    padding: 5px 15px;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.categories .btn:hover {
+    background-color: #ff5722;
+    color: #fff;
+    border-color: #ff5722;
+}
+
 
 .category-link.active {
     background-color: #0d6efd;
@@ -32,6 +238,120 @@ body {
     color: #fff;
     font-weight: bold;
 }
+
+/* Floating Cart Button */
+.floating-cart-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #ff6f00; /* cam đậm */
+    color: #fff;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1050;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out; /* hiệu ứng mượt */
+}
+
+    .floating-cart-btn:hover {
+        background: #e65100; /* cam đậm hơn khi hover */
+        color: #fff;
+        transform: scale(1.1); /* phóng to nhẹ khi hover */
+    }
+
+    .floating-cart-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .floating-cart-btn .badge {
+        font-size: 12px;
+    }
+
+/*---------------------------------------------------------------*/
+
+/* Cooperation Section */
+body {
+    background: #f5f5f5; /* nền xám nhạt */
+}
+
+.container-coporation {
+    background-color: #fff;
+    box-shadow: 0 2px 2px 0 rgba(50, 50, 50, .1);
+    -moz-box-shadow: 0 2px 2px 0 rgba(50,50,50,.1);
+    -webkit-box-shadow: 0 2px 2px 0 rgba(50, 50, 50, .1);
+    padding: 20px 150px 50px;
+    border-radius: 4px;
+    margin-top: 60px;
+    position: relative;
+}
+/*.container-cooporation {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 30px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px 150px 50px;
+    margin: 30px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}*/
+
+
+.container-coporation .title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.container-coporation img {
+    max-width: 100%; /* luôn nhỏ hơn hoặc bằng container */
+    height: auto; /* giữ tỉ lệ */
+    display: block;
+}
+
+.container-coporation .bg-cop {
+    position: absolute;
+    bottom: -1px;
+    right: 0;
+    z-index: 2;
+    line-height: 0;
+    text-align: center;
+    width: 40%;
+    max-width: 350px;
+}
+
+/* Áp dụng cho phần Cooperation section */
+.container-coporation p {
+    font-size: 15px; /* cỡ chữ vừa phải */
+    line-height: 1.6; /* thoáng hơn cho dễ đọc */
+    margin-bottom: 12px; /* khoảng cách giữa các đoạn */
+    max-width: 700px; /* giới hạn chiều rộng tối đa */
+    text-align: justify; /* căn đều 2 bên (hoặc center nếu muốn) */
+}
+
+@media (max-width: 768px) {
+    .container-coporation {
+        padding: 20px; /* bớt padding cho gọn */
+    }
+
+    .container-coporation .bg-cop {
+        position: static; /* bỏ absolute để xuống dưới text */
+        margin: 20px auto 0;
+        width: 80%; /* chiếm 80% chiều rộng */
+        text-align: center;
+    }
+
+    .container-coporation img {
+        max-width: 100%; /* full theo khung nhỏ */
+    }
+}
+
 
 .shake {
     animation: shake 0.5s;

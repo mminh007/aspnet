@@ -6,10 +6,11 @@
     var role = Context.Session.GetString("UserRole");
     var userId = Context.Session.GetString("UserId");
 
-    if (userId == null)
+    if (userId == null || email == null)
     {
         var authInfo = AuthHelper.GetUserInfo(Context);
         userId = authInfo.userId;
+        email = authInfo.Email;
     }
 
     // var adminBase = SettingsHelper.GetAdminUrl("Base");
@@ -38,7 +39,11 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link text-dark" asp-controller="Authentication" asp-action="Logout">Đăng xuất</a>
+            <a href="@Url.Action("Logout", "Authentication",
+                   new { returnUrl = Context.Request.Path + Context.Request.QueryString })"
+           class="nav-link">
+            Đăng Xuất
+        </a>
         </li>
     }
     else

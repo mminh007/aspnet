@@ -42,7 +42,10 @@ namespace Order.DAL.Models.Entities
         public decimal LineTotal => Quantity * Price;
 
         [NotMapped]
-        public string ErrorMessag { get; set; }
+        public string ErrorMessage { get; set; }
+
+        [NotMapped]
+        public bool IsAvailable { get; set; }
 
         // Navigation properties
         [ForeignKey("CartId")]

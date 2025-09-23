@@ -40,6 +40,7 @@ namespace Auth.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, identity.UserId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, identity.Email),
                 new Claim(ClaimTypes.Role, identity.Role),
                 //new Claim("role", identity.Role),                   // Ocelot standard  
                 //new Claim("Role", identity.Role)

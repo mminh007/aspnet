@@ -2,6 +2,7 @@
 @model LoginModel
 
 
+
 @{
     ViewData["Title"] = "Log in";
 }
@@ -11,6 +12,7 @@
         <h2 class="text-center mb-4">Login</h2>
 
         <form asp-action="Login" method="post" >
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
             <div>
                 <label>Email</label>
                 <input asp-for="Email" class="form-control form-control-sm" />

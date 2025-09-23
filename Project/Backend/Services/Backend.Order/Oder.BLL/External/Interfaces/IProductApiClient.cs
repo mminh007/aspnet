@@ -11,5 +11,7 @@ namespace Order.BLL.External.Interfaces
     public interface IProductApiClient
     {
         Task<OrderResponseModel<List<DTOs.CartProductDTO>>> GetProductInfoAsync(List<Guid> productId);
+
+        Task<OrderResponseModel<DTOs.CartProductDTO>> ValidateProduct(Guid productId);
     }
 }

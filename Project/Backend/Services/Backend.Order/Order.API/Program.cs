@@ -17,6 +17,7 @@ using Order.DAL.UnitOfWork.Interfaces;
 using StackExchange.Redis;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 namespace Order.API
 {
@@ -129,7 +130,11 @@ namespace Order.API
             builder.Services.AddDbContext<OrderDbContext>(options =>
                options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+            .AddJsonOptions(opt =>
+            {
+                opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>

@@ -13,6 +13,7 @@ namespace Frontend.Models.Orders
 
         public class CartItemDTO
         {
+            public Guid CartItemId { get; set; }
             public Guid ProductId { get; set; }
             public Guid StoreId { get; set; }
 
@@ -21,6 +22,9 @@ namespace Frontend.Models.Orders
             [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
             public int Quantity { get; set; }
 
+            public string ErrorMessage { get; set; }
+
+            public bool IsAvailable { get; set; } = true;
             public decimal Price { get; set; } // lấy từ ProductService
         }
 
@@ -57,8 +61,5 @@ namespace Frontend.Models.Orders
             public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         }
 
-        public class AddItemToCartRequest
-        {
-        }
     }
 }

@@ -2,6 +2,7 @@
 using Frontend.HttpsClients.Auths;
 using Frontend.Models.Auth;
 using Frontend.Services.Interfaces;
+using System.Net.WebSockets;
 
 namespace Frontend.Services
 {
@@ -25,9 +26,16 @@ namespace Frontend.Services
                 return (false, "", "", 0, "", "", message ?? "Login failed", statusCode);
 
             // Parse token để lấy userId
-            var (isAuth, userId) = AuthHelper.ParseUserIdFromToken(accessToken);
+            var (isAuth, userId, Email, _) = AuthHelper.ParseUserIdFromToken(accessToken);
 
             return (isAuth, accessToken, refreshToken, expiresIn, role, userId, message ?? "Login successful", statusCode);
+        }
+
+        public async Task<(bool Success, string newAccessToken, string newRefreshToken, int expiresIn, string Role, string Message, int statusCode)> RefreshToken(string refreshToken)
+        {
+            var (Success, newAccessToken, newRefreshToken, expiresIn, Message, StatusCode, Role) = await _authApi.RefreshTokenAsync(refreshToken);
+
+            return (Success, newAccessToken, newRefreshToken, expiresIn, Role, Message, StatusCode);
         }
 
         public async Task<(bool Success, string Message, int StatusCode)> Register(RegisterModel model)

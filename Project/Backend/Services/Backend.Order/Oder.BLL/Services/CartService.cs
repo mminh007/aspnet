@@ -6,7 +6,6 @@ using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
 using Order.DAL.Models.Entities;
 using Order.DAL.UnitOfWork.Interfaces;
-using System.Net.WebSockets;
 using static Order.Common.Models.DTOs;
 
 namespace Order.BLL.Services
@@ -26,7 +25,7 @@ namespace Order.BLL.Services
             _logger = logger;
         }
 
-        public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId)
+        public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act = "check")
         {
             var cart = await _uow.Carts.GetCartByUserIdAsync(userId);
 
@@ -42,45 +41,51 @@ namespace Order.BLL.Services
 
             var dto = _mapper.Map<CartDTO>(cart);
 
-            // Lấy danh sách productId trong cart
-            var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
-
-            // Gọi batch API sang ProductService
-            var productResponse = await _productService.GetProductInfoAsync(productIds);
-
-            if (!productResponse.Success  || productResponse.Data == null)
+            if (act == "check")
             {
-                // Nếu API fail → gắn error message cho toàn bộ items
+                // Lấy danh sách productId trong cart
+                var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
+
+                // Gọi batch API sang ProductService
+                var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+                if (!productResponse.Success || productResponse.Data == null)
+                {
+                    // Nếu API fail → gắn error message cho toàn bộ items
+                    foreach (var item in dto.Items)
+                    {
+                        item.ErrorMessage = "Cannot fetch product info";
+                        item.IsAvailable = false;
+                    }
+
+                    return new OrderResponseModel<CartDTO?>
+                    {
+                        Success = false,
+                        Message = OperationResult.Error,
+                        ErrorMessage = "Cannot fetch product info",
+                        Data = dto
+                    };
+                }
+
+                // Map product info vào cart items
+                var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
+
                 foreach (var item in dto.Items)
                 {
-                    item.ErrorMessage = "Cannot fetch product info";
+                    if (productDict.TryGetValue(item.ProductId, out var product) && product.IsActive)
+                    {
+                        item.ProductName = product.ProductName;
+                        item.Price = product.SalePrice;
+                        item.ErrorMessage = string.Empty;
+                        item.IsAvailable = true;
+                    }
+                    else
+                    {
+                        item.ErrorMessage = "Product out of stock or unavailable";
+                        item.IsAvailable = false;
+                    }
                 }
-
-                return new OrderResponseModel<CartDTO?>
-                {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = "Cannot fetch product info",
-                    Data = dto
-                };
-            }
-
-            // Map product info vào cart items
-            var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
-
-            foreach (var item in dto.Items)
-            {
-                if (productDict.TryGetValue(item.ProductId, out var product) && product.IsActive)
-                {
-                    item.ProductName = product.ProductName;
-                    item.Price = product.SalePrice;
-                    item.ErrorMessage = null;
-                }
-                else
-                {
-                    item.ErrorMessage = "Product out of stock or unavailable";
-                }
-            }
+            } 
 
             return new OrderResponseModel<CartDTO?>
             {
@@ -90,16 +95,13 @@ namespace Order.BLL.Services
             };
         }
 
-
-
-
-        public async Task<OrderResponseModel<Guid>> AddItemToCartAsync(Guid userId, Guid cartId, RequestItemToCartModel itemDto)
+        public async Task<OrderResponseModel<int>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto)
         {
             // Lấy cart từ DB
-            var dbCart = await _uow.Carts.GetCartByIdAsync(cartId);
+            var dbCart = await _uow.Carts.GetCartByUserIdAsync(userId);
             if (dbCart == null)
             {
-                return new OrderResponseModel<Guid>
+                return new OrderResponseModel<int>
                 {
                     Success = false,
                     Message = OperationResult.NotFound,
@@ -139,11 +141,11 @@ namespace Order.BLL.Services
             await _uow.Carts.UpdateCartAsync(dbCart);
             await _uow.SaveChangesAsync();
 
-            return new OrderResponseModel<Guid>
+            return new OrderResponseModel<int>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = dbCart.CartId
+                Data = dbCart.Items.Count
             };
         }
 
@@ -387,5 +389,72 @@ namespace Order.BLL.Services
             };
 
         }
+
+        public async Task<OrderResponseModel<CartDTO>> UpdateItemAsync(Guid buyerId, Guid cartItemId, UpdateQuantityRequest request)
+        {
+            var cartItem = await _uow.Carts.GetCartItemByIdAsync(cartItemId);
+            if (cartItem == null)
+            {
+                return new OrderResponseModel<CartDTO>
+                {
+                    Success = false,
+                    Message = OperationResult.NotFound,
+                    ErrorMessage = "Cart item not found"
+                };
+            }
+
+            // Validate product từ ProductService
+            var productResponse = await _productService.ValidateProduct(cartItem.ProductId);
+
+            if (!productResponse.Success || productResponse.Data == null)
+            {
+                // ❌ Product không tồn tại
+                cartItem.IsAvailable = false;
+                cartItem.ErrorMessage = "Product not found";
+            }
+            else
+            {
+                var product = productResponse.Data;
+
+                if (!product.IsActive)
+                {
+                    // ❌ Product bị inactive
+                    cartItem.IsAvailable = false;
+                    cartItem.ErrorMessage = "This product is inactive";
+                }
+                else if (request.Quantity > product.Quantity)
+                {
+                    // ❌ Không đủ tồn kho
+                    cartItem.IsAvailable = false;
+                    cartItem.ErrorMessage = $"Insufficient stock, only {product.Quantity} items left";
+                }
+                else
+                {
+                    // ✅ Update thành công
+                    cartItem.Quantity = request.Quantity;
+                    cartItem.Price = product.SalePrice;
+                    cartItem.ProductName = product.ProductName;
+                    cartItem.IsAvailable = true;
+                    cartItem.ErrorMessage = string.Empty;
+                }
+            }
+
+            cartItem.UpdatedAt = DateTime.UtcNow;
+            await _uow.Carts.UpdateCartItemAsync(cartItem);
+            await _uow.SaveChangesAsync();
+
+            // ✅ Luôn trả về giỏ hàng mới nhất
+            var newCart = await GetCartAsync(buyerId);
+            //var dto = _mapper.Map<CartDTO>(newCart);
+
+            return new OrderResponseModel<CartDTO>
+            {
+                Success = true,
+                Message = OperationResult.Success,
+                Data = newCart.Data
+            };
+        }
+
+
     }
 }

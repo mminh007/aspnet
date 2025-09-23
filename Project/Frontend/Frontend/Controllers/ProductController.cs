@@ -1,6 +1,8 @@
-﻿using Frontend.Models.Products;
+﻿using static Frontend.Models.Products.DTOs;
+using static Frontend.Models.Orders.DTOs;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Frontend.Models.Orders.Requests;
 
 namespace Frontend.Controllers
 {
@@ -8,12 +10,15 @@ namespace Frontend.Controllers
     {
         private readonly IStoreService _storeService;
         private readonly IProductService _productService;
+        private readonly IOrderService _orderService;
         private readonly ILogger<ProductController> _logger;
 
-        public ProductController(IStoreService storeService, IProductService productService, ILogger<ProductController> logger)
+        public ProductController(IStoreService storeService, IProductService productService, IOrderService orderService,
+                                 ILogger<ProductController> logger)
         {
             _storeService = storeService;
             _productService = productService;
+            _orderService = orderService;
             _logger = logger;
         }
 
@@ -57,26 +62,32 @@ namespace Frontend.Controllers
             }
 
             var model = (Store: store,
-                         Categories: categories?.ToList() ?? new List<DTOs.CategoryDTO>(),
-                         Products: products?.ToList() ?? new List<DTOs.ProductBuyerDTO>());
+                         Categories: categories?.ToList() ?? new List<CategoryDTO>(),
+                         Products: products?.ToList() ?? new List<ProductBuyerDTO>());
 
 
             return View(model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProductToCart(Guid productId, Guid userId)
+        public async Task<IActionResult> AddProductToCart(Guid buyer, [FromBody] RequestItemsToCartModel dto)
         {
-            if (productId == Guid.Empty || userId == Guid.Empty)
+            if (dto.ProductId == Guid.Empty || buyer == Guid.Empty)
             {
-                return BadRequest("ProductId and UserId are required.");
+                return BadRequest(new { message = "ProductId and UserId are required." });
             }
-            // Logic to add product to cart would go here.
-            // This is a placeholder for demonstration purposes.
-            _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", productId, userId);
-            TempData["Message"] = "Product added to cart successfully!";
-            return View();
 
+            var (msg, statusCode, countItems) = await _orderService.AddProductToCart(buyer, dto);
+            _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", dto.ProductId, buyer);
 
+            TempData["Message"] = msg;
+            TempData["CountItemsInCart"] = countItems;
+
+            return Ok(new
+            {
+                message = msg,
+                countItems = countItems
+            });
+        }
     }
 }

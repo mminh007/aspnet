@@ -1,15 +1,17 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using StackExchange.Redis;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Frontend.Helpers
 {
     public static class AuthHelper
     {
-        public static (bool isAuth, string userId) GetUserInfo(HttpContext context)
+        public static (bool isAuth, string userId, string Email, string Role) GetUserInfo(HttpContext context)
         {
 
             var token = context.Request.Cookies["accessToken"];
             if (string.IsNullOrEmpty(token))
-                return (false, "");
+                return (false, "", "", "");
 
             if (IsTokenValid(token))
             {
@@ -19,21 +21,25 @@ namespace Frontend.Helpers
                     var jwtToken = jwtHandler.ReadJwtToken(token);
 
                     if (jwtToken.ValidTo <= DateTime.UtcNow)
-                        return (false, "");
+                        return (false, "", "", "");
 
                     var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? "";
+                    var Email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "";
+                    var Role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "";
 
                     context.Session.SetString("UserId", userId);
+                    context.Session.SetString("UserEmail", Email);
+                    context.Session.SetString("UserRole", Role);
 
-                    return (true, userId);
+                    return (true, userId, Email, Role);
                 }
                 catch
                 {
-                    return (false, "");
+                    return (false, "", "", "");
                 }
             }
 
-            return (false, "");
+            return (false, "", "", "");
 
         }
 
@@ -48,9 +54,9 @@ namespace Frontend.Helpers
             catch { return false; }
         }
 
-        public static (bool isAuth, string userId) ParseUserIdFromToken(string token)
+        public static (bool isAuth, string userId, string userEmail, string Role) ParseUserIdFromToken(string token)
         {
-            if (string.IsNullOrEmpty(token)) return (false, "");
+            if (string.IsNullOrEmpty(token)) return (false, "", "", "");
 
             try
             {
@@ -58,14 +64,16 @@ namespace Frontend.Helpers
                 var jwtToken = jwtHandler.ReadJwtToken(token);
 
                 if (jwtToken.ValidTo <= DateTime.UtcNow)
-                    return (false, "");
+                    return (false, "", "", "");
 
+                var Email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "";
                 var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? "";
-                return (!string.IsNullOrEmpty(userId), userId);
+                var Role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "";
+                return (!string.IsNullOrEmpty(userId), userId, Email, Role);
             }
             catch
             {
-                return (false, "");
+                return (false, "", "", "");
             }
         }
     }
