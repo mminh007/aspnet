@@ -25,6 +25,8 @@ namespace Frontend.Models.Products
             [MaxLength(500)]
             public string Description { get; set; }
 
+            public string ProductImage { get; set; }
+
             [Column(TypeName = "decimal(18,2)")]
             public decimal SalePrice { get; set; }
 

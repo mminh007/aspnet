@@ -4,8 +4,11 @@
     {
         public Guid? StoreId { get; set; } 
         public string StoreName { get; set; }
+        
+        public string StoreCategory { get; set; }
 
         public string Description { get; set; }
+        public string StoreImage { get; set; }
 
         public string Address { get; set; }
 

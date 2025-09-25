@@ -12,9 +12,11 @@ using EventBus.Interfaces;
 using EventBusRabbitMQ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Product.Common.Configs;
 using RabbitMQ.Client;
 using System.Security.Claims;
 using System.Text;
@@ -118,6 +120,10 @@ namespace API
 
             builder.Services.AddAuthorization();
 
+            // Bind StaticFiles config
+            builder.Services.Configure<StaticFileConfig>(
+                builder.Configuration.GetSection("StaticFiles"));
+
             builder.Services.AddAutoMapper(cfg => { }, typeof(ProductProfile));
 
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -176,6 +182,16 @@ namespace API
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            var staticFileConfig = app.Configuration
+                .GetSection("StaticFiles:ImageUrl")
+                .Get<ImageUrlConfig>();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(staticFileConfig.PhysicalPath),
+                RequestPath = staticFileConfig.RequestPath
+            });
 
             app.UseHttpsRedirection();
 

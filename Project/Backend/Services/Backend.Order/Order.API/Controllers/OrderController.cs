@@ -20,38 +20,38 @@ namespace Order.API.Controllers
         }       
 
         // ✅ Lấy đơn hàng theo Id
-        [HttpGet("{orderId:guid}")]
+        [HttpGet("get-order")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> GetOrderById(Guid orderId)
+        public async Task<IActionResult> GetOrderById([FromQuery] Guid order)
         {
-            var result = await _orderService.GetOrderByIdAsync(orderId);
+            var result = await _orderService.GetOrderByIdAsync(order);
             return HandleResponse(result);
         }
 
         // ✅ Lấy danh sách đơn theo User
-        [HttpGet("user/{userId:guid}")]
+        [HttpGet("user/get")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> GetOrdersByUser(Guid userId)
+        public async Task<IActionResult> GetOrdersByUser([FromQuery] Guid buyer)
         {
-            var result = await _orderService.GetOrdersByUserAsync(userId);
+            var result = await _orderService.GetOrdersByUserAsync(buyer);
             return HandleResponse(result);
         }
 
         // ✅ Lấy danh sách đơn theo Store
-        [HttpGet("store/{storeId:guid}")]
+        [HttpGet("seller")]
         [Authorize(Roles = "seller")]
-        public async Task<IActionResult> GetOrdersByStore(Guid storeId)
+        public async Task<IActionResult> GetOrdersByStore([FromQuery] Guid store)
         {
-            var result = await _orderService.GetOrdersByStoreAsync(storeId);
+            var result = await _orderService.GetOrdersByStoreAsync(store);
             return HandleResponse(result);
         }
 
         // ✅ Cập nhật đơn hàng (Payment Service sẽ gọi API này để cập nhật trạng thái thanh toán)
-        [HttpPut("{orderId:guid}")]
+        [HttpPut("update-order")]
         [Authorize(Roles = "system")]
-        public async Task<IActionResult> UpdateOrder(Guid orderId, [FromBody] UpdateOrderRequest dto)
+        public async Task<IActionResult> UpdateOrder([FromQuery] Guid order, [FromBody] UpdateOrderRequest dto)
         {
-            if (dto == null || dto.OrderId != orderId)
+            if (dto == null || dto.OrderId != order)
                 return BadRequest("Invalid order data");
 
             var result = await _orderService.UpdateOrderAsync(dto);
@@ -59,23 +59,23 @@ namespace Order.API.Controllers
         }
 
         // ✅ Xóa đơn hàng
-        [HttpDelete("{orderId:guid}")]
+        [HttpDelete("delete-order")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> DeleteOrder(Guid orderId)
+        public async Task<IActionResult> DeleteOrder([FromQuery] Guid order)
         {
-            var result = await _orderService.DeleteOrderAsync(orderId);
+            var result = await _orderService.DeleteOrderAsync(order);
             return HandleResponse(result);
         }
 
         // ✅ Checkout từ giỏ
-        [HttpPost("checkout/{userId:guid}")]
+        [HttpPost("checkout")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> Checkout(Guid userId, [FromBody] IEnumerable<Guid> productIds)
+        public async Task<IActionResult> Checkout([FromQuery] Guid user, [FromBody] IEnumerable<Guid> productIds)
         {
             if (productIds == null || !productIds.Any())
                 return BadRequest("No products selected for checkout");
 
-            var result = await _orderService.CheckoutAsync(userId, productIds);
+            var result = await _orderService.CheckoutAsync(user, productIds);
             return HandleResponse(result);
         }
 

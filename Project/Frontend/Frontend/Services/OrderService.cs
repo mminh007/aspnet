@@ -23,9 +23,9 @@ namespace Frontend.Services
             _cache = cache;
         }
 
-        public async Task<(string Message, int StatusCode, int CountItems)> AddProductToCart(Guid userId, RequestItemsToCartModel dto)
+        public async Task<(string Message, int StatusCode, int CountItems, IEnumerable<DTOs.CartItemDTO> itemList)> AddProductToCart(Guid userId, RequestItemsToCartModel dto)
         {
-            var (success, message, statusCode, totalItems) = await _client.AddItemsToCart(userId, dto);
+            var (success, message, statusCode, cart) = await _client.AddItemsToCart(userId, dto);
 
             if (!success)
             {
@@ -35,18 +35,49 @@ namespace Frontend.Services
                 // Giữ cache cũ nếu có
                 var (msg, sttCode, dtoCount) = await CountingItemsInCart(userId);
 
-                return ($"Message from API CountingItems: {msg}", sttCode, dtoCount.CountItems);
+                return ($"Message from API CountingItems: {msg}", sttCode, dtoCount.CountItems, null);
+            }
+
+            var totalItems = cart.Items.Count;
+
+            // filter by storeId
+            var productList = new List<DTOs.CartItemDTO>();
+
+            foreach (var item in cart.Items)
+            {
+                if (item.StoreId == dto.StoreId) { productList.Add(item); }
             }
 
             // ✅ Luôn update cache bằng kết quả từ API
-            string cacheKey = $"cart:countItems:{userId}";
-            await _cache.SetAsync(cacheKey, new DTOs.CountItemsDTO { CountItems = totalItems }, _cacheDuration);
-
+            string cacheKey_counting = $"cart:countItems:{userId}";
+            await _cache.SetAsync(cacheKey_counting, new DTOs.CountItemsDTO { CountItems = totalItems }, _cacheDuration);
             _logger.LogInformation("✅ Cart updated for userId={UserId}, totalItems={TotalItems}", userId, totalItems);
 
-            var(_, _, _) = await GetCartByUserId(userId, "add");
+            // Update Cart cache
+            string cacheKey_cart = $"cart:Bagde:{userId}";
+            await _cache.SetAsync(cacheKey_cart, cart, _cacheDuration);
 
-            return (message, statusCode, totalItems);
+            //var(_, _, _) = await GetCartByUserId(userId, "add");
+
+            return (message, statusCode, totalItems, productList);
+        }
+
+        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId)
+        {
+            var (message, statusCode, data) = await GetCartByUserId(userId);
+
+            var productList = new List<DTOs.CartItemDTO>(); 
+            if (data == null)
+            {
+                return (message, statusCode, null);
+            }   
+            
+            foreach (var item in data.Items)
+            {
+                if(item.StoreId.Equals(storeId)) { productList.Add(item); }
+            }
+
+            return (message, statusCode, productList);
         }
 
 
@@ -125,6 +156,31 @@ namespace Frontend.Services
             var result = await _client.UpdateItemQuantity(userId, cartItemId, request);
 
             return (result.Message, result.statusCode, result.data);
+        }
+
+
+        public async Task<(string Message, int StatusCode, DTOs.OrderDTO Data)> GetOrderById(Guid orderId)
+        {
+            var result = await _client.GetOrderById(orderId);
+            return (result.Message ?? "No message", result.statusCode, result.data);
+        }
+
+        public async Task<(string Message, int StatusCode, List<DTOs.OrderDTO> Data)> GetOrdersByUser(Guid userId)
+        {
+            var result = await _client.GetOrdersByUser(userId);
+            return (result.Message ?? "No message", result.statusCode, result.data ?? new List<DTOs.OrderDTO>());
+        }
+
+        public async Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId)
+        {
+            var result = await _client.DeleteOrder(orderId);
+            return (result.Message ?? "No message", result.statusCode);
+        }
+
+        public async Task<(string Message, int StatusCode, DTOs.OrderDTO Data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
+        {
+            var result = await _client.Checkout(userId, productIds);
+            return (result.Message ?? "No message", result.statusCode, result.data);
         }
     }
 }

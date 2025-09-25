@@ -116,6 +116,7 @@ namespace DAL.Repository
             product.ProductName = updateProduct.ProductName;
             product.Description = updateProduct.Description;
             product.ImportPrice = updateProduct.ImportPrice;
+            product.ProductImage = updateProduct.ProductImage;
             product.Quantity = updateProduct.Quantity;
             product.Supplier = updateProduct.Supplier;
             product.CategoryId = updateProduct.CategoryId;

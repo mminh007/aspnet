@@ -1,5 +1,61 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@using static Frontend.Models.Orders.DTOs
+@model IEnumerable<OrderDTO>
+
 @{
+    ViewData["Title"] = "Đơn hàng vừa tạo";
 }
+
+<div class="container mt-4">
+    <h3 class="mb-3">Đơn hàng của bạn</h3>
+
+    @if (Model != null && Model.Any())
+    {
+        @foreach (var order in Model)
+        {
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Đơn hàng:</strong> @order.OrderId</span>
+                        <span><strong>Trạng thái:</strong> @order.Status</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p><strong>Store:</strong> @order.StoreId</p>
+                    <p><strong>Ngày tạo:</strong> @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+
+                    <table class="table table-bordered text-center mt-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Số lượng</th>
+                                <th>Giá</th>
+                                <th>Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in order.OrderItems)
+                            {
+                                <tr>
+                                    <td>@item.ProductId</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.Price.ToString("N0") đ</td>
+                                    <td>@item.LineTotal.ToString("N0") đ</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold">Tổng cộng</td>
+                                <td class="fw-bold text-primary">@order.TotalAmount.ToString("N0") đ</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-danger">Không có đơn hàng nào được tạo.</p>
+    }
+</div>

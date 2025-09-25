@@ -21,6 +21,8 @@ namespace Order.DAL.Models.Entities
 
         [Required] public string ProductName { get; set; }
 
+        [Required]
+        public string ProductImage { get; set; }
 
         [Required]
         public Guid StoreId { get; set; }

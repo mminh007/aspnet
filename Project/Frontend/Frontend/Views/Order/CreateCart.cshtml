@@ -10,74 +10,79 @@
 
     @if (Model != null && Model.Items.Any())
     {
-        <table class="table table-bordered align-middle text-center">
-            <thead class="table-light">
-                <tr>
-                    <th class="text-start">Tên sản phẩm</th>
-                    <th>Giá</th>
-                    <th style="width: 160px;">Số lượng</th>
-                    <th>Thành tiền</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Items)
-                {
+        <form id="checkoutForm" method="post" asp-controller="Order" asp-action="CreateOrder">
+            <input type="hidden" name="userId" value="@Model.UserId" />
+            <table class="table table-bordered align-middle text-center">
+                <thead class="table-light">
                     <tr>
-                        <!-- Tên sản phẩm -->
-                        <td class="text-start">
-                            <strong>@item.ProductName</strong><br />
-                            <span id="status-@item.CartItemId"
-                                  class="badge @(item.IsAvailable ? "bg-success" : "bg-secondary")">
-                                @(item.IsAvailable ? "Còn hàng" : item.ErrorMessage)
-                            </span>
-                        </td>
-
-                        <!-- Giá -->
-                        <td>@item.Price.ToString("N0") đ</td>
-
-                        <!-- Nút tăng/giảm -->
-                        <td>
-                            <div class="d-flex justify-content-center align-items-center">
-                                <button class="btn btn-sm btn-light border quantity-btn decrease"
-                                        data-user-id="@Model.UserId"
-                                        data-item-id="@item.CartItemId"
-                                        data-product-id="@item.ProductId">
-                                    -
-                                </button>
-                                <span class="mx-2 fw-bold quantity-value" id="qty-@item.CartItemId">@item.Quantity</span>
-                                <button class="btn btn-sm btn-light border quantity-btn increase"
-                                        data-user-id="@Model.UserId"
-                                        data-item-id="@item.CartItemId"
-                                        data-product-id="@item.ProductId">
-                                    +
-                                </button>
-                            </div>
-                        </td>
-
-                        <!-- Thành tiền -->
-                        <td id="subtotal-@item.CartItemId" class="fw-bold text-primary">
-                            @((item.Price * item.Quantity).ToString("N0")) đ
-                        </td>
+                        <th><input type="checkbox" id="selectAll" /></th>
+                        <th class="text-start">Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th style="width: 160px;">Số lượng</th>
+                        <th>Thành tiền</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <!-- Checkbox chọn -->
+                            <td>
+                                <input type="checkbox" class="product-checkbox"
+                                       name="selectedProducts" value="@item.ProductId" />
+                            </td>
 
-        <!-- Tổng kết -->
-        <div class="mt-3 text-end">
-            <p id="totalItems"><strong>Tổng sản phẩm:</strong> @Model.TotalItems</p>
-            <p id="totalPrice"><strong>Tổng tiền:</strong> @Model.TotalPrice.ToString("N0") đ</p>
-        </div>
+                            <!-- Tên sản phẩm -->
+                            <td class="text-start">
+                                <strong>@item.ProductName</strong><br />
+                                <span id="status-@item.CartItemId"
+                                      class="badge @(item.IsAvailable ? "bg-success" : "bg-secondary")">
+                                    @(item.IsAvailable ? "Còn hàng" : item.ErrorMessage)
+                                </span>
+                            </td>
 
-        <!-- Tạo đơn hàng -->
-        <div class="mt-3 text-end">
-            <button class="btn btn-primary"
-                    asp-controller="Order"
-                    asp-action="CreateOrder"
-                    asp-route-userId="@Model.UserId">
-                Tạo đơn hàng
-            </button>
-        </div>
+                            <!-- Giá -->
+                            <td>@item.Price.ToString("N0") đ</td>
+
+                            <!-- Nút tăng/giảm -->
+                            <td>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <button type="button" class="btn btn-sm btn-light border quantity-btn decrease"
+                                            data-user-id="@Model.UserId"
+                                            data-item-id="@item.CartItemId"
+                                            data-product-id="@item.ProductId">
+                                        -
+                                    </button>
+                                    <span class="mx-2 fw-bold quantity-value" id="qty-@item.CartItemId">@item.Quantity</span>
+                                    <button type="button" class="btn btn-sm btn-light border quantity-btn increase"
+                                            data-user-id="@Model.UserId"
+                                            data-item-id="@item.CartItemId"
+                                            data-product-id="@item.ProductId">
+                                        +
+                                    </button>
+                                </div>
+                            </td>
+
+                            <!-- Thành tiền -->
+                            <td id="subtotal-@item.CartItemId" class="fw-bold text-primary">
+                                @((item.Price * item.Quantity).ToString("N0")) đ
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Tổng kết -->
+            <div class="mt-3 text-end">
+                <p id="totalItems"><strong>Tổng sản phẩm:</strong> @Model.TotalItems</p>
+                <p id="totalPrice"><strong>Tổng tiền:</strong> @Model.TotalPrice.ToString("N0") đ</p>
+            </div>
+
+            <!-- Tạo đơn hàng -->
+            <div class="mt-3 text-end">
+                <button type="submit" class="btn btn-primary">Tạo đơn hàng</button>
+            </div>
+        </form>
     }
     else
     {
@@ -169,6 +174,15 @@
                         allBtns.forEach(b => b.disabled = false);
                     }
                 });
+            });
+        });
+    </script>
+
+    <script>
+        // Chọn tất cả
+        document.getElementById("selectAll")?.addEventListener("change", function () {
+            document.querySelectorAll(".product-checkbox").forEach(cb => {
+                cb.checked = this.checked;
             });
         });
     </script>

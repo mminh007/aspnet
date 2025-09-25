@@ -1,10 +1,11 @@
-﻿using Store.Common.Enums;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Store.BLL.Services;
+using Store.Common.Enums;
 using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
-using Store.BLL.Services;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Store.API.Controllers
 {
@@ -54,11 +55,15 @@ namespace Store.API.Controllers
             return HandleResponse(result);
         }
 
-        [HttpPut("{storId}")]
+        [HttpPut("update")]
         [Authorize(Roles = "seller")]
-        public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreModel model, string storeId)
+        public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreModel model, [FromQuery] Guid user)
         {
-            var userId = Guid.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);            
+            var subClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!Guid.TryParse(subClaim, out var userId))
+                return Unauthorized("Token không hợp lệ: sub claim bị thiếu hoặc không phải GUID");
             model.UserId = userId;
 
             var result = await _storeService.UpdateStoreAsync(model);
@@ -79,8 +84,8 @@ namespace Store.API.Controllers
         {
             if (User.IsInRole("seller"))
             {
-                var userIdFromToken = User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value;
-                //var userIdFromToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userIdFromToken = User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value
+                                        ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 model.UserId = Guid.Parse(userIdFromToken!);
             }

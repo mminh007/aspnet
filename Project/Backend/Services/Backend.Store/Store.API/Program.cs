@@ -1,11 +1,12 @@
-
-using Store.BLL.Services;
-using Store.DAL.Databases;
-using Store.DAL.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Store.BLL.Services;
+using Store.Common.Configs;
+using Store.DAL.Databases;
+using Store.DAL.Repository;
 using System.Security.Claims;
 using System.Text;
 
@@ -17,8 +18,7 @@ namespace Store
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            // JWT Auth
+            // JWT
             var jwt = builder.Configuration.GetSection("Jwt");
             var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
@@ -44,43 +44,26 @@ namespace Store
                         ClockSkew = TimeSpan.Zero,
                         RoleClaimType = ClaimTypes.Role
                     };
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnAuthenticationFailed = context =>
-                        {
-                            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                            {
-                                context.Response.Headers["Token-Expired"] = "true";
-                                context.Response.StatusCode = 401; // Unauthorized
-                                context.Response.ContentType = "application/json";
-
-                                var jsonResponse = System.Text.Json.JsonSerializer.Serialize(new
-                                {
-                                    message = "Access token has expired"
-                                });
-                                return context.Response.WriteAsJsonAsync(jsonResponse);
-                            }
-                            return Task.CompletedTask;
-
-                        }
-                    };
                 });
 
             builder.Services.AddAuthorization();
 
-            builder.Services.AddScoped<IStoreRepository , StoreRepository>();
+            // Bind StaticFiles config
+            builder.Services.Configure<StaticFileConfig>(
+                builder.Configuration.GetSection("StaticFiles"));
+
+            // Register DI
+            builder.Services.AddScoped<IStoreRepository, StoreRepository>();
             builder.Services.AddScoped<IStoreService, StoreService>();
 
             builder.Services.AddDbContext<StoreDbContext>(options =>
-                    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));        
+                options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.Store", Version = "v1" });
-
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
@@ -105,18 +88,26 @@ namespace Store
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // Static file middleware
+            var staticFileConfig = app.Configuration
+                .GetSection("StaticFiles:ImageUrl")
+                .Get<ImageUrlConfig>();
 
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(staticFileConfig.PhysicalPath),
+                RequestPath = staticFileConfig.RequestPath
+            });
+
+            app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

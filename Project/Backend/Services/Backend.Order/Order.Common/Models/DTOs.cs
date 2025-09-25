@@ -19,6 +19,7 @@ namespace Order.Common.Models
             public string ErrorMessage { get; set; } = string.Empty;
             public bool IsAvailable { get; set; } = true;
             public decimal Price { get; set; } // lấy từ ProductService
+            public string ProductImage { get; set; }
         }
 
         // DTO cho giỏ hàng
@@ -58,6 +59,7 @@ namespace Order.Common.Models
         {
             public Guid ProductId { get; set; }
             public string ProductName { get; set; }
+            public string ProductImage { get; set; }
             public decimal SalePrice { get; set; }
             public int Quantity { get; set; }
             public bool IsActive { get; set; } = true;

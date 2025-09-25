@@ -30,6 +30,10 @@ namespace DAL.Databases
                       .IsRequired()
                       .HasMaxLength(50);
 
+                entity.Property(e => e.ProductImage)
+                      .HasMaxLength(255)
+                      .IsRequired(false);
+
                 entity.Property(e => e.Description)
                       .HasMaxLength(500);
 

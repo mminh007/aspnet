@@ -1,0 +1,23 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "..\\Authentication.API\\API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "..\\Authentication.BLL\\BLL.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "..\\Authentication.DAL\\DAL.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "..\\Authentication.Common\\Common.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
