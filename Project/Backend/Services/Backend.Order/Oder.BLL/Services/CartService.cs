@@ -76,6 +76,7 @@ namespace Order.BLL.Services
                     {
                         item.ProductName = product.ProductName;
                         item.Price = product.SalePrice;
+                        item.ProductImage = product.ProductImage;
                         item.ErrorMessage = string.Empty;
                         item.IsAvailable = true;
                     }
@@ -95,13 +96,13 @@ namespace Order.BLL.Services
             };
         }
 
-        public async Task<OrderResponseModel<int>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto)
+        public async Task<OrderResponseModel<CartDTO>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto)
         {
             // Lấy cart từ DB
             var dbCart = await _uow.Carts.GetCartByUserIdAsync(userId);
             if (dbCart == null)
             {
-                return new OrderResponseModel<int>
+                return new OrderResponseModel<CartDTO>
                 {
                     Success = false,
                     Message = OperationResult.NotFound,
@@ -132,6 +133,7 @@ namespace Order.BLL.Services
                     UpdatedAt = DateTime.UtcNow,
                     Price = 0,
                     ProductName = string.Empty,
+                    ProductImage = string.Empty,
                 };
 
                 dbCart.Items.Add(newItem);
@@ -141,11 +143,13 @@ namespace Order.BLL.Services
             await _uow.Carts.UpdateCartAsync(dbCart);
             await _uow.SaveChangesAsync();
 
-            return new OrderResponseModel<int>
+            var cart = await GetCartAsync(userId, "check");
+       
+            return new OrderResponseModel<CartDTO>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = dbCart.Items.Count
+                Data = cart.Data,
             };
         }
 
@@ -211,8 +215,7 @@ namespace Order.BLL.Services
         }
 
         // Validate & enrich product info
-        private async Task<(bool IsValid, string ErrorMessage, List<CartItemModel> ValidItems)>
-    ValidateCartItemsAsync(List<CartItemModel> items)
+        private async Task<(bool IsValid, string ErrorMessage, List<CartItemModel> ValidItems)> ValidateCartItemsAsync(List<CartItemModel> items)
         {
             var validItems = new List<CartItemModel>();
             var productIds = items.Select(i => i.ProductId).Distinct().ToList();

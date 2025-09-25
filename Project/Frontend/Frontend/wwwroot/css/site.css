@@ -12,6 +12,10 @@
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
+a {
+    text-decoration: none;
+}
+
 html {
   position: relative;
   min-height: 100%;
@@ -113,6 +117,13 @@ body {
     right: -10px; /* nhích sang phải */
 }
 
+#cartBadgeFloating {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    line-height: 1;
+    position: absolute;
+    /* nhích sang phải */
+}
 /* Khi màn hình nhỏ: giỏ hàng + login xuống dòng */
 @media (max-width: 768px) {
     .cart-login {
@@ -172,18 +183,30 @@ body {
     font-weight: bold;
     margin: 0 0 5px;
     color: #333;
+    white-space: nowrap; /* không xuống dòng */
+    overflow: hidden; /* ẩn phần dư */
+    text-overflow: ellipsis;
 }
 
 .address-res {
     font-size: 13px;
     color: #777;
     margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .content-promotion {
     font-size: 13px;
     color: #e53935;
     margin: 0;
+/*    display: -webkit-box;*/
+    /*-webkit-line-clamp: 2;*/ /* số dòng tối đa */
+/*    -webkit-box-orient: vertical;*/
+    white-space: nowrap;
+    overflow: hidden; /* ẩn phần dư */
+    text-overflow: ellipsis;
 }
 
 .opentime-status {
@@ -351,6 +374,67 @@ body {
         max-width: 100%; /* full theo khung nhỏ */
     }
 }
+
+/*-----------------------------------------------------------------*/
+
+.seo-footer {
+    margin: 50px;
+}
+
+
+.seo-footer-head {
+    color: rgba(0,0,0, .54);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.seo-footer-title {
+    color: rgba(0,0,0, .54);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0;
+
+}
+
+.seo-footer-body {
+    column-count:4;
+}
+
+.seo-footer-body a:hover .seo-footer-title {
+    color: #ff5722; /* màu khi hover */
+}
+
+.seo-footer-body a + a::before { 
+    content: " |";
+    margin: 0 5px;
+    color: #aaa; /* màu của dấu | */
+}
+
+.seo-footer-item {
+    padding-right: 5px;
+    break-inside: avoid;
+}
+
+.sub-item-wrapper {
+    list-style-type: none;
+    padding: 0;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+
+}
+
+.sub-item {
+    font-size: 13px;
+    color: rgba(0,0,0, .54);
+    text-decoration: none ;
+    color: #444;
+    transition: color 0.2s;
+}
+
+
+
 
 
 .shake {

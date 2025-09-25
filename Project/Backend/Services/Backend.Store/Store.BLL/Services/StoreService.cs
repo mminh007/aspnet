@@ -1,9 +1,13 @@
 ﻿
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Store.Common.Configs;
 using Store.Common.Enums;
 using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
 using Store.DAL.Repository;
-using Microsoft.Extensions.Logging;
+using System.Net.WebSockets;
 
 
 namespace Store.BLL.Services
@@ -12,11 +16,16 @@ namespace Store.BLL.Services
     {
         private readonly IStoreRepository _storeRepository;
         private readonly ILogger<StoreService> _logger;
+        private readonly StaticFileConfig _staticFileConfig;
 
-        public StoreService(IStoreRepository storeRepository, ILogger<StoreService> logger)
+        public StoreService(IStoreRepository storeRepository, ILogger<StoreService> logger, IOptions<StaticFileConfig> staticFileConfig)
         {
             _storeRepository = storeRepository;
             _logger = logger;
+
+            _staticFileConfig = staticFileConfig.Value;
+
+
         }
 
         public async Task<StoreResponseModel<object>> ChangeActive(StoreActiveModel model)
@@ -111,6 +120,9 @@ namespace Store.BLL.Services
                     };
                 }
 
+                storeInfo.StoreImage =
+                    $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{storeInfo.StoreImage}";
+
                 return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
@@ -170,6 +182,9 @@ namespace Store.BLL.Services
                     };
                 }
 
+                store.StoreImage =
+                    $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
+
                 return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
@@ -220,6 +235,13 @@ namespace Store.BLL.Services
                         Message = OperationResult.NotFound,
                         ErrorMessage = "No stores found for the requested page"
                     };
+                }
+
+                foreach (var store in storesList)
+                {
+                    store.StoreImage =
+                    $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
+
                 }
 
                 return new StoreResponseModel<IEnumerable<StoreDTO>>
@@ -273,6 +295,13 @@ namespace Store.BLL.Services
                         Message = OperationResult.NotFound,
                         ErrorMessage = "No stores found for the requested page"
                     };
+                }
+
+                foreach (var store in storesList)
+                {
+                    store.StoreImage =
+                    $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
+
                 }
 
                 var paginatedResponse = new PaginatedStoreResponse

@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
+using BLL.Services.Interfaces;
 using Common.Enums;
 using Common.Models;
 using Common.Models.Requests;
 using Common.Models.Responses;
 using DAL.Models.Entities;
 using DAL.Repository;
-using BLL.Services.Interfaces;
+using Microsoft.Extensions.Options;
+using Product.Common.Configs;
 
 namespace BLL.Services
 {
@@ -13,11 +15,13 @@ namespace BLL.Services
     {
         private readonly IProductRepository _repo;
         private readonly IMapper _mapper;
+        private readonly StaticFileConfig _staticFileConfig;
 
-        public ProductService(IProductRepository repo, IMapper mapper)
+        public ProductService(IProductRepository repo, IMapper mapper, IOptions<StaticFileConfig> staticFileConfig)
         {
             _repo = repo;
             _mapper = mapper;
+            _staticFileConfig = staticFileConfig.Value;
         }
 
         // ---------------------------
@@ -38,6 +42,8 @@ namespace BLL.Services
 
             var dto = _mapper.Map<DTOs.ProductSellerDTO>(product);
 
+            dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{product.ProductImage}";
+
             return new ProductResponseModel<DTOs.ProductSellerDTO>
             {
                 Success = true,
@@ -54,6 +60,12 @@ namespace BLL.Services
             if (userRole == "seller")
             {
                 var dtos = _mapper.Map<IEnumerable<DTOs.ProductSellerDTO>>(products);
+
+                foreach (var dto in dtos)
+                {
+                    dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+                }
+
                 return new ProductResponseModel<IEnumerable<object>>
                 {
                     Success = true,
@@ -64,6 +76,12 @@ namespace BLL.Services
             else
             {
                 var dtos = _mapper.Map<IEnumerable<DTOs.ProductBuyerDTO>>(products);
+
+                foreach (var dto in dtos)
+                {
+                    dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+                }
+
                 return new ProductResponseModel<IEnumerable<object>>
                 {
                     Success = true,
@@ -78,6 +96,11 @@ namespace BLL.Services
             var products = await _repo.GetProductByStoreAndCategoryIdAsync(storeId, categoryId);
             var dtos = _mapper.Map<IEnumerable<DTOs.ProductSellerDTO>>(products);
 
+            foreach (var dto in dtos)
+            {
+                dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+            }
+
             return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
             {
                 Success = true,
@@ -90,6 +113,11 @@ namespace BLL.Services
         {
             var products = await _repo.SearchProductByStoreAsync(storeId, keyword);
             var dtos = _mapper.Map<IEnumerable<DTOs.ProductSellerDTO>>(products);
+
+            foreach (var dto in dtos)
+            {
+                dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+            }
 
             return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
             {
@@ -108,6 +136,8 @@ namespace BLL.Services
                 await _repo.SaveChangesAsync();
 
                 var prodDto = _mapper.Map<DTOs.ProductSellerDTO>(created);
+
+                prodDto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{prodDto.ProductImage}";
 
                 return new ProductResponseModel<DTOs.ProductSellerDTO>
                 {
@@ -293,6 +323,11 @@ namespace BLL.Services
                 // Map sang DTO
                 var dtos = _mapper.Map<IEnumerable<DTOs.OrderProductDTO>>(products);
 
+                foreach (var d in dtos)
+                {
+                    d.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{d.ProductImage}";
+                }
+                
                 return new ProductResponseModel<IEnumerable<DTOs.OrderProductDTO>>
                 {
                     Success = true,
@@ -326,6 +361,8 @@ namespace BLL.Services
             }
 
             var dto = _mapper.Map<DTOs.OrderProductDTO>(product);
+
+            dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
 
             return new ProductResponseModel<DTOs.OrderProductDTO>
             {

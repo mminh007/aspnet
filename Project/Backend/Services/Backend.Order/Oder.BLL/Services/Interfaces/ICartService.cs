@@ -8,7 +8,7 @@ namespace Order.BLL.Services
     public interface ICartService
     {
         Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act="check");
-        Task<OrderResponseModel<int>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto);
+        Task<OrderResponseModel<CartDTO>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto);
         Task<OrderResponseModel<string>> RemoveItemFromCartAsync(Guid userId, Guid productId);
         Task<OrderResponseModel<string>> ClearCartAsync(Guid userId);
         Task<OrderResponseModel<List<CartItemDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds);

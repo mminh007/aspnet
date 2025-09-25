@@ -1,19 +1,25 @@
-﻿
-
-
+﻿@using Frontend.Helpers;
 @model IEnumerable<Frontend.Models.Stores.StoreDto>
+
+@{
+    var token = Context.Request.Cookies["accessToken"];
+    var isLoggedIn = !string.IsNullOrEmpty(token);
+
+    var AuthHeader = AuthHelper.GetUserInfo(Context);
+    var userId = AuthHeader.userId;
+}
 
 @foreach (var item in Model)
 {
     <div class="col-md-4 mb-4">
         <div class="item-restaurant">
             <a target="_blank" class="item-content" 
-               href="@Url.Action("Index", "Product", new { storeId = item.StoreId })">
+               href="@Url.Action("Index", "Product", new { store = item.StoreId, user = userId})">
 
                 <!-- Hình ảnh cửa hàng -->
-                @* <div class="img-restaurant">
-                    <img src="@item.ImageUrl" alt="@item.StoreName" class="img-fluid" />
-                </div> *@
+                <div class="img-restaurant">
+                    <img src="@item.StoreImage" alt="@item.StoreName" class="img-fluid" />
+                </div>
 
                 <!-- Thông tin -->
                 <div class="info-restaurant">

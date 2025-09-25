@@ -19,6 +19,9 @@ namespace DAL.Models.Entities
         [MaxLength(500)]
         public string ProductName { get; set; }
 
+        [MaxLength(50)]
+        public string? ProductImage { get; set; }
+
         public string Description { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
@@ -28,7 +31,6 @@ namespace DAL.Models.Entities
         public decimal ImportPrice { get; set; }
 
         public int Quantity { get; set; }
-
 
         public string Supplier { get; set; }
 

@@ -15,6 +15,12 @@ namespace Store.Common.Models.Requests
         public string? StoreName { get; set; }
 
         [Required]
+        public string? StoreCategory { get; set; }
+
+        [Required]
+        public string? StoreImage { get; set; }
+
+        [Required]
         public string Address { get; set; }
 
         [Required]

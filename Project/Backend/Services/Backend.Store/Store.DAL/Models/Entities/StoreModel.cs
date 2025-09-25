@@ -13,8 +13,11 @@ namespace Store.DAL.Models.Entities
 
         public string? StoreName { get; set; }
 
+        public string? StoreCategory { get; set; }
+        public string? StoreImage { get; set; }
+
         [Phone]
-        [MaxLength(10)]
+        [MaxLength(20)]
         public string? Phone { get; set; }
 
         public string? Address { get; set; }

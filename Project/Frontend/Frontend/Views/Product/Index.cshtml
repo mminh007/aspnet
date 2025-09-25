@@ -1,13 +1,17 @@
 ﻿@using static Frontend.Models.Products.DTOs;
+@using static Frontend.Models.Orders.DTOs;
 @using Frontend.Models.Stores;
 @using Frontend.Helpers;
 
 @{
+    var token = Context.Request.Cookies["accessToken"];
+    var isLoggedIn = !string.IsNullOrEmpty(token);
+
     var AuthHeader = AuthHelper.GetUserInfo(Context);
     var userId = AuthHeader.userId;
 }
 
-@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products)
+@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products, IEnumerable<CartItemDTO> cartItems)
 
 @{
     ViewData["Title"] = "Store Menu";
@@ -16,26 +20,40 @@
 <div class="container mt-4">
     <!-- Store Info -->
     <div class="row mb-4">
+        <!-- Hình ảnh cửa hàng -->
         <div class="col-md-12">
             <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h3 class="card-title">@Model.Store.StoreName</h3>
-                    <p class="text-muted">@Model.Store.Description</p>
-                    <ul class="list-unstyled mb-2">
-                        <li><strong>Địa chỉ:</strong> @Model.Store.Address</li>
-                        <li><strong>Điện thoại:</strong> @Model.Store.Phone</li>
-                        <li>
-                            <strong>Trạng thái:</strong>
-                            @if (Model.Store.IsActive)
-                            {
-                                <span class="badge bg-success">Mở cửa</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Tạm ngưng</span>
-                            }
-                        </li>
-                    </ul>
+                <div class="row g-0 align-items-center">
+                    <!-- Ảnh cửa hàng -->
+                    <div class="col-md-4">
+                        <img src="@Model.Store.StoreImage"
+                             alt="@Model.Store.StoreName"
+                             class="img-fluid rounded-start"
+                             style="object-fit: cover; height: 220px; width: 100%;" />
+                    </div>
+
+                    <!-- Thông tin cửa hàng -->
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h3 class="card-title">@Model.Store.StoreName</h3>
+                            <p class="text-muted">@Model.Store.Description</p>
+                            <ul class="list-unstyled mb-2">
+                                <li><strong>Địa chỉ:</strong> @Model.Store.Address</li>
+                                <li><strong>Điện thoại:</strong> @Model.Store.Phone</li>
+                                <li>
+                                    <strong>Trạng thái:</strong>
+                                    @if (Model.Store.IsActive)
+                                    {
+                                        <span class="badge bg-success">Mở cửa</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Tạm ngưng</span>
+                                    }
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -73,7 +91,14 @@
                         {
                             <div class="card mb-3 shadow-sm border-0">
                                 <div class="row g-0 align-items-center">
-                                    <div class="col-md-8">
+                                    <div class="col-md-3">
+                                        <div class="card-body py-2">
+                                            <img src="@product.ProductImage" alt="@product.ProductName" class="img-fluid rounded-start"
+                                                 style="object-fit: cover; height: 194px; width: auto;" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
                                         <div class="card-body py-2">
                                             <h5 class="card-title mb-1">@product.ProductName</h5>
                                             <p class="card-text text-muted small mb-1">@product.Description</p>
@@ -84,8 +109,8 @@
                                             <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
                                         </div>
                                     </div>
-                                    <div class="col-md-2 text-end pe-3">
-                                        <div class="cart-actions" id="cart-actions-@product.ProductId">
+                                    <div class="col-md-3 text-center pe-3">
+                                        <div class="cart-actions" id="cart-actions-@product.ProductId" data-store-id="@product.StoreId">
                                             <button class="btn btn-primary btn-sm add-to-cart"
                                                     data-product-id="@product.ProductId"
                                                     data-store-id="@product.StoreId">
@@ -104,7 +129,7 @@
 </div>
 
 <!-- Floating Cart Button -->
-<a href=""
+<a href="" data-bs-toggle="modal" data-bs-target="#cartItemModal"
    class="floating-cart-btn">
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
          class="bi bi-cart" viewBox="0 0 16 16">
@@ -124,11 +149,69 @@
                  .001-2.001A1 1 0 0 1 12 12z" />
     </svg>
     <span id="cartBadgeFloating"
-          class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
-        0
+          class="badge rounded-pill position-absolute top-0 start-0 translate-middle @(isLoggedIn ? "bg-danger" : "bg-secondary") ">
+        @(Model.cartItems?.Sum(i => i.Quantity) ?? 0)
     </span>
 </a>
 
+<div class="modal fade" id="cartItemModal" tabindex="-1" aria-labelledby="CartItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Giỏ hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="modal-body-item-list">
+                    @if (Model.cartItems != null && Model.cartItems.Any())
+                    {
+                        foreach (var item in Model.cartItems)
+                        {
+                            <div class="d-flex align-items-center border-bottom py-2">
+                                <div class="flex-shrink-0">
+                                    <img src="@item.ProductImage" alt="@item.ProductName"
+                                         class="img-thumbnail" style="width:60px; height:60px; object-fit:cover;">
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">@item.ProductName</h6>
+                                    <div class="fw-bold text-danger mt-1">@item.Price.ToString("N0") đ</div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-outline-secondary decrease"
+                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                        -
+                                    </button>
+                                    <span class="mx-2 fw-bold">@item.Quantity</span>
+                                    <button class="btn btn-sm btn-outline-secondary increase"
+                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-center text-muted">Giỏ hàng trống</p>
+                    }
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Giá món đã bao gồm thuế, nhưng chưa bao gồm phí giao hàng và các phí khác.
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between">
+                <div>
+                    <span class="fw-bold fs-5 text-danger" id="cart-total">@((Model.cartItems?.Sum(i => i.Quantity * i.Price) ?? 0).ToString("N0")) đ</span>
+                </div>
+                <button type="button" class="btn btn-danger px-4" id="btnCheckout">Tạo đơn hàng</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
@@ -186,7 +269,7 @@
                     }
                 });
             });
-                 
+
 
             // bind lại nút + -
             function bindQuantityButtons(productId, storeId, userId) {
@@ -246,3 +329,5 @@
         });
     </script>
 }
+
+

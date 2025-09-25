@@ -165,7 +165,7 @@
       //}
     },
     {
-      "DownstreamPathTemplate": "/api/store/{storeId}",
+      "DownstreamPathTemplate": "/api/store/update",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -173,7 +173,7 @@
           "Port": 7153
         }
       ],
-      "UpstreamPathTemplate": "/store/{storeId}",
+      "UpstreamPathTemplate": "/store/update",
       "UpstreamHttpMethod": [ "PUT" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
@@ -445,7 +445,7 @@
     // ORDER SERVICE
     // -------------------------
     {
-      "DownstreamPathTemplate": "/api/order/{orderId}",
+      "DownstreamPathTemplate": "/api/order/get-order",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -453,11 +453,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/{orderId}",
+      "UpstreamPathTemplate": "/order/get-order",
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/user/{userId}",
+      "DownstreamPathTemplate": "/api/order/user/get",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -465,11 +465,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/user/{userId}",
+      "UpstreamPathTemplate": "/order/user/get",
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/store/{storeId}",
+      "DownstreamPathTemplate": "/api/order/seller",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -477,11 +477,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/store/{storeId}",
+      "UpstreamPathTemplate": "/order/seller",
       "UpstreamHttpMethod": [ "GET" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/{orderId}",
+      "DownstreamPathTemplate": "/api/order/update-order",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -489,11 +489,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/{orderId}",
+      "UpstreamPathTemplate": "/order/update-order",
       "UpstreamHttpMethod": [ "PUT" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/{orderId}",
+      "DownstreamPathTemplate": "/api/order/delete-order",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -501,11 +501,11 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/{orderId}",
+      "UpstreamPathTemplate": "/order/delete-order",
       "UpstreamHttpMethod": [ "DELETE" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/checkout/{userId}",
+      "DownstreamPathTemplate": "/api/order/checkout",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -513,7 +513,7 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/checkout/{userId}",
+      "UpstreamPathTemplate": "/order/checkout",
       "UpstreamHttpMethod": [ "POST" ]
     },
     // -------------------------

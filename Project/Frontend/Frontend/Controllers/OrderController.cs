@@ -2,6 +2,7 @@
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using static Frontend.Models.Orders.DTOs;
 
 namespace Frontend.Controllers
 {
@@ -22,8 +23,13 @@ namespace Frontend.Controllers
             if(status != 200)
             {
                 ViewBag.Error = message;
-            }   
-            
+            }
+
+            //_logger.LogInformation("CartItem in store: {@Data}", JsonSerializer.Serialize(data, new JsonSerializerOptions
+            //{
+            //    WriteIndented = true
+            //}));
+
             return View(data);
         }
 
@@ -52,9 +58,25 @@ namespace Frontend.Controllers
             });
         }
 
-        public async Task<IActionResult> CreateOrder(Guid userId)
+        [HttpPost]
+        public async Task<IActionResult> CreateOrder(Guid userId, [FromForm] List<Guid> selectedProducts)
         {
-            return View();
+            if (selectedProducts == null || !selectedProducts.Any())
+            {
+                TempData["Error"] = "Bạn chưa chọn sản phẩm nào để tạo đơn hàng.";
+                return RedirectToAction("CreateCart", new { id = userId });
+            }
+
+            var (msg, status, data) = await _orderService.Checkout(userId, selectedProducts);
+
+            if (status != 200 || data == null)
+            {
+                ViewBag.Error = msg;
+                return View("CreateOrder", new List<OrderDTO>());
+            }
+
+            return View("CreateOrder", data);
         }
+
     }
 }

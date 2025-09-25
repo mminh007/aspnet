@@ -3,6 +3,7 @@ using static Frontend.Models.Orders.DTOs;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Frontend.Models.Orders.Requests;
+using Frontend.Models.Auth;
 
 namespace Frontend.Controllers
 {
@@ -23,47 +24,58 @@ namespace Frontend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index([FromQuery] Guid storeId )
+        public async Task<IActionResult> Index([FromQuery] Guid store, Guid user )
         {
             var tempCount = TempData["CountItemsInCart"];
             _logger.LogInformation($"From ProductController => TempData['CountItemsInCart']: {tempCount}");
-            _logger.LogInformation("✅ Retrieved store for StoreId={StoreId}", storeId);
+            _logger.LogInformation("✅ Retrieved store for StoreId={StoreId}", store);
 
-            if (storeId == Guid.Empty)
+            if (store == Guid.Empty)
             {
                 _logger.LogWarning("⚠️ storeId EMPTY khi gọi Store");
                 return BadRequest("storeId is required");
             }
 
-            var (message, statusCode, store) = await _storeService.GetStoresDetailAsync(storeId);
+            var (message, statusCode, storeData) = await _storeService.GetStoresDetailAsync(store);
 
-            var (prodMessage, prodStatusCode, products) = await _productService.GetProductByStoreIdAsync(storeId);
+            var (prodMessage, prodStatusCode, productsData) = await _productService.GetProductByStoreIdAsync(store);
 
-            var (storeCategoriesMessage, storeCategoriesStatusCode, categories) = await _productService.SearchCategoriesByStoreIdAsync(storeId);
+            var (storeCategoriesMessage, storeCategoriesStatusCode, categoriesData) = await _productService.SearchCategoriesByStoreIdAsync(store);
 
-            if (store == null)
+            var (oderMessage, orderStatus, orderData) = await _orderService.GetCartInStore(user, store);
+
+            if (storeData == null)
             {
-                _logger.LogWarning("⚠️ Store is NULL for storeId={StoreId}", storeId);
+                _logger.LogWarning("⚠️ Store is NULL for storeId={StoreId}", store);
                 ViewBag.Message = $"Error {statusCode}: {message}";
             }
 
 
-            if (products == null)
+            if (productsData == null)
             {
-                _logger.LogWarning("⚠️ Products are NULL for storeId={StoreId}", storeId);
+                _logger.LogWarning("⚠️ Products are NULL for storeId={StoreId}", store);
                 ViewBag.prodMessage = $"No products found for this store.";
             }
 
 
-            if (categories == null)
+            if (categoriesData == null)
             {
-                _logger.LogWarning("⚠️ Categories are NULL for storeId={StoreId}", storeId);
+                _logger.LogWarning("⚠️ Categories are NULL for storeId={StoreId}", store);
                 ViewBag.catMessage = $"No categories found for this store.";
             }
 
-            var model = (Store: store,
-                         Categories: categories?.ToList() ?? new List<CategoryDTO>(),
-                         Products: products?.ToList() ?? new List<ProductBuyerDTO>());
+            //_logger.LogInformation("ProductImage: {image}", orderData);
+
+
+            //foreach (var o in orderData)
+            //{
+            //    _logger.LogInformation("CartItem in store", o);
+            //}
+
+            var model = (Store: storeData,
+                         Categories: categoriesData?.ToList() ?? new List<CategoryDTO>(),
+                         Products: productsData?.ToList() ?? new List<ProductBuyerDTO>(),
+                         CartItems: orderData);
 
 
             return View(model);
@@ -77,7 +89,7 @@ namespace Frontend.Controllers
                 return BadRequest(new { message = "ProductId and UserId are required." });
             }
 
-            var (msg, statusCode, countItems) = await _orderService.AddProductToCart(buyer, dto);
+            var (msg, statusCode, countItems, cartStore) = await _orderService.AddProductToCart(buyer, dto);
             _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", dto.ProductId, buyer);
 
             TempData["Message"] = msg;
@@ -86,7 +98,8 @@ namespace Frontend.Controllers
             return Ok(new
             {
                 message = msg,
-                countItems = countItems
+                countItems = countItems,
+                cartStore = cartStore
             });
         }
     }

@@ -58,7 +58,9 @@ namespace Store.DAL.Repository
             if (store == null) return 0;
 
             store.StoreName = model.StoreName;
+            store.StoreCategory = model.StoreCategory;
             store.Description = model.Description;
+            store.StoreImage = model.StoreImage;
             store.Address = model.Address;
             store.Phone = model.Phone;
             store.UpdatedAt = DateTime.UtcNow;
@@ -83,7 +85,9 @@ namespace Store.DAL.Repository
             {
                 StoreId = store.StoreId,
                 StoreName = store.StoreName,
+                StoreCategory = store.StoreCategory,
                 Description = store.Description,
+                StoreImage = store.StoreImage,
                 IsActive = store.IsActive,
                 Address = store.Address,
                 Phone = store.Phone
@@ -108,7 +112,9 @@ namespace Store.DAL.Repository
             {
                 StoreId = store.StoreId,
                 StoreName = store.StoreName,
+                StoreCategory = store.StoreCategory,
                 Description = store.Description,
+                StoreImage = store.StoreImage,
                 IsActive = store.IsActive,
                 Address = store.Address,
                 Phone = store.Phone
@@ -148,7 +154,9 @@ namespace Store.DAL.Repository
                 {
                     StoreId = s.StoreId,
                     StoreName = s.StoreName,
+                    StoreCategory = s.StoreCategory,
                     Description = s.Description,
+                    StoreImage = s.StoreImage,
                     IsActive = s.IsActive,
                     Address = s.Address,
                     Phone = s.Phone

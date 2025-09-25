@@ -1,5 +1,7 @@
-﻿using Frontend.Models.Stores;
-using System.Net.Http;
+﻿using Frontend.Configs;
+using Frontend.Configs.Store;
+using Frontend.Models.Stores;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -7,79 +9,62 @@ namespace Frontend.HttpsClients.Stores
 {
     public class StoreApiClient : IStoreApiClient
     {
-        private readonly HttpClient _client;
-        private readonly IConfiguration _configuration;
+        private readonly HttpClient _httpClient;
         private readonly ILogger<StoreApiClient> _logger;
+        private readonly StoreEndpoints _endpoints;
 
-        private static string _getAllStore;
-        private static string _getStoreDetail;
-
-        public StoreApiClient(HttpClient client,
-                              IConfiguration configuration,
-                              ILogger<StoreApiClient> logger)
+        public StoreApiClient(HttpClient httpClient,
+                              ILogger<StoreApiClient> logger,
+                              IOptions<StoreEndpoints> endpoints)
         {
-            _client = client;
-            _configuration = configuration;
+            _httpClient = httpClient;
             _logger = logger;
-
-            var endpoint = _configuration.GetSection("ServiceUrls:Store:Endpoints");
-            _getAllStore = endpoint["GetAllStore"];
-            _getStoreDetail = endpoint["GetStoreDetail"];
+            _endpoints = endpoints.Value;
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto?> Data)> GetStoresPagedAsync(int page, int pageSize)
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto?>? Data)>
+            GetStoresPagedAsync(int page, int pageSize)
         {
-            var url = _getAllStore
+            var url = _endpoints.GetAllStore
                 .Replace("{page}", page.ToString())
                 .Replace("{pageSize}", pageSize.ToString());
 
-            var response = await _client.GetAsync(url);
-            var content = await response.Content.ReadAsStringAsync();
-
-            try
-            {
-                var result = JsonSerializer.Deserialize<StoreApiResponse<IEnumerable<StoreDto>>>(content,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (!response.IsSuccessStatusCode || result == null)
-                {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
-                }
-
-                return (true, result.Message, result.StatusCode, result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Exception while parsing response");
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
-            }
+            var response = await _httpClient.GetAsync(url);
+            return await ParseResponse<IEnumerable<StoreDto>>(response, "GetStoresPaged");
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)> GetStoreByIdAsync(Guid storeId)
+        public async Task<(bool Success, string? Message, int statusCode, StoreDto? Data)>
+            GetStoreByIdAsync(Guid storeId)
         {
+            var url = _endpoints.GetStoreDetail.Replace("{storeId}", storeId.ToString());
+            var response = await _httpClient.GetAsync(url);
+            return await ParseResponse<StoreDto>(response, "GetStoreById");
+        }
 
-            var url = _getStoreDetail.Replace("{storeId}", storeId.ToString());
-            var response = await _client.GetAsync(url);
-
+        private async Task<(bool Success, string? Message, int statusCode, T? Data)>
+            ParseResponse<T>(HttpResponseMessage response, string action)
+        {
             var content = await response.Content.ReadAsStringAsync();
-
             try
             {
-                var result = JsonSerializer.Deserialize<StoreApiResponse<StoreDto>>(content,
+                var result = JsonSerializer.Deserialize<StoreApiResponse<T>>(content,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (!response.IsSuccessStatusCode || result == null)
                 {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
+                    return (false, result?.Message ?? $"[{action}] Failed: {content}",
+                        (int)response.StatusCode, default);
                 }
 
                 return (true, result.Message, result.StatusCode, result.Data);
             }
             catch (Exception ex)
             {
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
+                _logger.LogError(ex, "❌ Exception while parsing {Action}", action);
+                return (false, $"Exception: {ex.Message}", (int)response.StatusCode, default);
             }
         }
+
         private class StoreApiResponse<T>
         {
             [JsonPropertyName("statusCode")] public int StatusCode { get; set; }

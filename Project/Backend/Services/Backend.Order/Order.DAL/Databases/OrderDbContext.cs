@@ -44,6 +44,10 @@ namespace Order.DAL.Databases
                 .Property(i => i.Price)
                 .HasColumnType("decimal(18,2)");
 
+            modelBuilder.Entity<CartItemModel>()
+                .Property(i => i.ProductImage)
+                .HasMaxLength(500);
+
             modelBuilder.Entity<OrderItemModel>()
                 .Property(i => i.Price)
                 .HasColumnType("decimal(18,2)");

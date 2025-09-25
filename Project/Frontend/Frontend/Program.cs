@@ -1,5 +1,9 @@
 ﻿using Frontend.Cache;
 using Frontend.Cache.Interfaces;
+using Frontend.Configs.Auth;
+using Frontend.Configs.Order;
+using Frontend.Configs.Product;
+using Frontend.Configs.Store;
 using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
 using Frontend.HttpsClients.Orders;
@@ -8,6 +12,7 @@ using Frontend.HttpsClients.Stores;
 using Frontend.Middlewares;
 using Frontend.Services;
 using Frontend.Services.Interfaces;
+using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using System.Text.Json;
 
@@ -27,25 +32,41 @@ namespace Frontend
             // Connect Auth Service
             builder.Services.AddScoped<HeaderHandler>();
 
+            // Order Enpoints
             builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             }).AddHttpMessageHandler<HeaderHandler>();
 
+            builder.Services.Configure<OrderEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Order:Endpoints"));
+
+            // Auth Enpoints
             builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
+            builder.Services.Configure<AuthEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Auth:Endpoints"));
+
+            // Store endpoints
             builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             }).AddHttpMessageHandler<HeaderHandler>();
 
+            builder.Services.Configure<StoreEndpoints>(
+            builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
+
+            // Product Endpoints
             builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.Configure<ProductEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IStoreService, StoreService>();
@@ -65,6 +86,8 @@ namespace Frontend
                 var configuration = builder.Configuration.GetConnectionString("Redis");
                 return ConnectionMultiplexer.Connect(configuration);
             });
+
+            // Static File
 
             // Đăng ký RedisCacheService
             builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
@@ -101,6 +124,7 @@ namespace Frontend
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
 
             app.UseAuthentication();
             app.UseAuthorization();

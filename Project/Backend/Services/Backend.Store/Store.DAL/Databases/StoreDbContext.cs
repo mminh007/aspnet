@@ -28,6 +28,16 @@ namespace Store.DAL.Databases
                       .IsRequired()
                       .HasMaxLength(50);
 
+                entity.Property(e => e.StoreImage)
+                      .HasMaxLength(255)
+                      .IsRequired(false); ;
+
+                entity.Property(e => e.StoreCategory)
+                      .HasMaxLength(50);
+
+                entity.Property(e => e.Phone)
+                      .HasMaxLength(10);
+
                 entity.Property(e => e.Description)
                       .HasMaxLength(500);
 
@@ -49,7 +59,5 @@ namespace Store.DAL.Databases
                 entity.Property(e => e.EventType).IsRequired().HasMaxLength(250);
             });
         }
-        
-
     }
 }
