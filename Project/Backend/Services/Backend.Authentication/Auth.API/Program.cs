@@ -20,6 +20,8 @@ namespace Auth.API
     {
         public static void Main(string[] args)
         {
+            DotNetEnv.Env.Load();
+
             var builder = WebApplication.CreateBuilder(args);
 
             var jwt = builder.Configuration.GetSection("Jwt");
