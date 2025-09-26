@@ -25,6 +25,10 @@
       {
         "Path": "Services\\Backend.Order\\Order.API\\Order.API.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "Services\\Backend.Payment\\Payment.API\\Payment.API.csproj",
+        "Action": "Start"
       }
     ]
   }

@@ -38,6 +38,8 @@ ScaffoldingReadMe.txt
 
 .vs/
 
+.env
+
 # Others
 ~$*
 *~
