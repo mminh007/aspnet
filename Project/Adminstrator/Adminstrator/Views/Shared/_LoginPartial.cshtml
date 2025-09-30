@@ -1,6 +1,6 @@
 ﻿@using Adminstrator.Helpers;
 @{
-    var token = Context.Request.Cookies["accessToken"];
+    var token = Context.Request.Cookies["admin_accessToken"];
     var email = Context.Session.GetString("UserEmail");
     var role = Context.Session.GetString("UserRole");
     var userId = Context.Session.GetString("UserId");
@@ -27,7 +27,7 @@
                     <a class="dropdown-item" asp-controller="User" asp-action="Management">Quản lý tài khoản</a>
                 </li>
                 <li>
-                    <a class="dropdown-item" asp-controller="Store" asp-action="Management">Quản lý cửa hàng</a>
+                    <a class="dropdown-item" asp-controller="Store" asp-action="Index">Quản lý cửa hàng</a>
                 </li>
             </ul>
         </li>

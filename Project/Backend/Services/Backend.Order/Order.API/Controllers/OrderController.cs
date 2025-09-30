@@ -4,6 +4,8 @@ using Oder.BLL.Services.Interfaces;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using static Order.Common.Models.DTOs;
 
 namespace Order.API.Controllers
@@ -31,9 +33,12 @@ namespace Order.API.Controllers
         // ✅ Lấy danh sách đơn theo User
         [HttpGet("user/get")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> GetOrdersByUser([FromQuery] Guid buyer)
+        public async Task<IActionResult> GetOrdersByUser()
         {
-            var result = await _orderService.GetOrdersByUserAsync(buyer);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
+            var result = await _orderService.GetOrdersByUserAsync(userId);
             return HandleResponse(result);
         }
 
@@ -70,12 +75,15 @@ namespace Order.API.Controllers
         // ✅ Checkout từ giỏ
         [HttpPost("checkout")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> Checkout([FromQuery] Guid user, [FromBody] IEnumerable<Guid> productIds)
+        public async Task<IActionResult> Checkout([FromBody] IEnumerable<Guid> productIds)
         {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
             if (productIds == null || !productIds.Any())
                 return BadRequest("No products selected for checkout");
 
-            var result = await _orderService.CheckoutAsync(user, productIds);
+            var result = await _orderService.CheckoutAsync(userId, productIds);
             return HandleResponse(result);
         }
 

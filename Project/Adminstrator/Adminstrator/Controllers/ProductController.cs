@@ -7,13 +7,13 @@ namespace Adminstrator.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly IStoreServices _storeService;
+        private readonly IStoreService _storeService;
         private readonly IProductService _productService;
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(
             IProductService productService,
-            IStoreServices storeService,
+            IStoreService storeService,
             ILogger<ProductController> logger)
         {
             _productService = productService;
@@ -22,7 +22,7 @@ namespace Adminstrator.Controllers
         }
 
         [Route("Product/Management/{storeId:guid}")]
-        public async Task<IActionResult> Management(Guid storeId)
+        public async Task<IActionResult> Index(Guid storeId)
         {
 
             _logger.LogInformation("✅ Retrieved store for StoreId={StoreId}", storeId);

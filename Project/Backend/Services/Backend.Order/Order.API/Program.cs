@@ -10,6 +10,7 @@ using Order.API.Mapping;
 using Order.BLL.External;
 using Order.BLL.External.Interfaces;
 using Order.BLL.Services;
+using Order.Common.Configs;
 using Order.DAL.Databases;
 using Order.DAL.Repositories;
 using Order.DAL.Repository.Interfaces;
@@ -87,7 +88,7 @@ namespace Order.API
 
             builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:User:BaseUrl"]);
+                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Product:BaseUrl"]);
                 client.DefaultRequestHeaders.Add("User-Agent", "AuthService/1.0");
             });
 
@@ -162,7 +163,8 @@ namespace Order.API
                 });
             });
 
-
+            builder.Services.Configure<StaticFileConfig>(
+                builder.Configuration.GetSection("StaticFiles"));
 
             var app = builder.Build();
 

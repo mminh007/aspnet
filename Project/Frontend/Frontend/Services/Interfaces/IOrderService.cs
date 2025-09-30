@@ -15,6 +15,8 @@ namespace Frontend.Services.Interfaces
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId);
 
+        Task<(string Message, int StatusCode, DTOs.CartDTO data)> DeleteItemInCart(Guid userId, Guid productId);
+
 
         // Order function
 
@@ -27,7 +29,7 @@ namespace Frontend.Services.Interfaces
         Task<(string Message, int StatusCode)>
             DeleteOrder(Guid orderId);
 
-        Task<(string Message, int StatusCode, DTOs.OrderDTO Data)>
+        Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)>
             Checkout(Guid userId, IEnumerable<Guid> productIds);
 
     }

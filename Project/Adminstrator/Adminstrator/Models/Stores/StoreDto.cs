@@ -10,6 +10,10 @@ namespace Adminstrator.Models.Stores
         [JsonPropertyName("storeName")]
         public string StoreName { get; set; }
 
+        public string StoreImage { get; set; }
+
+        public string StoreCategory { get; set; }
+
         [JsonPropertyName("description")]
         public string Description { get; set; }
 

@@ -9,7 +9,7 @@ namespace Order.BLL.Services
     {
         Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act="check");
         Task<OrderResponseModel<CartDTO>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto);
-        Task<OrderResponseModel<string>> RemoveItemFromCartAsync(Guid userId, Guid productId);
+        Task<OrderResponseModel<CartDTO>> RemoveItemFromCartAsync(Guid userId, Guid cartItemId);
         Task<OrderResponseModel<string>> ClearCartAsync(Guid userId);
         Task<OrderResponseModel<List<CartItemDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds);
         Task<OrderResponseModel<List<CartItemDTO>>> GetCartItemsByStoreAsync(Guid userId, Guid storeId);

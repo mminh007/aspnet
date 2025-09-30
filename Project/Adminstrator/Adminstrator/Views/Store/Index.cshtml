@@ -1,6 +1,210 @@
-﻿@{
+﻿@using Adminstrator.Models.Stores;
+@model StoreDto
+
+@{
     ViewData["Title"] = "Store Management";
 }
 
-<h2>Store Management</h2>
+<h2 class="mb-4 text-center">Store Management</h2>
 
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card store-card shadow-sm border-0">
+            <div class="row g-0 align-items-center">
+                <!-- Store Image -->
+                <div class="col-md-4">
+                    <img src="@Model.StoreImage" alt="@Model.StoreName" class="img-fluid store-image" />
+                </div>
+
+                <!-- Store Info -->
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title">@Model.StoreName</h5>
+                        <p class="card-text text-muted">@Model.Description</p>
+                        <p><strong>Tag:</strong> @Model.StoreCategory</p>
+
+                        <ul class="list-unstyled mb-3">
+                            <li><strong>Address:</strong> @Model.Address</li>
+                            <li><strong>Phone:</strong> @Model.Phone</li>
+
+                            <li>
+                                <strong>Status:</strong>
+                                <div class="form-check form-switch d-inline-block ms-2">
+                                    <input class="form-check-input" type="checkbox" id="toggleActive"
+                                           @(Model.IsActive ? "checked" : "")
+                                           data-store-id="@Model.StoreId" />
+                                    <label class="form-check-label" for="toggleActive">
+                                        @(Model.IsActive ? "Active" : "Inactive")
+                                    </label>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <!-- Buttons -->
+                        <a asp-controller="Product"
+                           asp-action="Index"
+                           asp-route-storeId="@Model.StoreId"
+                           class="btn btn-primary">
+                            Manage Store
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#updateStoreModal">
+                            Cập nhật
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Update Store -->
+<div class="modal fade" id="updateStoreModal" tabindex="-1" aria-labelledby="updateStoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="updateStoreForm" enctype="multipart/form-data">
+                <input type="hidden" name="StoreId" value="@Model.StoreId" />
+
+                <div class="mb-3">
+                    <label class="form-label">Hình ảnh cửa hàng</label>
+                    <input type="file" class="form-control" id="StoreImage" name="StoreImage" accept="image/*" />
+                    <small class="text-muted">Ảnh hiện tại:</small>
+                    <img id="previewImage" src="@($"{Environment.GetEnvironmentVariable("STORE_IMAGE_REQUEST")}/{Model.StoreImage}")"
+                         class="img-thumbnail mt-2" style="max-height:100px;" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tên cửa hàng</label>
+                    <input type="text" class="form-control" name="StoreName" value="@Model.StoreName" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mô tả</label>
+                    <textarea class="form-control" name="Description" rows="3">@Model.Description</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Địa chỉ</label>
+                    <input type="text" class="form-control" name="Address" value="@Model.Address" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" class="form-control" name="Phone" value="@Model.Phone" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Danh mục</label>
+                    <input type="text" class="form-control" name="StoreCategory" value="@Model.StoreCategory" />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-success">Xác nhận</button>
+                </div>
+            </form>
+
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggle = document.getElementById("toggleActive");
+
+            toggle.addEventListener("change", async function () {
+                const storeId = this.getAttribute("data-store-id");
+                const isActive = this.checked;
+
+                try {
+                    const response = await fetch(`/Admin/Store/ChangeActive`, {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ storeId, isActive })
+                    });
+
+                    console.log("📥 Raw response:", response);
+
+                    const data = await response.json().catch(() => null);
+                    console.log("📦 Parsed data:", data);
+
+                    if (response.ok) {
+                        const label = document.querySelector("label[for='toggleActive']");
+                        label.textContent = isActive ? "Active" : "Inactive";
+                        label.classList.toggle("text-success", isActive);
+                        label.classList.toggle("text-muted", !isActive);
+                    } else {
+                        alert("❌ Cập nhật trạng thái thất bại!");
+                        this.checked = !isActive; // rollback
+                    }
+                } catch (err) {
+                    alert("⚠️ Lỗi kết nối server!");
+                    this.checked = !isActive; // rollback
+                }
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const updateForm = document.getElementById("updateStoreForm");
+            const imageInput = document.getElementById("StoreImage");
+            const previewImage = document.getElementById("previewImage");
+
+            // ✅ Preview ảnh mới khi chọn file
+            imageInput.addEventListener("change", function () {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewImage.src = e.target.result;
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            // ✅ Submit bằng fetch API
+                    updateForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(updateForm);
+
+            try {
+                const response = await fetch("/admin/Store/Update", {
+                    method: "PUT", // phải match với Controller (HttpPost)
+                    body: formData
+                });
+
+                console.log("📥 Raw response:", response);
+
+                const result = await response.json();
+                console.log("📦 Parsed data:", result);
+
+                if (result.success) {
+                    // đóng modal
+                    bootstrap.Modal.getInstance(document.getElementById("updateStoreModal")).hide();
+
+                    // reload hoặc update UI trực tiếp
+                    location.reload();
+
+                    // Nếu muốn update UI trực tiếp:
+                    // document.querySelector(".card-title").textContent = result.data.storeName;
+                    // document.querySelector(".card-text").textContent = result.data.description;
+                } else {
+                    alert("❌ " + result.message);
+                }
+            } catch (err) {
+                console.error("⚠️ Lỗi kết nối:", err);
+                alert("⚠️ Không thể kết nối server!");
+            }
+        });
+
+        });
+    </script>
+}

@@ -235,6 +235,9 @@ body {
 /*---------------------------------------------------------------*/
 
 /*Store Detail (Product List)*/
+.category-link {
+    cursor: pointer;
+}
 
 .categories .btn {
     border-radius: 20px;
@@ -376,7 +379,29 @@ body {
 }
 
 /*-----------------------------------------------------------------*/
+/* Cart Page*/
 
+.cart-img {
+    width: 60px; /* cố định chiều rộng */
+    height: 60px; /* cố định chiều cao */
+    object-fit: cover; /* giữ tỉ lệ, không méo hình */
+    border-radius: 4px;
+    border: 1px solid #eee; /* khung nhẹ */
+}
+
+/*-----------------------------------------------------------------*/
+/* Cart Page*/
+
+.order-img {
+    width: 60px; /* cố định chiều rộng */
+    height: 60px; /* cố định chiều cao */
+    object-fit: cover; /* giữ tỉ lệ, không méo hình */
+    border-radius: 4px;
+    border: 1px solid #eee; /* khung nhẹ */
+}
+
+/*-----------------------------------------------------------------*/
+/* Footer _layout */
 .seo-footer {
     margin: 50px;
 }

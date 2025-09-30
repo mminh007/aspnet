@@ -37,7 +37,7 @@ namespace API.Controllers
         }
 
 
-        [HttpGet("search/store/{storeId:guid}")]
+        [HttpGet("get-product/{storeId:guid}")]
         public async Task<IActionResult> GetProductsByStore(Guid storeId)
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -47,18 +47,18 @@ namespace API.Controllers
         }
 
 
-        [HttpGet("search/store/{storeId:guid}/category/{categoryId:guid}")]
-        public async Task<IActionResult> GetProductsByStoreAndCategory(Guid storeId, Guid categoryId)
+        [HttpGet("get/{storeId:guid}")]
+        public async Task<IActionResult> GetProductsByStoreAndCategory(Guid storeId, [FromQuery] Guid category_id)
         {
             //var StoreId = Guid.Parse(storeId);
             //var CateId = Guid.Parse(categoryId);
 
-            var response = await _service.GetProductsByStoreAndCategoryAsync(storeId, categoryId);
+            var response = await _service.GetProductsByStoreAndCategoryAsync(storeId, category_id);
             return HandleResponse(response);
         }
 
 
-        [HttpGet("search/store/{storeId:guid}/search")]
+        [HttpGet("search-product/{storeId:guid}")]
         public async Task<IActionResult> SearchProductsByStore(Guid storeId, [FromQuery] string keyword)
         {
             //var StoreId = Guid.Parse(storeId);
@@ -67,7 +67,7 @@ namespace API.Controllers
         }
 
 
-        [HttpPost]
+        [HttpPost("create-product")]
         public async Task<IActionResult> CreateProduct([FromBody] DTOs.ProductDTO dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -77,14 +77,14 @@ namespace API.Controllers
         }
 
 
-        [HttpPut("{productId:guid}")]
+        [HttpPut("update/{productId:guid}")]
         public async Task<IActionResult> UpdateProduct([FromBody] IEnumerable<UpdateProductModel> dto, Guid productId)
         {
             var response = await _service.UpdateProductAsync(dto);
             return HandleResponse(response);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var response = await _service.DeleteProductAsync(id);
@@ -96,14 +96,14 @@ namespace API.Controllers
         // ---------------------------
 
 
-        [HttpPost("category")]
+        [HttpPost("create-category")]
         public async Task<IActionResult> CreateCategory([FromBody] DTOs.CategoryDTO category)
         {
             var response = await _service.CreateCategoryAsync(category);
             return HandleResponse(response);
         }
 
-        [HttpGet("search/category/store/{storeId:guid}")]
+        [HttpGet("search-category/{storeId:guid}")]
         public async Task<IActionResult> SearchCategories(Guid storeId)
         {
             //var StoreId = Guid.Parse(storeId);

@@ -42,7 +42,7 @@ namespace Frontend.Controllers
 
             var (storeCategoriesMessage, storeCategoriesStatusCode, categoriesData) = await _productService.SearchCategoriesByStoreIdAsync(store);
 
-            var (oderMessage, orderStatus, orderData) = await _orderService.GetCartInStore(user, store);
+            var (cartMessage, cartStatus, cartItems) = await _orderService.GetCartInStore(user, store);
 
             if (storeData == null)
             {
@@ -75,7 +75,7 @@ namespace Frontend.Controllers
             var model = (Store: storeData,
                          Categories: categoriesData?.ToList() ?? new List<CategoryDTO>(),
                          Products: productsData?.ToList() ?? new List<ProductBuyerDTO>(),
-                         CartItems: orderData);
+                         CartItems: cartItems ?? Enumerable.Empty<CartItemDTO>());
 
 
             return View(model);
@@ -90,6 +90,10 @@ namespace Frontend.Controllers
             }
 
             var (msg, statusCode, countItems, cartStore) = await _orderService.AddProductToCart(buyer, dto);
+
+            var (cartMsg, cartStatus, cartItems) = await _orderService.GetCartInStore(buyer, dto.StoreId);
+            var totalItemsInStore = cartItems?.Sum(i => i.Quantity) ?? 0;
+
             _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", dto.ProductId, buyer);
 
             TempData["Message"] = msg;
@@ -98,8 +102,9 @@ namespace Frontend.Controllers
             return Ok(new
             {
                 message = msg,
-                countItems = countItems,
-                cartStore = cartStore
+                countItems = countItems,           
+                cartStore = cartStore,              
+                countItemsInStore = totalItemsInStore  
             });
         }
     }

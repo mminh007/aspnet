@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Order.BLL.External.Interfaces;
+using Order.Common.Configs;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
@@ -39,20 +41,14 @@ namespace Order.BLL.Services
                 };
             }
 
-            var dto = _mapper.Map<CartDTO>(cart);
-
             if (act == "check")
             {
-                // Lấy danh sách productId trong cart
-                var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
-
-                // Gọi batch API sang ProductService
+                var productIds = cart.Items.Select(i => i.ProductId).Distinct().ToList();
                 var productResponse = await _productService.GetProductInfoAsync(productIds);
 
                 if (!productResponse.Success || productResponse.Data == null)
                 {
-                    // Nếu API fail → gắn error message cho toàn bộ items
-                    foreach (var item in dto.Items)
+                    foreach (var item in cart.Items)
                     {
                         item.ErrorMessage = "Cannot fetch product info";
                         item.IsAvailable = false;
@@ -63,30 +59,53 @@ namespace Order.BLL.Services
                         Success = false,
                         Message = OperationResult.Error,
                         ErrorMessage = "Cannot fetch product info",
-                        Data = dto
+                        Data = _mapper.Map<CartDTO>(cart)
                     };
                 }
 
-                // Map product info vào cart items
                 var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
 
-                foreach (var item in dto.Items)
+                foreach (var item in cart.Items) // dùng CartItemModel
                 {
                     if (productDict.TryGetValue(item.ProductId, out var product) && product.IsActive)
                     {
                         item.ProductName = product.ProductName;
                         item.Price = product.SalePrice;
                         item.ProductImage = product.ProductImage;
-                        item.ErrorMessage = string.Empty;
-                        item.IsAvailable = true;
+
+                        if (product.Quantity <= 0)
+                        {
+                            item.Quantity = 0;
+                            item.ErrorMessage = "Product out of stock";
+                            item.IsAvailable = false;
+                        }
+                        else if (item.Quantity > product.Quantity)
+                        {
+                            item.Quantity = product.Quantity; // cập nhật entity
+                            item.ErrorMessage = $"Maximum quantity available: {product.Quantity}";
+                            item.IsAvailable = true;
+                        }
+                        else
+                        {
+                            item.ErrorMessage = string.Empty;
+                            item.IsAvailable = true;
+                        }
                     }
                     else
                     {
-                        item.ErrorMessage = "Product out of stock or unavailable";
+                        item.ErrorMessage = "Product not available";
                         item.IsAvailable = false;
                     }
+
+                    item.UpdatedAt = DateTime.UtcNow;
+                    await _uow.Carts.UpdateCartItemAsync(item);
                 }
-            } 
+
+                // ❗ Commit thay đổi xuống DB
+                await _uow.SaveChangesAsync();
+            }
+
+            var dto = _mapper.Map<CartDTO>(cart);
 
             return new OrderResponseModel<CartDTO?>
             {
@@ -95,6 +114,8 @@ namespace Order.BLL.Services
                 Data = dto
             };
         }
+
+
 
         public async Task<OrderResponseModel<CartDTO>> AddItemToCartAsync(Guid userId, RequestItemToCartModel itemDto)
         {
@@ -155,12 +176,12 @@ namespace Order.BLL.Services
 
 
 
-        public async Task<OrderResponseModel<string>> RemoveItemFromCartAsync(Guid userId, Guid productId)
+        public async Task<OrderResponseModel<CartDTO>> RemoveItemFromCartAsync(Guid userId, Guid cartItemId)
         {
             var dbCart = await _uow.Carts.GetCartByUserIdAsync(userId);
             if (dbCart == null)
             {
-                return new OrderResponseModel<string>
+                return new OrderResponseModel<CartDTO>
                 {
                     Success = false,
                     Message = OperationResult.NotFound,
@@ -168,10 +189,10 @@ namespace Order.BLL.Services
                 };
             }
 
-            var item = dbCart.Items.FirstOrDefault(i => i.ProductId == productId);
+            var item = dbCart.Items.FirstOrDefault(i => i.CartItemId == cartItemId);
             if (item == null)
             {
-                return new OrderResponseModel<string>
+                return new OrderResponseModel<CartDTO>
                 {
                     Success = false,
                     Message = OperationResult.NotFound,
@@ -182,11 +203,12 @@ namespace Order.BLL.Services
             await _uow.Carts.RemoveCartItemAsync(item.CartItemId);
             await _uow.SaveChangesAsync();
 
-            return new OrderResponseModel<string>
+            var newCart = await GetCartAsync(userId, "");
+            return new OrderResponseModel<CartDTO>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = productId.ToString()
+                Data = newCart.Data,
             };
         }
 
@@ -220,7 +242,7 @@ namespace Order.BLL.Services
             var validItems = new List<CartItemModel>();
             var productIds = items.Select(i => i.ProductId).Distinct().ToList();
 
-            // Gọi batch API
+            // batch API
             var productResponse = await _productService.GetProductInfoAsync(productIds);
 
             if (!productResponse.Success || productResponse.Data == null)
@@ -234,13 +256,17 @@ namespace Order.BLL.Services
             {
                 if (!productDict.TryGetValue(item.ProductId, out var product) || !product.IsActive)
                 {
-                    return (false, $"Product {item.ProductId} not found or inactive", validItems);
+                    item.ProductImage = product.ProductImage;
+                    item.IsAvailable = false;
+                    item.ErrorMessage = $"Product not found or inactive";
+                    //return (false, $"Product {item.ProductId} not found or inactive", validItems);
                 }
 
                 if (item.Quantity > product.Quantity)
                 {
-                    return (false, $"Not enough stock for {product.ProductName}. " +
-                                   $"Available: {product.Quantity}, Requested: {item.Quantity}", validItems);
+                    item.ProductImage = product.ProductImage;
+                    item.ErrorMessage = $"Not enough stock for {product.ProductName}" +
+                                        $"Available: {product.Quantity}";
                 }
 
                 // Update cartItem info nếu có thay đổi
@@ -248,6 +274,7 @@ namespace Order.BLL.Services
                 {
                     item.Price = product.SalePrice;
                     item.ProductName = product.ProductName;
+                    item.ProductImage = product.ProductImage;
                     item.UpdatedAt = DateTime.UtcNow;
                     await _uow.Carts.UpdateCartItemAsync(item);
                 }
@@ -406,48 +433,14 @@ namespace Order.BLL.Services
                 };
             }
 
-            // Validate product từ ProductService
-            var productResponse = await _productService.ValidateProduct(cartItem.ProductId);
-
-            if (!productResponse.Success || productResponse.Data == null)
-            {
-                // ❌ Product không tồn tại
-                cartItem.IsAvailable = false;
-                cartItem.ErrorMessage = "Product not found";
-            }
-            else
-            {
-                var product = productResponse.Data;
-
-                if (!product.IsActive)
-                {
-                    // ❌ Product bị inactive
-                    cartItem.IsAvailable = false;
-                    cartItem.ErrorMessage = "This product is inactive";
-                }
-                else if (request.Quantity > product.Quantity)
-                {
-                    // ❌ Không đủ tồn kho
-                    cartItem.IsAvailable = false;
-                    cartItem.ErrorMessage = $"Insufficient stock, only {product.Quantity} items left";
-                }
-                else
-                {
-                    // ✅ Update thành công
-                    cartItem.Quantity = request.Quantity;
-                    cartItem.Price = product.SalePrice;
-                    cartItem.ProductName = product.ProductName;
-                    cartItem.IsAvailable = true;
-                    cartItem.ErrorMessage = string.Empty;
-                }
-            }
+            cartItem.Quantity = request.Quantity;
 
             cartItem.UpdatedAt = DateTime.UtcNow;
             await _uow.Carts.UpdateCartItemAsync(cartItem);
             await _uow.SaveChangesAsync();
 
             // ✅ Luôn trả về giỏ hàng mới nhất
-            var newCart = await GetCartAsync(buyerId);
+            var newCart = await GetCartAsync(buyerId, "check");
             //var dto = _mapper.Map<CartDTO>(newCart);
 
             return new OrderResponseModel<CartDTO>

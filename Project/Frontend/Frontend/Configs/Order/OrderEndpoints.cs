@@ -3,6 +3,7 @@
     public class OrderEndpoints
     {
         public string GetCart { get; set; } = string.Empty;
+        public string GetCartInStore {  get; set; } = string.Empty;
         public string GetCountingItems { get; set; } = string.Empty;
         public string AddItemsToCart { get; set; } = string.Empty;
         public string UpdateItemQuantity { get; set; } = string.Empty;

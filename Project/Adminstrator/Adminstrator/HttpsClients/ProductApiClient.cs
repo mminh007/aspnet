@@ -1,5 +1,7 @@
-﻿using Adminstrator.HttpsClients.Interfaces;
+﻿using Adminstrator.Configs.Product;
+using Adminstrator.HttpsClients.Interfaces;
 using Adminstrator.Models.Products;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,23 +12,15 @@ namespace Adminstrator.HttpsClients
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<ProductApiClient> _logger;
-
-        private readonly string _getByStoreEndpoint;
-        private readonly string _getByIdEndpoint;
-        private readonly string _searchCategoriesEndpoint;
+        private readonly ProductEndpoints _endpoints;
 
         public ProductApiClient(HttpClient httpClient,
-                                IConfiguration configuration,
-                                ILogger<ProductApiClient> logger)
+                                ILogger<ProductApiClient> logger,
+                                IOptions<ProductEndpoints> endpoints)
         {
             _httpClient = httpClient;
-            _configuration = configuration;
             _logger = logger;
-
-            var endpoints = _configuration.GetSection("ServiceUrls:Product:Endpoints");
-            _getByStoreEndpoint = endpoints["GetByStore"];
-            _getByIdEndpoint = endpoints["GetById"];
-            _searchCategoriesEndpoint = endpoints["SearchCategories"];
+            _endpoints = endpoints.Value;
         }
 
         // ---------------------------
@@ -34,76 +28,47 @@ namespace Adminstrator.HttpsClients
         // ---------------------------
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.ProductSellerDTO>? Data)> GetByStoreAsync(Guid storeId)
         {
-            var url = _getByStoreEndpoint.Replace("{storeId}", storeId.ToString());
+            var url = _endpoints.GetByStore.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
-            var content = await response.Content.ReadAsStringAsync();
+            return await ParseResponse<IEnumerable<DTOs.ProductSellerDTO>>(response, "GetByStore");
 
-            try
-            {
-                var result = JsonSerializer.Deserialize<ProductApiResponse<IEnumerable<DTOs.ProductSellerDTO>>>(content,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (!response.IsSuccessStatusCode || result == null)
-                {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
-                }
-
-                return (true, result.Message, result.StatusCode, result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Exception while parsing response");
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
-            }
         }
 
         public async Task<(bool Success, string? Message, int statusCode, DTOs.ProductSellerDTO? Data)> GetByIdAsync(Guid productId)
         {
-            var url = _getByIdEndpoint.Replace("{id}", productId.ToString());
+            var url = _endpoints.GetById.Replace("{id}", productId.ToString());
             var response = await _httpClient.GetAsync(url);
-            var content = await response.Content.ReadAsStringAsync();
-
-            try
-            {
-                var result = JsonSerializer.Deserialize<ProductApiResponse<DTOs.ProductSellerDTO>>(content,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (!response.IsSuccessStatusCode || result == null)
-                {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
-                }
-
-                return (true, result.Message, result.StatusCode, result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Exception while parsing response");
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
-            }
+            return await ParseResponse<DTOs.ProductSellerDTO>(response, "GetById");
+  
         }
 
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.CategoryDTO>? Data)> SearchCategoriesAsync(Guid storeId)
         {
-            var url = _searchCategoriesEndpoint.Replace("{storeId}", storeId.ToString());
+            var url = _endpoints.SearchCategories.Replace("{storeId}", storeId.ToString());
             var response = await _httpClient.GetAsync(url);
-            var content = await response.Content.ReadAsStringAsync();
+            return await ParseResponse<IEnumerable<DTOs.CategoryDTO>>(response, "SearchCategories");
+        }
 
+        private async Task<(bool Success, string? Message, int statusCode, T? Data)>
+            ParseResponse<T>(HttpResponseMessage response, string action)
+        {
+            var content = await response.Content.ReadAsStringAsync();
             try
             {
-                var result = JsonSerializer.Deserialize<ProductApiResponse<IEnumerable<DTOs.CategoryDTO>>>(content,
+                var result = JsonSerializer.Deserialize<ProductApiResponse<T>>(content,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (!response.IsSuccessStatusCode || result == null)
                 {
-                    return (false, result?.Message ?? $"Request failed: {content}", (int)response.StatusCode, null);
+                    return (false, result?.Message ?? $"❌ {action} failed: {content}", (int)response.StatusCode, default);
                 }
 
                 return (true, result.Message, result.StatusCode, result.Data);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Exception while parsing response");
-                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, null);
+                _logger.LogError(ex, "❌ Exception while parsing response for {Action}", action);
+                return (false, $"Exception while parsing response: {ex.Message}", (int)response.StatusCode, default);
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Oder.BLL.Services.Interfaces;
+using Order.BLL.External.Interfaces;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
@@ -14,12 +15,14 @@ namespace Order.BLL.Services
         private readonly IUnitOfWork _uow;
         private readonly IMapper _mapper;
         private readonly ICartService _cartService;
+        private readonly IProductApiClient _productService;
 
-        public OrderService(IUnitOfWork uow, IMapper mapper, ICartService cartService)
+        public OrderService(IUnitOfWork uow, IMapper mapper, ICartService cartService, IProductApiClient productApiClient)
         {
             _uow = uow;
             _mapper = mapper;
             _cartService = cartService;
+            _productService = productApiClient;
         }
 
         public async Task<OrderResponseModel<OrderDTO>> CreateOrderAsync(OrderDTO dto)
@@ -39,6 +42,7 @@ namespace Order.BLL.Services
         public async Task<OrderResponseModel<OrderDTO?>> GetOrderByIdAsync(Guid orderId)
         {
             var entity = await _uow.Orders.GetOrderByIdAsync(orderId);
+
             if (entity == null)
                 return new OrderResponseModel<OrderDTO?>
                 {
@@ -47,24 +51,110 @@ namespace Order.BLL.Services
                     ErrorMessage = "Order not found"
                 };
 
+            var productIds = entity.OrderItems.Select(i => i.ProductId).Distinct().ToList();
+
+            var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+            // Map entity -> DTO
+            var orderDto = _mapper.Map<OrderDTO>(entity);
+
+            if (productResponse.Success && productResponse.Data != null)
+            {
+                // Tạo dictionary để lookup nhanh product info theo ProductId
+                var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
+
+                foreach (var item in orderDto.OrderItems)
+                {
+                    if (productDict.TryGetValue(item.ProductId, out var product))
+                    {
+                        item.ProductName = product.ProductName;
+                        item.ProductImage = product.ProductImage;
+                    }
+                }
+            }
+            else
+            {
+                // Nếu không gọi được ProductService thì vẫn trả order, nhưng có cảnh báo
+                return new OrderResponseModel<OrderDTO?>
+                {
+                    Success = true,
+                    Message = OperationResult.Success,
+                    Data = orderDto,
+                    ErrorMessage = "Cannot call Product Service"
+                };
+            }
+
             return new OrderResponseModel<OrderDTO?>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = _mapper.Map<OrderDTO>(entity)
+                Data = orderDto
             };
         }
 
         public async Task<OrderResponseModel<IEnumerable<OrderDTO>>> GetOrdersByUserAsync(Guid userId)
         {
             var entities = await _uow.Orders.GetOrdersByUserAsync(userId);
+
+            if (entities == null || !entities.Any())
+            {
+                return new OrderResponseModel<IEnumerable<OrderDTO>>
+                {
+                    Success = false,
+                    Message = OperationResult.NotFound,
+                    ErrorMessage = "No orders found for this user"
+                };
+            }
+
+            // Lấy tất cả productId trong toàn bộ order
+            var productIds = entities.SelectMany(o => o.OrderItems)
+                                     .Select(i => i.ProductId)
+                                     .Distinct()
+                                     .ToList();
+
+            // Gọi ProductService để lấy thông tin sản phẩm
+            var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+            // Map entity -> DTO
+            var orderDtos = entities.Select(e => _mapper.Map<OrderDTO>(e)).ToList();
+
+            if (productResponse.Success && productResponse.Data != null)
+            {
+                // Tạo dictionary để lookup nhanh product info theo ProductId
+                var productDict = productResponse.Data.ToDictionary(p => p.ProductId, p => p);
+
+                foreach (var order in orderDtos)
+                {
+                    foreach (var item in order.OrderItems)
+                    {
+                        if (productDict.TryGetValue(item.ProductId, out var product))
+                        {
+                            item.ProductName = product.ProductName;
+                            item.ProductImage = product.ProductImage;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Nếu không gọi được ProductService thì vẫn trả order, nhưng có cảnh báo
+                return new OrderResponseModel<IEnumerable<OrderDTO>>
+                {
+                    Success = true,
+                    Message = OperationResult.Success,
+                    Data = orderDtos,
+                    ErrorMessage = "Cannot call Product Service"
+                };
+            }
+
             return new OrderResponseModel<IEnumerable<OrderDTO>>
             {
-                Success = entities != null,
-                Message = entities != null ? OperationResult.Success : OperationResult.NotFound,
-                Data = entities?.Select(e => _mapper.Map<OrderDTO>(e))
+                Success = true,
+                Message = OperationResult.Success,
+                Data = orderDtos
             };
         }
+
 
         public async Task<OrderResponseModel<IEnumerable<OrderDTO>>> GetOrdersByStoreAsync(Guid storeId)
         {
@@ -155,6 +245,8 @@ namespace Order.BLL.Services
                     {
                         OrderItemId = Guid.NewGuid(),
                         ProductId = item.ProductId,
+                        ProductImage = item.ProductImage,
+                        ProductName = item.ProductName,
                         Quantity = item.Quantity,
                         Price = item.Price
                     }).ToList()

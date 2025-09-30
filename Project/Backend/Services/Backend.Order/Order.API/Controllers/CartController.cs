@@ -4,6 +4,8 @@ using Order.BLL.Services;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Order.API.Controllers
 {
@@ -23,16 +25,21 @@ namespace Order.API.Controllers
         /// Lấy giỏ hàng của user
         /// </summary>
         [HttpGet("get-cart")]
-        public async Task<IActionResult> GetCart([FromQuery] Guid buyer)
+        public async Task<IActionResult> GetCart()
         {
-            var result = await _cartService.GetCartAsync(buyer, "check");
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
+            var result = await _cartService.GetCartAsync(userId, "check");
             return HandleResponse(result);
         }
 
         [HttpGet("counting-item")]
-        public async Task<IActionResult> GetCountItems([FromQuery] Guid buyer)
+        public async Task<IActionResult> GetCountItems()
         {
-            var result = await _cartService.CountItemsInCartAsync(buyer);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+            var result = await _cartService.CountItemsInCartAsync(userId);
             return HandleResponse(result);
         }
 
@@ -40,12 +47,14 @@ namespace Order.API.Controllers
         /// Thêm item vào giỏ hàng
         /// </summary>
         [HttpPost("add-item")]
-        public async Task<IActionResult> AddItem([FromQuery] Guid buyer, [FromBody] RequestItemToCartModel item)
+        public async Task<IActionResult> AddItem([FromBody] RequestItemToCartModel item)
         {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
             if (item == null)
                 return BadRequest("Invalid item data");
 
-            var result = await _cartService.AddItemToCartAsync(buyer, item);
+            var result = await _cartService.AddItemToCartAsync(userId, item);
             return HandleResponse(result);
         }
 
@@ -54,15 +63,17 @@ namespace Order.API.Controllers
         /// </summary>
         [HttpPut("update-item")]
         public async Task<IActionResult> UpdateItemQuantity(
-                    [FromQuery] Guid buyer,
                     [FromQuery] Guid item,
                     [FromBody] UpdateQuantityRequest request)
         {
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
             if (request == null || request.Quantity <= 0)
                 return BadRequest(request);
 
             // Gọi update service (đã validate bên trong)
-            var result = await _cartService.UpdateItemAsync(buyer, item, request);
+            var result = await _cartService.UpdateItemAsync(userId, item, request);
            
             return HandleResponse(result);
         }
@@ -70,10 +81,13 @@ namespace Order.API.Controllers
         /// <summary>
         /// Xóa item khỏi giỏ hàng
         /// </summary>
-        [HttpDelete("/delete-item")]
-        public async Task<IActionResult> RemoveItem([FromQuery]  Guid buyer, [FromQuery] Guid item)
+        [HttpDelete("delete-item")]
+        public async Task<IActionResult> RemoveItem([FromQuery] Guid item)
         {
-            var result = await _cartService.RemoveItemFromCartAsync(buyer, item);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
+            var result = await _cartService.RemoveItemFromCartAsync(userId, item);
             return HandleResponse(result);
         }
 
@@ -81,9 +95,12 @@ namespace Order.API.Controllers
         /// Xóa toàn bộ giỏ hàng
         /// </summary>
         [HttpDelete("delete-cart")]
-        public async Task<IActionResult> ClearCart([FromQuery] Guid buyer)
+        public async Task<IActionResult> ClearCart()
         {
-            var result = await _cartService.ClearCartAsync(buyer);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value);
+
+            var result = await _cartService.ClearCartAsync(userId);
             return HandleResponse(result);
         }
 
@@ -91,10 +108,13 @@ namespace Order.API.Controllers
         /// <summary>
         /// Lấy các items trong giỏ hàng theo store
         /// </summary>
-        [HttpGet("{userId:guid}/stores/{storeId:guid}/items")]
-        public async Task<IActionResult> GetCartItemsByStore(Guid userId, Guid storeId)
+        [HttpGet("get-item")]
+        public async Task<IActionResult> GetCartItemsByStore([FromQuery] Guid store_id)
         {
-            var result = await _cartService.GetCartItemsByStoreAsync(userId, storeId);
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                   ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value);
+
+            var result = await _cartService.GetCartItemsByStoreAsync(userId, store_id);
             return HandleResponse(result);
         }
 

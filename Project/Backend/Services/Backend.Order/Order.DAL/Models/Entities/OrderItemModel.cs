@@ -22,6 +22,12 @@ public class OrderItemModel
     [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
     public decimal Price { get; set; } = 0;
 
+    [NotMapped]
+    public string ProductName { get; set; }
+
+    [NotMapped]
+    public string ProductImage { get; set; }
+
     // Computed property
     [NotMapped]
     public decimal LineTotal => Quantity * Price;

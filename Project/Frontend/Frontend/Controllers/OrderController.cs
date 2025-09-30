@@ -1,11 +1,13 @@
 ﻿using Frontend.Models.Orders.Requests;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Text.Json;
 using static Frontend.Models.Orders.DTOs;
 
 namespace Frontend.Controllers
 {
+    [Route("Order")]
     public class OrderController : Controller
     {
         private readonly IOrderService _orderService;
@@ -33,28 +35,47 @@ namespace Frontend.Controllers
             return View(data);
         }
 
-        [HttpPut]
+        [HttpGet("get-cart-in-store")]
+        public async Task<IActionResult> GetCartItemInStore(Guid buyer, Guid storeId)
+        {
+            var (cartMsg, cartStatus, cartItems) = await _orderService.GetCartInStore(buyer, storeId);
+
+            return Ok( new
+            {
+                message = cartMsg, 
+                data = cartItems 
+            });  
+        }
+
+        [HttpPut("update-quantity")]
         public async Task<IActionResult> UpdateQuantity(
-            [FromQuery] Guid userId, 
-            [FromQuery] Guid cartItemId, 
+            [FromQuery] Guid buyer, 
+            [FromQuery] Guid item,
+            [FromQuery] Guid store,
             [FromBody] UpdateQuantityModel request)
         {
-            var (msg, status, data) = await _orderService.UpdateItemsInCart(userId, cartItemId, request);
+            var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, item, request);
 
-            _logger.LogInformation("CartDTO result: {CartJson}",
-            JsonSerializer.Serialize(data, new JsonSerializerOptions
-            {
-                WriteIndented = true // để format đẹp dễ đọc
-            }));
-            if (status != 200)
-            {
-                ViewBag.Error = msg;
-            }
+            //_logger.LogInformation("CartDTO result: {CartJson}",
+            //JsonSerializer.Serialize(data, new JsonSerializerOptions
+            //{
+            //    WriteIndented = true 
+            //}));
+
+            // Bug
+            // ✅ Lọc ra các CartItem theo storeId
+            var itemsInStore = data.Items
+                                   .Where(i => i.StoreId == store)
+                                   .ToList();
+
+            // ✅ Tính tổng số lượng trong store
+            var totalItemsInStore = itemsInStore.Sum(i => i.Quantity);
+
             return Ok( new
             {
                 message = msg,
-                data = data
-
+                data = data,
+                countItemsInStore = totalItemsInStore
             });
         }
 
@@ -76,6 +97,44 @@ namespace Frontend.Controllers
             }
 
             return View("CreateOrder", data);
+        }
+
+        [HttpDelete("delete-item")]
+        public async Task<IActionResult> DeleteCartItem(Guid buyer, [FromQuery] Guid item)
+        {
+            var (msg, status, data) = await _orderService.DeleteItemInCart(buyer, item);
+
+            if (status == 200)
+            {
+                // ✅ Trả về giỏ hàng mới nhất
+                return Ok(new
+                {
+                    statusCode = 200,
+                    message = "Item removed successfully",
+                    data = data // CartDTO
+                });
+            }
+
+            // ❌ Lỗi
+            return StatusCode(status, new
+            {
+                statusCode = status,
+                message = msg
+            });
+        }
+
+        [HttpGet("list-order")]
+        public async Task<IActionResult> GetOrderList(Guid buyer)
+        {
+            var (msg, status, data) = await _orderService.GetOrdersByUser(buyer);
+
+            if (status != 200)
+            {
+                ViewBag.Error = msg;
+            }
+
+            return View(data);
+
         }
 
     }

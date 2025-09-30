@@ -31,19 +31,23 @@ namespace Store.API.Controllers
         }
 
 
-        [HttpGet("user/{userId:guid}")]
+        [HttpGet("get")]
         [Authorize(Roles = "seller, system")]
-        public async Task<IActionResult> GetStoreById(Guid userId)
+        public async Task<IActionResult> GetStoreById()
         {
-            var result = await _storeService.GetStoreByIdAsync(userId);
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var id = Guid.Parse(userId);
+
+            var result = await _storeService.GetStoreByIdAsync(id);
             return HandleResponse(result);
         }
 
-        [HttpGet("detail/{storeId:guid}")]
+        [HttpGet("get-detail")]
         [Authorize(Roles = "seller, system")]
-        public async Task<IActionResult> GetStoreDetail(Guid storeId)
+        public async Task<IActionResult> GetStoreDetail([FromQuery] Guid store_id)
         {
-            var result = await _storeService.GetStoreDetailByIdAsync(storeId);
+            var result = await _storeService.GetStoreDetailByIdAsync(store_id);
             return HandleResponse(result);
         }
 
@@ -57,37 +61,41 @@ namespace Store.API.Controllers
 
         [HttpPut("update")]
         [Authorize(Roles = "seller")]
-        public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreModel model, [FromQuery] Guid user)
+        public async Task<IActionResult> UpdateStore([FromQuery] Guid store_id, [FromBody] UpdateStoreModel model)
         {
             var subClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(subClaim, out var userId))
                 return Unauthorized("Token không hợp lệ: sub claim bị thiếu hoặc không phải GUID");
-            model.UserId = userId;
+            model.storeId = store_id;
 
             var result = await _storeService.UpdateStoreAsync(model);
             return HandleResponse(result);
         }
 
-        [HttpDelete("{userId:guid}")]
+        [HttpDelete("delete")]
         [Authorize(Roles = "seller, admin")]
-        public async Task<IActionResult> DeleteStore(Guid userId)
+        public async Task<IActionResult> DeleteStore([FromQuery] Guid store_id)
         {
+            var subClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = Guid.Parse(subClaim);
+
             var result = await _storeService.DeleteStoreAsync(userId);
             return HandleResponse(result);
         }
 
         [HttpPatch("change-active")]
         [Authorize(Roles = "seller, system")]
-        public async Task<IActionResult> ChangeActive([FromBody] StoreActiveModel model)
+        public async Task<IActionResult> ChangeActive([FromBody] ChangeActiveRequest model, [FromQuery] Guid store_id)
         {
             if (User.IsInRole("seller"))
             {
-                var userIdFromToken = User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value
+                var userIdFromToken = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                                         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                model.UserId = Guid.Parse(userIdFromToken!);
+                var UserId = Guid.Parse(userIdFromToken!);
             }
 
             var result = await _storeService.ChangeActive(model);

@@ -16,13 +16,32 @@ namespace Frontend.Components
         {
             int countItems = 0;
 
-            if (Guid.TryParse(userId, out var parsedId))
+            if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var parsedId))
             {
-                var (msg, status, data) = await _orderService.CountingItemsInCart(parsedId);
-                countItems = data?.CountItems ?? 0;
+                try
+                {
+                    var (msg, status, data) = await _orderService.CountingItemsInCart(parsedId);
+
+                    if (status == 200 && data != null)
+                    {
+                        countItems = data.CountItems;
+                    }
+                    else
+                    {
+                        // nếu Unauthorized hoặc lỗi khác thì fallback 0
+                        countItems = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // log lỗi nhưng không crash
+                    Console.WriteLine($"CartViewComponent error: {ex.Message}");
+                    countItems = 0;
+                }
             }
 
             return View(countItems);
         }
+
     }
 }

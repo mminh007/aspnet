@@ -7,12 +7,12 @@ namespace Store.BLL.Services
     {
         Task<StoreResponseModel<Guid>> CreateStoreAsync(RegisterStoreModel model);
 
-        Task<StoreResponseModel<object>> UpdateStoreAsync(UpdateStoreModel model);
+        Task<StoreResponseModel<StoreDTO>> UpdateStoreAsync(UpdateStoreModel model);
 
         Task<StoreResponseModel<object>> DeleteStoreAsync(Guid UserId);
         Task<StoreResponseModel<StoreDTO>> GetStoreByIdAsync(Guid UserId);
 
-        Task<StoreResponseModel<object>> ChangeActive(StoreActiveModel model);
+        Task<StoreResponseModel<object>> ChangeActive(ChangeActiveRequest model);
 
         Task<StoreResponseModel<IEnumerable<StoreDTO>>> GetActiveStoresAsync(int page, int pageSize);
 

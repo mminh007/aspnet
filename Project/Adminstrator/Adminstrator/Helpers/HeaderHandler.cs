@@ -27,7 +27,7 @@
                 _logger.LogInformation("🔍 === COOKIES ===");
                 foreach (var cookie in httpContext.Request.Cookies)
                 {
-                    var value = cookie.Key == "accessToken" || cookie.Key == "refreshToken"
+                    var value = cookie.Key == "admin_accessToken" || cookie.Key == "admin_refreshToken"
                         ? $"{cookie.Value[..10]}..."
                         : cookie.Value;
                     _logger.LogInformation("  {Key}: {Value}", cookie.Key, value);
@@ -50,7 +50,7 @@
 
                 // Existing logic...
                 var authHeader = httpContext.Request.Headers["Authorization"].FirstOrDefault();
-                var accessToken = httpContext.Request.Cookies["accessToken"];
+                var accessToken = httpContext.Request.Cookies["admin_accessToken"];
 
                 if (!string.IsNullOrWhiteSpace(authHeader))
                 {

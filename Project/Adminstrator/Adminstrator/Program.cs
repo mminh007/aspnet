@@ -1,3 +1,6 @@
+using Adminstrator.Configs.Auth;
+using Adminstrator.Configs.Product;
+using Adminstrator.Configs.Store;
 using Adminstrator.Helpers;
 using Adminstrator.HttpsClients;
 using Adminstrator.HttpsClients.Auths;
@@ -5,6 +8,7 @@ using Adminstrator.HttpsClients.Interfaces;
 using Adminstrator.Middlewares;
 using Adminstrator.Services;
 using Adminstrator.Services.Interfaces;
+using Microsoft.Extensions.FileProviders;
 
 
 namespace Adminstrator
@@ -13,6 +17,11 @@ namespace Adminstrator
     {
         public static void Main(string[] args)
         {
+            DotNetEnv.Env.Load();
+
+            var storeImagePath = Environment.GetEnvironmentVariable("STORE_IMAGE_PATH");
+            var storeImageRequest = Environment.GetEnvironmentVariable("STORE_IMAGE_REQUEST");           
+
             var builder = WebApplication.CreateBuilder(args);
 
             SettingsHelper.Configure(builder.Configuration);
@@ -30,23 +39,34 @@ namespace Adminstrator
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             });
 
+            builder.Services.Configure<AuthEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Auth:Endpoints"));
+
             builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.Configure<StoreEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
 
             builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
             }).AddHttpMessageHandler<HeaderHandler>();
 
+            builder.Services.Configure<ProductEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
+
             // Connect Auth Service
 
-            builder.Services.AddScoped<IStoreServices, StoreServices>();
-            builder.Services.AddScoped<IAuthServices, AuthServices>();
+            builder.Services.AddScoped<IStoreService, StoreServices>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IProductService, ProductService>();
             // Connect Service
 
+            // map static files
+            builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);
 
             builder.Services.AddSession(options =>
             {
@@ -71,7 +91,11 @@ namespace Adminstrator
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(storeImagePath),
+                RequestPath = storeImageRequest
+            });
 
             app.UseRouting();
             app.UseSession();

@@ -47,7 +47,7 @@ namespace Order.DAL.Models.Entities
         public string ErrorMessage { get; set; }
 
         [NotMapped]
-        public bool IsAvailable { get; set; }
+        public bool IsAvailable { get; set; } = true;
 
         // Navigation properties
         [ForeignKey("CartId")]

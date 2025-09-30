@@ -26,6 +26,7 @@
                     <table class="table table-bordered text-center mt-3">
                         <thead class="table-light">
                             <tr>
+                                <th>Ảnh</th>
                                 <th>Sản phẩm</th>
                                 <th>Số lượng</th>
                                 <th>Giá</th>
@@ -36,7 +37,8 @@
                             @foreach (var item in order.OrderItems)
                             {
                                 <tr>
-                                    <td>@item.ProductId</td>
+                                    <td><img src="@item.ProductImage" alt="Alternate Text" class="order-img me-2" /></td>
+                                    <td>@item.ProductName</td>
                                     <td>@item.Quantity</td>
                                     <td>@item.Price.ToString("N0") đ</td>
                                     <td>@item.LineTotal.ToString("N0") đ</td>

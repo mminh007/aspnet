@@ -28,11 +28,11 @@ namespace Store.BLL.Services
 
         }
 
-        public async Task<StoreResponseModel<object>> ChangeActive(StoreActiveModel model)
+        public async Task<StoreResponseModel<object>> ChangeActive(ChangeActiveRequest model)
         {
             try
             {
-                var result = await _storeRepository.ChangeActiveStoreAsync(model.UserId, model.IsActive);
+                var result = await _storeRepository.ChangeActiveStoreAsync(model.StoreId, model.IsActive);
                 if (result == 0)
                 {
                     return new StoreResponseModel<object>
@@ -142,22 +142,26 @@ namespace Store.BLL.Services
             }
         }
 
-        public async Task<StoreResponseModel<object>> UpdateStoreAsync(UpdateStoreModel model)
+        public async Task<StoreResponseModel<StoreDTO>> UpdateStoreAsync(UpdateStoreModel model)
         {
             try
             {
 
                 await _storeRepository.UpdateStoreAsync(model);
-                return new StoreResponseModel<object>
+
+                var store = await _storeRepository.GetStoreDetailById(model.storeId);
+
+                return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
+                    Data = store
                 };
             }
 
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while updating Store Infomation");
-                return new StoreResponseModel<object>
+                return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Error,
                     ErrorMessage = "Error while updating Store Infomation",

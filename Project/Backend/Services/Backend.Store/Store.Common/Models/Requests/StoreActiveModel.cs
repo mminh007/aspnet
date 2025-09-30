@@ -2,10 +2,10 @@
 
 namespace Store.Common.Models.Requests
 {
-    public class StoreActiveModel
+    public class ChangeActiveRequest
     {
         [Required]
-        public Guid UserId { get; set; }
+        public Guid StoreId { get; set; }
 
         [Required]
         public bool IsActive { get; set; }

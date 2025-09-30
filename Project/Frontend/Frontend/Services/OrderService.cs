@@ -5,7 +5,8 @@ using Frontend.Models.Orders.Requests;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Net.NetworkInformation;
-
+// UserId không cần phải truyền vào vì backend sẽ parse từ access token
+// Nhưng vì theo flow cũ nên vẫn sẽ truyền useId để tránh refactor quá nhiều và tránh bug
 namespace Frontend.Services
 {
     public class OrderService : IOrderService
@@ -64,26 +65,19 @@ namespace Frontend.Services
 
         public async Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId)
         {
-            var (message, statusCode, data) = await GetCartByUserId(userId);
+            string cacheKey = $"cart:cartStore:{userId}-{storeId}";
+            var (success, message, statusCode, data) = await _client.GetCartItemInStore(storeId);
 
-            var productList = new List<DTOs.CartItemDTO>(); 
-            if (data == null)
-            {
-                return (message, statusCode, null);
-            }   
-            
-            foreach (var item in data.Items)
-            {
-                if(item.StoreId.Equals(storeId)) { productList.Add(item); }
-            }
+            await _cache.SetAsync(cacheKey, data, _cacheDuration);
 
-            return (message, statusCode, productList);
+            return (message, statusCode, data);
+
         }
 
 
         public async Task<(string Message, int StatusCode, DTOs.CountItemsDTO data)> CountingItemsInCart(Guid userId)
         {
-            string cacheKey = $"cart:countItems:{userId}";
+            string cacheKey = $"cart:cart:{userId}";
 
             // ✅ Check cache first
             var checkData = await _cache.GetAsync<DTOs.CountItemsDTO>(cacheKey);
@@ -162,6 +156,7 @@ namespace Frontend.Services
         public async Task<(string Message, int StatusCode, DTOs.OrderDTO Data)> GetOrderById(Guid orderId)
         {
             var result = await _client.GetOrderById(orderId);
+
             return (result.Message ?? "No message", result.statusCode, result.data);
         }
 
@@ -171,16 +166,63 @@ namespace Frontend.Services
             return (result.Message ?? "No message", result.statusCode, result.data ?? new List<DTOs.OrderDTO>());
         }
 
+ 
+
         public async Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId)
         {
             var result = await _client.DeleteOrder(orderId);
             return (result.Message ?? "No message", result.statusCode);
         }
 
-        public async Task<(string Message, int StatusCode, DTOs.OrderDTO Data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
         {
             var result = await _client.Checkout(userId, productIds);
+
+            if (result.data != null)
+            {
+                // Sau khi checkout thành công, giỏ hàng sẽ thay đổi → gọi API GetCart để lấy giỏ hàng mới
+                var (success, msg, status, newCart) = await _client.GetCart(userId);
+
+                if (success)
+                {
+                    // ✅ Update lại cache countItems
+                    string cacheKey_counting = $"cart:countItems:{userId}";
+                    await _cache.SetAsync(cacheKey_counting, new DTOs.CountItemsDTO { CountItems = newCart.Items.Count }, _cacheDuration);
+
+                    // ✅ Update lại cache cart
+                    string cacheKey_cart = $"cart:Bagde:{userId}";
+                    await _cache.SetAsync(cacheKey_cart, newCart, _cacheDuration);
+
+                    _logger.LogInformation("🛒 Checkout done, cart refreshed for userId={UserId}, totalItems={TotalItems}", userId, newCart.TotalItems);
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ Failed to refresh cart after checkout for userId={UserId}", userId);
+                }
+            }
+
             return (result.Message ?? "No message", result.statusCode, result.data);
         }
+
+
+        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> DeleteItemInCart(Guid userId, Guid cartItemId)
+        {
+            var result = await _client.RemoveItem(userId, cartItemId);
+
+            if (result.data != null)
+            {
+                // Update lại cache
+                string cacheKey_counting = $"cart:countItems:{userId}";
+                await _cache.SetAsync(cacheKey_counting, new DTOs.CountItemsDTO { CountItems = result.data.Items.Count }, _cacheDuration);
+
+                string cacheKey_cart = $"cart:Bagde:{userId}";
+                await _cache.SetAsync(cacheKey_cart, result.data, _cacheDuration);
+
+                _logger.LogInformation("🗑 Cart item deleted for userId={UserId}, totalItems={TotalItems}", userId, result.data.TotalItems);
+            }
+
+            return (result.Message ?? string.Empty, result.statusCode, result.data);
+        }
+
     }
 }

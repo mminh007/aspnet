@@ -8,9 +8,9 @@ namespace Adminstrator.Controllers
     public class AuthenticationController : Controller
     {
         
-        private readonly IAuthServices _authServices;
+        private readonly IAuthService _authServices;
 
-        public AuthenticationController( IAuthServices authService)
+        public AuthenticationController( IAuthService authService)
         {
             _authServices = authService;
         }
@@ -33,7 +33,7 @@ namespace Adminstrator.Controllers
             }
 
             // add Access Token in Cookie
-            Response.Cookies.Append("accessToken", accessToken, new CookieOptions
+            Response.Cookies.Append("admin_accessToken", accessToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -44,7 +44,7 @@ namespace Adminstrator.Controllers
             // add Refresh Token in Cookie
             if (!string.IsNullOrEmpty(refreshToken))
             {
-                Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+                Response.Cookies.Append("admin_refreshToken", refreshToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
@@ -59,7 +59,7 @@ namespace Adminstrator.Controllers
             HttpContext.Session.SetString("UserRole", role);
 
             TempData["Message"] = message ?? "Login Successfully!";
-            return RedirectToAction("Management", "Store", new { id = userId});
+            return RedirectToAction("Index", "Store");
         }
 
         [HttpGet]
@@ -93,8 +93,8 @@ namespace Adminstrator.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            Response.Cookies.Delete("accessToken");
-            Response.Cookies.Delete("refreshToken");
+            Response.Cookies.Delete("admin_accessToken");
+            Response.Cookies.Delete("admin_refreshToken");
 
             TempData["Message"] = "Logout Successfully!";
             return RedirectToAction("Login", "Authentication");

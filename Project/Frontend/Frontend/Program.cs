@@ -57,7 +57,7 @@ namespace Frontend
             }).AddHttpMessageHandler<HeaderHandler>();
 
             builder.Services.Configure<StoreEndpoints>(
-            builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
 
             // Product Endpoints
             builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>

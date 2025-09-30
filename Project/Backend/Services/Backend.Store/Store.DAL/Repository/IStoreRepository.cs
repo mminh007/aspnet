@@ -21,7 +21,7 @@ namespace Store.DAL.Repository
         Task<StoreDTO?> GetStoreDetailById(Guid storeId);
 
 
-        Task<int> ChangeActiveStoreAsync(Guid userId, bool IsActive);
+        Task<int> ChangeActiveStoreAsync(Guid storeId, bool IsActive);
 
 
     }

@@ -37,7 +37,14 @@
 
                 <!-- Cart + Login -->
                 <div class="cart-login ms-auto">
-                    @await Component.InvokeAsync("Cart", new { userId = AuthHelper.GetUserInfo(Context).userId })
+                    @{
+                        var user = AuthHelper.GetUserInfo(Context);
+                    }
+                    @if (user.isAuth)
+                    {
+                        <!-- Chỉ render Cart khi user đăng nhập -->
+                        @await Component.InvokeAsync("Cart", new { userId = user.userId })
+                    }
                     <partial name="_loginPartial" />
                 </div>
             </div>

@@ -26,24 +26,33 @@ namespace Frontend.HttpsClients.Orders
         // -------- CART METHODS --------
         public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> GetCart(Guid userId)
         {
-            var url = _endpoints.GetCart.Replace("{userId}", userId.ToString());
+            var url = _endpoints.GetCart;
             var response = await _httpClient.GetAsync(url);
             return await ParseResponse<CartDTO>(response, "GetCart");
         }
 
         public async Task<(bool Success, string? Message, int statusCode, CountItemsDTO data)> GetCountItemsToCart(Guid userId)
         {
-            var url = _endpoints.GetCountingItems.Replace("{userId}", userId.ToString());
+            var url = _endpoints.GetCountingItems;
             var response = await _httpClient.GetAsync(url);
             return await ParseResponse<CountItemsDTO>(response, "GetCountingItems");
         }
 
         public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> AddItemsToCart(Guid userId, RequestItemsToCartModel dto)
         {
-            var url = _endpoints.AddItemsToCart.Replace("{userId}", userId.ToString());
+            var url = _endpoints.AddItemsToCart;
             var response = await _httpClient.PostAsJsonAsync(url, dto);
             return await ParseResponse<CartDTO>(response, "AddItemsToCart");
         }
+
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<CartItemDTO> data)> GetCartItemInStore(Guid storeId)
+        {
+            var url = _endpoints.GetCartInStore.Replace("{storeId}", storeId.ToString());
+            var response = await _httpClient.GetAsync(url);
+
+            return await ParseResponse<IEnumerable<CartItemDTO>>(response, "GetCartItemInStore");
+        }
+
 
         // -------- ORDER METHODS --------
         public async Task<(bool Success, string? Message, int statusCode, OrderDTO data)> GetOrderById(Guid orderId)
@@ -55,7 +64,7 @@ namespace Frontend.HttpsClients.Orders
 
         public async Task<(bool Success, string? Message, int statusCode, List<OrderDTO> data)> GetOrdersByUser(Guid userId)
         {
-            var url = _endpoints.GetOrdersByUser.Replace("{userId}", userId.ToString());
+            var url = _endpoints.GetOrdersByUser;
             var response = await _httpClient.GetAsync(url);
             return await ParseResponse<List<OrderDTO>>(response, "GetOrdersByUser");
         }
@@ -68,12 +77,42 @@ namespace Frontend.HttpsClients.Orders
             return (parsed.Success, parsed.Message, parsed.statusCode);
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, OrderDTO data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<OrderDTO> data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
         {
-            var url = _endpoints.Checkout.Replace("{userId}", userId.ToString());
+            var url = _endpoints.Checkout;
             var response = await _httpClient.PostAsJsonAsync(url, productIds);
-            return await ParseResponse<OrderDTO>(response, "Checkout");
+            return await ParseResponse<List<OrderDTO>>(response, "Checkout");
         }
+
+       
+
+        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid userId, Guid cartItemId, UpdateQuantityModel request)
+        {
+            var url = _endpoints.UpdateItemQuantity.Replace("{cartItemId}", cartItemId.ToString());
+
+            var response = await _httpClient.PutAsJsonAsync(url, request);
+            var parsed = await ParseResponse<CartDTO>(response, "UpdateItemQuantity");
+            return (parsed.Success, parsed.Message, parsed.statusCode, parsed.dto);
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> RemoveItem(Guid userId, Guid cartItemId)
+        {
+            var url = _endpoints.RemoveItem.Replace("{cartItemId}", cartItemId.ToString());
+
+            var response = await _httpClient.DeleteAsync(url);
+            var parsed = await ParseResponse<CartDTO>(response, "RemoveItem");
+            return (parsed.Success, parsed.Message, parsed.statusCode, parsed.dto);
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode)> ClearCart(Guid userId)
+        {
+            var url = _endpoints.ClearCart;
+            var response = await _httpClient.DeleteAsync(url);
+            var parsed = await ParseResponse<object>(response, "ClearCart");
+            return (parsed.Success, parsed.Message, parsed.statusCode);
+        }
+
+       
 
         // -------- ParseResponse (giữ nguyên logic cũ) --------
         private async Task<(bool Success, string? Message, int statusCode, T dto)> ParseResponse<T>(HttpResponseMessage response, string action)
@@ -96,32 +135,6 @@ namespace Frontend.HttpsClients.Orders
                 _logger.LogError(ex, $"❌ Exception while parsing response for {action}");
                 return (false, $"Exception: {ex.Message}", (int)response.StatusCode, default);
             }
-        }
-
-        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid userId, Guid cartItemId, UpdateQuantityModel request)
-        {
-            var url = _endpoints.UpdateItemQuantity.Replace("{userId}", userId.ToString())
-                                         .Replace("{cartItemId}", cartItemId.ToString());
-            var response = await _httpClient.PutAsJsonAsync(url, request);
-            var parsed = await ParseResponse<CartDTO>(response, "UpdateItemQuantity");
-            return (parsed.Success, parsed.Message, parsed.statusCode, parsed.dto);
-        }
-
-        public async Task<(bool Success, string? Message, int statusCode)> RemoveItem(Guid userId, Guid productId)
-        {
-            var url = _endpoints.RemoveItem.Replace("{userId}", userId.ToString())
-                                 .Replace("{productId}", productId.ToString());
-            var response = await _httpClient.DeleteAsync(url);
-            var parsed = await ParseResponse<object>(response, "RemoveItem");
-            return (parsed.Success, parsed.Message, parsed.statusCode);
-        }
-
-        public async Task<(bool Success, string? Message, int statusCode)> ClearCart(Guid userId)
-        {
-            var url = _endpoints.ClearCart.Replace("{userId}", userId.ToString());
-            var response = await _httpClient.DeleteAsync(url);
-            var parsed = await ParseResponse<object>(response, "ClearCart");
-            return (parsed.Success, parsed.Message, parsed.statusCode);
         }
 
         private class OrderApiResponse<T>

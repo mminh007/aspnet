@@ -54,21 +54,30 @@ namespace Store.DAL.Repository
         public async Task<int> UpdateStoreAsync(UpdateStoreModel model)
         {
             var store = await _db.Stores
-                .FirstOrDefaultAsync(s => s.UserId == model.UserId);
+                .FirstOrDefaultAsync(s => s.StoreId == model.storeId);
             if (store == null) return 0;
 
-            store.StoreName = model.StoreName;
-            store.StoreCategory = model.StoreCategory;
-            store.Description = model.Description;
-            store.StoreImage = model.StoreImage;
-            store.Address = model.Address;
-            store.Phone = model.Phone;
+            if (!string.IsNullOrEmpty(model.StoreName))
+                store.StoreName = model.StoreName;
+
+            if (!string.IsNullOrEmpty(model.StoreCategory))
+                store.StoreCategory = model.StoreCategory;
+
+            if (!string.IsNullOrEmpty(model.Description))
+                store.Description = model.Description;
+
+            if (!string.IsNullOrEmpty(model.StoreImage))
+                store.StoreImage = model.StoreImage;
+
+            if (!string.IsNullOrEmpty(model.Address))
+                store.Address = model.Address;
+
+            if (!string.IsNullOrEmpty(model.Phone))
+                store.Phone = model.Phone;
+
             store.UpdatedAt = DateTime.UtcNow;
 
             return await _db.SaveChangesAsync();
-
-
-
         }
 
         public async Task<StoreDTO> GetStoreInfo(Guid userId)
@@ -121,21 +130,7 @@ namespace Store.DAL.Repository
             };
         }
 
-        //public async Task<StoreDTO?> BuyerGetStoreDetailById(Guid storeId)
-        //{
-        //    var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId && s.IsActive);
-        //    if (store == null) return null;
-
-        //    return new StoreDTO
-        //    {
-        //        StoreId = store.StoreId,
-        //        StoreName = store.StoreName,
-        //        Description = store.Description,
-        //        IsActive = store.IsActive,
-        //        Address = store.Address,
-        //        Phone = store.Phone
-        //    };
-        //}
+      
 
         // ✅ New: Get all active stores
         public async Task<IEnumerable<StoreDTO>?> GetActiveStoresAsync(int page, int pageSize)
@@ -171,10 +166,10 @@ namespace Store.DAL.Repository
                 .CountAsync();
         }
 
-        public async Task<int> ChangeActiveStoreAsync(Guid userId, bool IsActive)
+        public async Task<int> ChangeActiveStoreAsync(Guid storeId, bool IsActive)
         {
             var store = await _db.Stores.FirstOrDefaultAsync(
-                s => s.UserId == userId);
+                s => s.StoreId == storeId);
 
             store.IsActive = IsActive;
             store.UpdatedAt = DateTime.UtcNow;

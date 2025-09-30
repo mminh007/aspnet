@@ -16,6 +16,8 @@ namespace Frontend.Models.Stores
         [JsonPropertyName("storeimage")]
         public string StoreImage { get; set; }
 
+        public string StoreCategory { get; set; }  
+
         [JsonPropertyName("address")]
         public string Address { get; set; }
 
