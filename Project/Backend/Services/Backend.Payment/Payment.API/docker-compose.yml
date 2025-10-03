@@ -6,4 +6,4 @@ services:
     restart: always
     environment:
       - STRIPE_API_KEY=${STRIPE_API_KEY}
-    command: listen --forward-to http://host.docker.internal:7190/api/webhook
+    command: listen --forward-to https://host.docker.internal:7190/api/webhook --skip-verify

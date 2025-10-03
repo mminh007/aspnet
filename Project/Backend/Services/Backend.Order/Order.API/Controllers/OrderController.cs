@@ -6,7 +6,7 @@ using Order.Common.Models.Requests;
 using Order.Common.Models.Responses;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using static Order.Common.Models.DTOs;
+
 
 namespace Order.API.Controllers
 {
@@ -73,9 +73,9 @@ namespace Order.API.Controllers
         }
 
         // ✅ Checkout từ giỏ
-        [HttpPost("checkout")]
+        [HttpPost("create-order")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> Checkout([FromBody] IEnumerable<Guid> productIds)
+        public async Task<IActionResult> CreateOrder([FromBody] IEnumerable<Guid> productIds)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                                     ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
@@ -85,6 +85,15 @@ namespace Order.API.Controllers
 
             var result = await _orderService.CheckoutAsync(userId, productIds);
             return HandleResponse(result);
+        }
+
+        [HttpPut("update-status/{orderId}")]
+        [Authorize(Roles= "system")]
+        public async Task<IActionResult> UpdateStatusOrder(Guid orderId, [FromQuery] string status)
+        {
+            var response = await _orderService.UpdateStatusAsync(orderId, status);
+
+            return HandleResponse(response);
         }
 
         private IActionResult HandleResponse<T>(OrderResponseModel<T> response)

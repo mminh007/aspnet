@@ -1,0 +1,710 @@
+﻿@using static Frontend.Models.Products.DTOs;
+@using static Frontend.Models.Orders.DTOs;
+@using Frontend.Models.Stores;
+@using Frontend.Helpers;
+
+@{
+    var token = Context.Request.Cookies["accessToken"];
+    var isLoggedIn = !string.IsNullOrEmpty(token);
+
+    var AuthHeader = AuthHelper.GetUserInfo(Context);
+    var userId = AuthHeader.userId;
+}
+
+@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products, IEnumerable<CartItemDTO> cartItems)
+
+@{
+    ViewData["Title"] = "Store Menu";
+}
+
+<div class="container mt-4">
+    <!-- Store Info -->
+    <div class="row mb-4">
+        <!-- Hình ảnh cửa hàng -->
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="row g-0 align-items-center">
+                    <!-- Ảnh cửa hàng -->
+                    <div class="col-md-4">
+                        <img src="@Model.Store.StoreImage"
+                             alt="@Model.Store.StoreName"
+                             class="img-fluid rounded-start"
+                             style="object-fit: cover; height: 220px; width: 100%;" />
+                    </div>
+
+                    <!-- Thông tin cửa hàng -->
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h3 class="card-title">@Model.Store.StoreName</h3>
+                            <p class="text-muted">@Model.Store.Description</p>
+                            <ul class="list-unstyled mb-2">
+                                <li><strong>Địa chỉ:</strong> @Model.Store.Address</li>
+                                <li><strong>Điện thoại:</strong> @Model.Store.Phone</li>
+                                <li>
+                                    <strong>Trạng thái:</strong>
+                                    @if (Model.Store.IsActive)
+                                    {
+                                        <span class="badge bg-success">Mở cửa</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Tạm ngưng</span>
+                                    }
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu -->
+    <div class="row">
+        <!-- Category Sidebar -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 mb-3 position-sticky" style="top: 20px;">
+                <div class="card-body p-2">
+                    <h5 class="card-title mb-3">Danh mục sản phẩm</h5>
+                    <ul class="list-group" id="categoryList">
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <li class="list-group-item list-group-item-action category-link"
+                                data-target="cat-@cat.CategoryId">
+                                @cat.CategoryName
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product List -->
+        <div class="col-md-9">
+            <div class="row">
+                @foreach (var cat in Model.Categories)
+                {
+                    <div id="cat-@cat.CategoryId" class="mb-4 category-section">
+                        <h4 class="border-bottom pb-2">@cat.CategoryName</h4>
+
+                        @foreach (var product in Model.Products.Where(p => p.CategoryId == cat.CategoryId))
+                        {
+                            <div class="card mb-3 shadow-sm border-0">
+                                <div class="row g-0 align-items-center">
+                                    <div class="col-md-3">
+                                        <div class="card-body py-2">
+                                            <img src="@product.ProductImage" alt="@product.ProductName" class="img-fluid rounded-start"
+                                                 style="object-fit: cover; height: 194px; width: auto;" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card-body py-2">
+                                            <h5 class="card-title mb-1">@product.ProductName</h5>
+                                            <p class="card-text text-muted small mb-1">@product.Description</p>
+                                            <span class="badge @(product.IsActive ? "bg-success" : "bg-secondary") mb-2">
+                                                @(product.IsActive ? "Đang bán" : "Ngừng bán")
+                                            </span>
+                                            <p class="card-text text-muted small mb-1">Số lượng: @product.Quantity</p>
+                                            <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 text-center pe-3">
+                                        @{
+                                            var existingItem = Model.cartItems?.FirstOrDefault(i => i.ProductId == product.ProductId);
+                                        }
+                                        <div class="cart-actions"
+                                             id="cart-actions-@product.ProductId"
+                                             data-store-id="@product.StoreId"
+                                             data-product-id="@product.ProductId"
+                                             data-price="@product.SalePrice"
+                                             @(existingItem != null ? $"data-cart-item-id=\"{existingItem.CartItemId}\"" : "")>
+
+                                            @if (existingItem != null)
+                                            {
+                                                <div class="d-flex justify-content-end align-items-center">
+                                                    <button class="btn btn-sm btn-light border decrease"
+                                                            data-action="decrease"
+                                                            data-product-id="@product.ProductId"
+                                                            data-store-id="@product.StoreId"
+                                                            data-cart-item-id="@existingItem.CartItemId">
+                                                        -
+                                                    </button>
+
+                                                    <span class="mx-2 fw-bold qty-display" id="qty-card-@product.ProductId"
+                                                          data-product-id="@product.ProductId">@existingItem.Quantity</span>
+
+                                                    <button class="btn btn-sm btn-light border increase"
+                                                            data-action="increase"
+                                                            data-product-id="@product.ProductId"
+                                                            data-store-id="@product.StoreId"
+                                                            data-cart-item-id="@existingItem.CartItemId">
+                                                        +
+                                                    </button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-primary btn-sm add-to-cart"
+                                                        data-action="add"
+                                                        data-product-id="@product.ProductId"
+                                                        data-store-id="@product.StoreId">
+                                                    +
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Cart Button -->
+<a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#cartItemModal"
+   class="floating-cart-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+         class="bi bi-cart" viewBox="0 0 16 16">
+        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5
+                 0 0 1 .485.379L2.89 3H14.5a.5.5
+                 0 0 1 .491.592l-1.5 8A.5.5
+                 0 0 1 13 12H4a.5.5
+                 0 0 1-.491-.408L2.01
+                 3.607 1.61 2H.5a.5.5
+                 0 0 1-.5-.5zM3.102
+                 4l1.313 7h8.17l1.313-7H3.102zM5
+                 12a2 2 0 1 0 0 4 2 2 0 0
+                 0 0-4zm7 0a2 2 0 1 0 0 4
+                 2 2 0 0 0 0-4zm-7 1a1 1
+                 0 1-1 .001-2.001A1 1 0 0 1
+                 5 13zm7-1a1 1 0 1-1
+                 .001-2.001A1 1 0 0 1 12 12z" />
+    </svg>
+    <span id="cartBadgeFloating"
+          class="badge rounded-pill position-absolute top-0 start-0 translate-middle @(isLoggedIn ? "bg-danger" : "bg-secondary") ">
+        @(Model.cartItems?.Sum(i => i.Quantity) ?? 0)
+    </span>
+</a>
+
+<div class="modal fade" id="cartItemModal" tabindex="-1" aria-labelledby="CartItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Giỏ hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="modal-body-item-list">
+                    @if (Model.cartItems != null && Model.cartItems.Any())
+                    {
+                        foreach (var item in Model.cartItems)
+                        {
+                            <div class="d-flex align-items-center border-bottom py-2">
+                                <div class="flex-shrink-0">
+                                    <img src="@item.ProductImage" alt="@item.ProductName"
+                                         class="img-thumbnail" style="width:60px; height:60px; object-fit:cover;">
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">@item.ProductName</h6>
+                                    <div class="fw-bold text-danger mt-1">@item.Price.ToString("N0") đ</div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-outline-secondary decrease"
+                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                        -
+                                    </button>
+                                    <span class="mx-2 fw-bold" id="qty-modal-@item.ProductId">@item.Quantity</span>
+                                    <button class="btn btn-sm btn-outline-secondary increase"
+                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-center text-muted">Giỏ hàng trống</p>
+                    }
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Giá món đã bao gồm thuế, nhưng chưa bao gồm phí giao hàng và các phí khác.
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between">
+                <div>
+                    <span class="fw-bold fs-5 text-danger" id="cart-total">@((Model.cartItems?.Sum(i => i.Quantity * i.Price) ?? 0).ToString("N0")) đ</span>
+                </div>
+                <button type="button" class="btn btn-danger px-4" id="btnCheckout">Tạo đơn hàng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const userId = "@userId";
+            const storeId = "@Model.Store.StoreId";
+
+            // =============================
+            // 0. Initialize - Load cart totals on page load
+            // =============================
+            async function initializeCartBadges() {
+                try {
+                    // Lấy cart items trong store hiện tại
+                    const storeRes = await fetch(`/Order/get-cart-in-store?buyer=${userId}&storeId=${storeId}`);
+                    if (storeRes.ok) {
+                        const storeResult = await storeRes.json();
+                        const storeItems = storeResult.data?.length || 0;
+
+                        // Lấy tổng số items trong toàn bộ giỏ hàng
+                        const totalRes = await fetch(`/api/cart/count?userId=${userId}`);
+                        let totalItems = storeItems; // fallback
+
+                        if (totalRes.ok) {
+                            const totalResult = await totalRes.json();
+                            totalItems = totalResult.countItems || 0;
+                        }
+
+                        updateBadges(totalItems, storeItems);
+                    }
+                } catch (err) {
+                    console.error("❌ Initialize error:", err);
+                }
+            }
+
+            // Call initialize
+            initializeCartBadges();
+
+            // =============================
+            // 1. API Functions
+            // =============================
+            async function addToCart(productId, storeId, userId) {
+                try {
+                    const res = await fetch(`/Product/AddProductToCart?buyer=${userId}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            productId: productId,
+                            storeId: storeId,
+                            quantity: 1
+                        })
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+
+                    const result = await res.json();
+                    console.log("✅ Added:", result);
+
+                    // Backend trả về: { message, countItems, cartStore, countItemsInStore }
+                    const totalItems = result.countItems || 0;
+                    const storeItems = result.countItemsInStore || 0;
+
+                    updateBadges(totalItems, storeItems);
+
+                    return result;
+                } catch (err) {
+                    console.error("❌ Add error:", err);
+                    return null;
+                }
+            }
+
+            async function updateQuantity(productId, storeId, userId, quantity) {
+                try {
+                    const requestBody = { productId, quantity };
+                    console.log("🔹 Update request:", requestBody);
+
+                    const res = await fetch(`/Order/update-quantity?item=${userId}&store=${storeId}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+
+                    const result = await res.json();
+                    console.log("✅ Updated:", result);
+
+                    // Backend trả về: { message, data: CartDTO, countItemsInStore }
+                    const totalItems = result.data?.items?.length || 0;
+                    const storeItems = result.countItemsInStore || 0;
+
+                    updateBadges(totalItems, storeItems);
+
+                    return result;
+                } catch (err) {
+                    console.error("❌ Update error:", err);
+                    return null;
+                }
+            }
+
+            async function removeItem(productId, storeId, userId) {
+                try {
+                    const res = await fetch(`/Order/delete-item?buyer=${userId}&item=${productId}`, {
+                        method: "DELETE"
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+
+                    const result = await res.json();
+                    console.log("🗑 Removed:", result);
+
+                    // Backend trả về: { statusCode, message, data: CartDTO }
+                    const totalItems = result.data?.items?.length || 0;
+                    const storeItems = result.data?.items?.filter(i => i.storeId === storeId).length || 0;
+
+                    updateBadges(totalItems, storeItems);
+
+                    return result;
+                } catch (err) {
+                    console.error("❌ Remove error:", err);
+                    return null;
+                }
+            }
+
+            // =============================
+            // 2. Badge Update
+            // =============================
+            function updateBadges(totalItems, countItemsInStore) {
+                // Badge tổng (navbar)
+                const cartBadge = document.getElementById("cartBadge");
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems;
+                    if (totalItems > 0) {
+                        cartBadge.classList.remove("bg-secondary");
+                        cartBadge.classList.add("bg-danger");
+                    } else {
+                        cartBadge.classList.remove("bg-danger");
+                        cartBadge.classList.add("bg-secondary");
+                    }
+                }
+
+                // Badge floating (store page)
+                const cartBadgeFloating = document.getElementById("cartBadgeFloating");
+                if (cartBadgeFloating) {
+                    cartBadgeFloating.textContent = countItemsInStore;
+                    if (countItemsInStore > 0) {
+                        cartBadgeFloating.classList.remove("bg-secondary");
+                        cartBadgeFloating.classList.add("bg-danger");
+                    } else {
+                        cartBadgeFloating.classList.remove("bg-danger");
+                        cartBadgeFloating.classList.add("bg-secondary");
+                    }
+                }
+            }
+
+            // =============================
+            // 3. Refresh Badges from Server
+            // =============================
+            async function refreshBadgesFromServer() {
+                try {
+                    // Lấy cart items trong store
+                    const storeRes = await fetch(`/Order/get-cart-in-store?buyer=${userId}&storeId=${storeId}`);
+                    if (storeRes.ok) {
+                        const storeResult = await storeRes.json();
+                        const storeItems = storeResult.data?.length || 0;
+
+                        // Tính tổng từ API hoặc từ local calculation
+                        // Vì backend không có endpoint trực tiếp lấy total, ta tính từ store items
+                        // Hoặc có thể call API GetCart nếu cần chính xác
+                        updateBadges(storeItems, storeItems); // Simplified version
+                    }
+                } catch (err) {
+                    console.error("❌ Refresh badges error:", err);
+                }
+            }
+
+            // =============================
+            // 4. Update Cart Total in Modal
+            // =============================
+            function updateCartTotal() {
+                const modalItems = document.querySelectorAll("#modal-body-item-list .d-flex");
+                let total = 0;
+
+                modalItems.forEach(item => {
+                    const qtySpan = item.querySelector("[id^='qty-modal-']");
+                    const priceText = item.querySelector(".fw-bold.text-danger").textContent;
+                    const price = parseInt(priceText.replace(/\D/g, ''));
+                    const qty = parseInt(qtySpan?.textContent || 0);
+                    total += price * qty;
+                });
+
+                const totalEl = document.getElementById("cart-total");
+                if (totalEl) {
+                    totalEl.textContent = `${total.toLocaleString()} đ`;
+                }
+            }
+
+            // =============================
+            // 5. Reset Card UI to Add Button
+            // =============================
+            function resetCardToAddButton(productId, storeId) {
+                const cardContainer = document.getElementById(`cart-actions-${productId}`);
+                if (cardContainer) {
+                    cardContainer.innerHTML = `
+                        <button class="btn btn-primary btn-sm add-to-cart"
+                                data-action="add"
+                                data-product-id="${productId}"
+                                data-store-id="${storeId}">+</button>`;
+                }
+            }
+
+            // =============================
+            // 6. Remove Item from Modal UI
+            // =============================
+            function removeItemFromModal(productId) {
+                const modalRow = document.querySelector(`#modal-body-item-list #qty-modal-${productId}`)?.closest(".d-flex");
+                if (modalRow) {
+                    modalRow.remove();
+                    updateCartTotal();
+
+                    // Check nếu giỏ hàng trống
+                    const remainingItems = document.querySelectorAll("#modal-body-item-list .d-flex");
+                    if (remainingItems.length === 0) {
+                        document.getElementById("modal-body-item-list").innerHTML =
+                            `<p class="text-center text-muted">Giỏ hàng trống</p>`;
+                        document.getElementById("cart-total").textContent = "0 đ";
+                    }
+                }
+            }
+
+            // =============================
+            // 7. Card Quantity Handler
+            // =============================
+            async function handleCardQuantity(productId, storeId, isIncrease, isAdd = false) {
+                const cardContainer = document.getElementById(`cart-actions-${productId}`);
+                const qtyEl = document.getElementById(`qty-card-${productId}`);
+                let currentQty = parseInt(qtyEl?.textContent || 0);
+
+                if (isAdd) {
+                    // Add new item
+                    const result = await addToCart(productId, storeId, userId);
+                    if (result) {
+                        // Chuyển UI từ "+" thành tăng/giảm
+                        cardContainer.innerHTML = `
+                            <div class="d-flex justify-content-end align-items-center">
+                                <button class="btn btn-sm btn-light border decrease"
+                                        data-action="decrease"
+                                        data-product-id="${productId}"
+                                        data-store-id="${storeId}">-</button>
+                                <span class="mx-2 fw-bold qty-display" id="qty-card-${productId}"
+                                      data-product-id="${productId}">1</span>
+                                <button class="btn btn-sm btn-light border increase"
+                                        data-action="increase"
+                                        data-product-id="${productId}"
+                                        data-store-id="${storeId}">+</button>
+                            </div>`;
+
+                        // Sync với modal nếu đang mở
+                        const modalQtyEl = document.getElementById(`qty-modal-${productId}`);
+                        if (modalQtyEl) {
+                            modalQtyEl.textContent = "1";
+                            updateCartTotal();
+                        } else {
+                            // Reload modal nếu cần
+                            await reloadModalCart();
+                        }
+                    }
+                    return;
+                }
+
+                // Tăng/giảm quantity
+                if (isIncrease) {
+                    currentQty++;
+                } else {
+                    currentQty--;
+                }
+
+                if (currentQty <= 0) {
+                    // Xóa item hoàn toàn
+                    console.log(`🗑 Removing product ${productId} from cart`);
+                    const result = await removeItem(productId, storeId, userId);
+
+                    if (result && result.statusCode === 200) {
+                        // 1. Reset card UI về nút "+"
+                        resetCardToAddButton(productId, storeId);
+
+                        // 2. Xóa khỏi modal
+                        removeItemFromModal(productId);
+
+                        console.log(`✅ Product ${productId} removed successfully`);
+                    }
+                } else {
+                    // Update quantity
+                    const result = await updateQuantity(productId, storeId, userId, currentQty);
+                    if (result && qtyEl) {
+                        qtyEl.textContent = currentQty;
+
+                        // Sync với modal
+                        const modalQtyEl = document.getElementById(`qty-modal-${productId}`);
+                        if (modalQtyEl) {
+                            modalQtyEl.textContent = currentQty;
+                            updateCartTotal();
+                        }
+                    }
+                }
+            }
+
+            // =============================
+            // 8. Modal Quantity Handler
+            // =============================
+            async function handleModalQuantity(productId, storeId, isIncrease) {
+                const qtyEl = document.getElementById(`qty-modal-${productId}`);
+                let currentQty = parseInt(qtyEl?.textContent || 0);
+
+                if (isIncrease) {
+                    currentQty++;
+                } else {
+                    currentQty--;
+                }
+
+                if (currentQty <= 0) {
+                    // Xóa item hoàn toàn
+                    console.log(`🗑 Removing product ${productId} from cart (via modal)`);
+                    const result = await removeItem(productId, storeId, userId);
+
+                    if (result && result.statusCode === 200) {
+                        // 1. Xóa khỏi modal
+                        removeItemFromModal(productId);
+
+                        // 2. Reset card UI về nút "+"
+                        resetCardToAddButton(productId, storeId);
+
+                        console.log(`✅ Product ${productId} removed successfully (via modal)`);
+                    }
+                } else {
+                    // Update quantity
+                    const result = await updateQuantity(productId, storeId, userId, currentQty);
+                    if (result && qtyEl) {
+                        qtyEl.textContent = currentQty;
+                        updateCartTotal();
+
+                        // Sync với card
+                        const cardQtyEl = document.getElementById(`qty-card-${productId}`);
+                        if (cardQtyEl) {
+                            cardQtyEl.textContent = currentQty;
+                        }
+                    }
+                }
+            }
+
+            // =============================
+            // 9. Event Listeners
+            // =============================
+
+            // Event delegation cho card actions
+            document.addEventListener("click", (e) => {
+                const target = e.target;
+
+                // Check nếu click vào button trong cart-actions (card area)
+                if (target.closest(".cart-actions")) {
+                    const productId = target.dataset.productId;
+                    const sId = target.dataset.storeId;
+
+                    if (target.classList.contains("add-to-cart")) {
+                        e.preventDefault();
+                        handleCardQuantity(productId, sId, false, true);
+                    } else if (target.classList.contains("increase")) {
+                        e.preventDefault();
+                        handleCardQuantity(productId, sId, true);
+                    } else if (target.classList.contains("decrease")) {
+                        e.preventDefault();
+                        handleCardQuantity(productId, sId, false);
+                    }
+                }
+            });
+
+            // Event listener cho modal
+            document.getElementById("cartItemModal").addEventListener("click", (e) => {
+                const target = e.target;
+
+                // Check nếu click trong modal body
+                if (target.closest("#modal-body-item-list")) {
+                    const productId = target.dataset.productId;
+                    const sId = target.dataset.storeId;
+
+                    if (target.classList.contains("increase")) {
+                        e.preventDefault();
+                        handleModalQuantity(productId, sId, true);
+                    } else if (target.classList.contains("decrease")) {
+                        e.preventDefault();
+                        handleModalQuantity(productId, sId, false);
+                    }
+                }
+            });
+
+            // =============================
+            // 10. Render Modal Cart
+            // =============================
+            async function reloadModalCart() {
+                try {
+                    const res = await fetch(`/Order/get-cart-in-store?buyer=${userId}&storeId=${storeId}`);
+                    if (res.ok) {
+                        const result = await res.json();
+                        renderCartItems(result.data || []);
+                    }
+                } catch (err) {
+                    console.error("Network error:", err);
+                }
+            }
+
+            document.getElementById("cartItemModal").addEventListener("show.bs.modal", reloadModalCart);
+
+            function renderCartItems(items) {
+                const container = document.getElementById("modal-body-item-list");
+                let total = 0;
+
+                if (!items || items.length === 0) {
+                    container.innerHTML = `<p class="text-center text-muted">Giỏ hàng trống</p>`;
+                    document.getElementById("cart-total").textContent = "0 đ";
+                    return;
+                }
+
+                let html = "";
+                items.forEach(item => {
+                    total += item.price * item.quantity;
+                    html += `
+                        <div class="d-flex align-items-center border-bottom py-2">
+                            <div class="flex-shrink-0">
+                                <img src="${item.productImage}" alt="${item.productName}"
+                                     class="img-thumbnail" style="width:60px; height:60px; object-fit:cover;">
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">${item.productName}</h6>
+                                <div class="fw-bold text-danger mt-1">${item.price.toLocaleString()} đ</div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-secondary decrease"
+                                        data-product-id="${item.productId}" data-store-id="${item.storeId}">-</button>
+                                <span class="mx-2 fw-bold" id="qty-modal-${item.productId}">${item.quantity}</span>
+                                <button class="btn btn-sm btn-outline-secondary increase"
+                                        data-product-id="${item.productId}" data-store-id="${item.storeId}">+</button>
+                            </div>
+                        </div>`;
+                });
+
+                container.innerHTML = html;
+                document.getElementById("cart-total").textContent = `${total.toLocaleString()} đ`;
+            }
+        });
+    </script>
+}
+
+
+
+

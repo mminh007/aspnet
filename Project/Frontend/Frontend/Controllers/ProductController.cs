@@ -1,9 +1,10 @@
-﻿using static Frontend.Models.Products.DTOs;
-using static Frontend.Models.Orders.DTOs;
+﻿using Frontend.Models.Auth;
+using Frontend.Models.Orders.Requests;
+using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Frontend.Models.Orders.Requests;
-using Frontend.Models.Auth;
+using static Frontend.Models.Orders.DTOs;
+using static Frontend.Models.Products.DTOs;
 
 namespace Frontend.Controllers
 {
@@ -44,41 +45,17 @@ namespace Frontend.Controllers
 
             var (cartMessage, cartStatus, cartItems) = await _orderService.GetCartInStore(user, store);
 
-            if (storeData == null)
-            {
-                _logger.LogWarning("⚠️ Store is NULL for storeId={StoreId}", store);
-                ViewBag.Message = $"Error {statusCode}: {message}";
-            }
-
-
-            if (productsData == null)
-            {
-                _logger.LogWarning("⚠️ Products are NULL for storeId={StoreId}", store);
-                ViewBag.prodMessage = $"No products found for this store.";
-            }
-
-
-            if (categoriesData == null)
-            {
-                _logger.LogWarning("⚠️ Categories are NULL for storeId={StoreId}", store);
-                ViewBag.catMessage = $"No categories found for this store.";
-            }
-
-            //_logger.LogInformation("ProductImage: {image}", orderData);
-
-
-            //foreach (var o in orderData)
-            //{
-            //    _logger.LogInformation("CartItem in store", o);
-            //}
+            var (countMsg, countStatus, countData) = await _orderService.CountingItemsInCart(user);
+            int totalCartItems = countData?.CountItems ?? 0;
 
             var model = (Store: storeData,
                          Categories: categoriesData?.ToList() ?? new List<CategoryDTO>(),
                          Products: productsData?.ToList() ?? new List<ProductBuyerDTO>(),
-                         CartItems: cartItems ?? Enumerable.Empty<CartItemDTO>());
-
+                         CartItems: cartItems ?? Enumerable.Empty<CartItemDTO>(),
+                         TotalCartItems: totalCartItems);
 
             return View(model);
+
         }
 
         [HttpPost]
@@ -89,10 +66,14 @@ namespace Frontend.Controllers
                 return BadRequest(new { message = "ProductId and UserId are required." });
             }
 
-            var (msg, statusCode, countItems, cartStore) = await _orderService.AddProductToCart(buyer, dto);
+            var (msg, statusCode, countItems, cart) = await _orderService.AddProductToCart(buyer, dto);
 
-            var (cartMsg, cartStatus, cartItems) = await _orderService.GetCartInStore(buyer, dto.StoreId);
-            var totalItemsInStore = cartItems?.Sum(i => i.Quantity) ?? 0;
+            var itemInStore = cart.Items.Where(i => i.StoreId == dto.StoreId).ToList();
+
+            var totalItemsInStore = itemInStore.Sum(i => i.Quantity);
+
+            //var (cartMsg, cartStatus, cartItems) = await _orderService.GetCartInStore(buyer, dto.StoreId);
+            //var totalItemsInStore = cartItems?.Sum(i => i.Quantity) ?? 0;
 
             _logger.LogInformation("Product {ProductId} added to cart for User {UserId}", dto.ProductId, buyer);
 
@@ -103,7 +84,7 @@ namespace Frontend.Controllers
             {
                 message = msg,
                 countItems = countItems,           
-                cartStore = cartStore,              
+                cartStore = cart,              
                 countItemsInStore = totalItemsInStore  
             });
         }

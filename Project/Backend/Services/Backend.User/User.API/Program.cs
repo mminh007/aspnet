@@ -10,7 +10,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
+using User.BLL.External.Interfaces;
+using User.Common.Urls.Order;
+using User.Helpers;
+
 
 namespace User
 {
@@ -56,6 +59,9 @@ namespace User
             });
 
             // Add Dependency injection
+            // Connect Auth Service
+            builder.Services.AddScoped<HeaderHandler>();
+
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IUserService, UserService>();
 
@@ -158,7 +164,15 @@ namespace User
                 client.DefaultRequestHeaders.Add("Store-Agent", "AuthService/1.0");
             });
 
-            
+            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Order:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.Configure<OrderEndpoints>(
+                builder.Configuration.GetSection("ServiceUrls:Order:Endpoints"));
+
+
 
             builder.Services.AddAuthorization();
 

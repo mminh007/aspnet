@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Payment.BLL.External.Interface;
 using Payment.BLL.Services.Interfaces;
 using Payment.Common.Enums;
 using Payment.Common.Models.Requests;
@@ -16,12 +18,17 @@ namespace Payment.BLL.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly PaymentIntentService _paymentIntentService;
+        private readonly IOrderApiClient _orderApiClient;
         private readonly IMapper _mapper;
+        private readonly ILogger<PaymentService> _logger;
 
-        public PaymentService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config)
+        public PaymentService(IUnitOfWork unitOfWork, IMapper mapper, IConfiguration config, IOrderApiClient orderApiClient,
+                              ILogger<PaymentService> logger)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _orderApiClient = orderApiClient;
+            _logger = logger;
 
             StripeConfiguration.ApiKey = config["Stripe:SecretKey"];  // TODO: lấy từ appsettings
             _paymentIntentService = new PaymentIntentService();
@@ -88,8 +95,8 @@ namespace Payment.BLL.Services
         {
             try
             {
-                // Gọi Stripe để confirm
-                var intent = await _paymentIntentService.ConfirmAsync(request.PaymentIntentId);
+                // 👉 Không ConfirmAsync nữa, chỉ Get để check trạng thái
+                var intent = await _paymentIntentService.GetAsync(request.PaymentIntentId);
 
                 var payment = await _unitOfWork.Payments.FindAsync(p => p.TransactionId == request.PaymentIntentId);
                 var entity = payment.FirstOrDefault();
@@ -104,11 +111,19 @@ namespace Payment.BLL.Services
                     };
                 }
 
-                // ✅ Luôn cập nhật sang Processing, chờ webhook quyết định final
-                entity.MarkProcessing();
+                // ✅ Nếu Stripe trả về đang xử lý, mark Processing
+                if (intent.Status == "processing" || intent.Status == "requires_action")
+                {
+                    entity.MarkProcessing();
+                    _unitOfWork.Payments.Update(entity);
+                    await _unitOfWork.SaveChangesAsync();
 
-                _unitOfWork.Payments.Update(entity);
-                await _unitOfWork.SaveChangesAsync();
+                    // 👉 Trigger OrderService cập nhật trạng thái "Processing"
+                    var updateOrder = await _orderApiClient.UpdateStatusOrder(entity.OrderId, "Processing");
+
+                    _logger.LogInformation("Update Status Order: {status}", updateOrder.Success);
+
+                }
 
                 return new PaymentResponseModel<PaymentDTO>
                 {
@@ -127,7 +142,6 @@ namespace Payment.BLL.Services
                 };
             }
         }
-
 
         public async Task<PaymentResponseModel<PaymentDTO>> GetPaymentByIdAsync(Guid paymentId)
         {

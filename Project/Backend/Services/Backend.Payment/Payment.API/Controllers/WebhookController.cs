@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Payment.BLL.External.Interface;
 using Payment.BLL.Services.Interfaces;
+using Payment.Common.Enums;
 using Payment.Common.Models.Requests;
 using Stripe;
 
@@ -11,18 +13,22 @@ namespace Payment.API.Controllers
     public class WebhookController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
+        private readonly IOrderApiClient _orderApiClient;
         private readonly ILogger<WebhookController> _logger;
         private readonly IConfiguration _configuration;
 
-        public WebhookController(IPaymentService paymentService, ILogger<WebhookController> logger, IConfiguration configuration)
+
+        public WebhookController(IPaymentService paymentService, ILogger<WebhookController> logger, IConfiguration configuration,
+                                 IOrderApiClient orderApiClient)
         {
             _paymentService = paymentService;
+            _orderApiClient = orderApiClient;
             _logger = logger;
             _configuration = configuration;
         }
 
         [HttpPost]
-        [AllowAnonymous] // Stripe gửi mà không có JWT
+        [AllowAnonymous] 
         public async Task<IActionResult> Handle()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
@@ -44,10 +50,11 @@ namespace Payment.API.Controllers
                     {
                         _logger.LogInformation("✅ PaymentIntent succeeded: {Id}", paymentIntent.Id);
 
-                        await _paymentService.ConfirmPaymentAsync(new ConfirmPaymentRequest
-                        {
-                            PaymentIntentId = paymentIntent.Id
-                        });
+                        await _paymentService.UpdatePaymentStatusAsync(paymentIntent.Id, PaymentStatus.Completed);
+
+                        var orderId = Guid.Parse(paymentIntent.Metadata["OrderId"]);
+
+                        await _orderApiClient.UpdateStatusOrder(orderId, "Paid");
                     }
                 }
                 else if (stripeEvent.Type == EventTypes.PaymentIntentPaymentFailed)

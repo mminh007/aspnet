@@ -2,11 +2,13 @@
 using Frontend.Cache.Interfaces;
 using Frontend.Configs.Auth;
 using Frontend.Configs.Order;
+using Frontend.Configs.Payment;
 using Frontend.Configs.Product;
 using Frontend.Configs.Store;
 using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
 using Frontend.HttpsClients.Orders;
+using Frontend.HttpsClients.Payments;
 using Frontend.HttpsClients.Products;
 using Frontend.HttpsClients.Stores;
 using Frontend.Middlewares;
@@ -23,6 +25,8 @@ namespace Frontend
     {
         public static void Main(string[] args)
         {
+            DotNetEnv.Env.Load();
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Setting Helper
@@ -68,10 +72,19 @@ namespace Frontend
             builder.Services.Configure<ProductEndpoints>(
                 builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
 
+            builder.Services.AddHttpClient<IPaymentApiClient, PaymentApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+            }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.Configure<PaymentEndpoints>(
+                builder.Configuration.GetSection("Ocelot:ServiceUrls:Payment:Endpoints"));
+
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IStoreService, StoreService>();
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IOrderService, OrderService>();  
+            builder.Services.AddScoped<IPaymentService, PaymentService>();
 
             builder.Services.AddSession(options =>
             {

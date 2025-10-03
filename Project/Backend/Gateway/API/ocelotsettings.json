@@ -504,7 +504,7 @@
       "UpstreamHttpMethod": [ "DELETE" ]
     },
     {
-      "DownstreamPathTemplate": "/api/order/checkout",
+      "DownstreamPathTemplate": "/api/order/create-order",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -512,7 +512,7 @@
           "Port": 7070
         }
       ],
-      "UpstreamPathTemplate": "/order/checkout",
+      "UpstreamPathTemplate": "/order/create-order",
       "UpstreamHttpMethod": [ "POST" ]
     },
     // -------------------------
@@ -552,6 +552,18 @@
         }
       ],
       "UpstreamPathTemplate": "/cart/add-item",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/cart/checkout-items-list",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7070
+        }
+      ],
+      "UpstreamPathTemplate": "/cart/checkout-items-list",
       "UpstreamHttpMethod": [ "POST" ]
     },
     {

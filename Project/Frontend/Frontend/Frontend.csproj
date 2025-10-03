@@ -7,8 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Payments\Responses\" />
   </ItemGroup>
 
 </Project>

@@ -295,5 +295,19 @@ namespace Order.BLL.Services
                 Data = orderDtos
             };
         }
+
+        public async Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status)
+        {
+            await _uow.Orders.UpdateStatus(orderId, status);
+
+            await _uow.SaveChangesAsync();
+
+            return new OrderResponseModel<string>
+            {
+                Success = true,
+                Message = OperationResult.Success,
+                Data = status
+            };
+        }
     }
 }

@@ -7,11 +7,11 @@ namespace Frontend.Services.Interfaces
     {
         Task<(string Message, int StatusCode, DTOs.CountItemsDTO? data)> CountingItemsInCart(Guid userId);
 
-        Task<(string Message, int StatusCode, int CountItems, IEnumerable<DTOs.CartItemDTO> itemList)> AddProductToCart(Guid userId,  RequestItemsToCartModel dto);
+        Task<(string Message, int StatusCode, int CountItems, DTOs.CartDTO? data)> AddProductToCart(Guid userId,  RequestItemsToCartModel dto);
 
         Task<(string Message, int StatusCode, DTOs.CartDTO? data)> GetCartByUserId(Guid userId, string status);
 
-        Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid itemId, UpdateQuantityModel request);
+        Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId, UpdateQuantityModel request);
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId);
 
@@ -30,7 +30,7 @@ namespace Frontend.Services.Interfaces
             DeleteOrder(Guid orderId);
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)>
-            Checkout(Guid userId, IEnumerable<Guid> productIds);
+            CreateOrder(Guid userId, IEnumerable<Guid> productIds);
 
     }
 }

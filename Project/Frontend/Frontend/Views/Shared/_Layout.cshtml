@@ -36,7 +36,7 @@
                 </div>
 
                 <!-- Cart + Login -->
-                <div class="cart-login ms-auto">
+                @* <div class="cart-login ms-auto">
                     @{
                         var user = AuthHelper.GetUserInfo(Context);
                     }
@@ -45,8 +45,10 @@
                         <!-- Chỉ render Cart khi user đăng nhập -->
                         @await Component.InvokeAsync("Cart", new { userId = user.userId })
                     }
-                    <partial name="_loginPartial" />
-                </div>
+                    
+                </div>  *@
+                <partial name="_loginPartial" />
+                
             </div>
         </nav>
     </header>
@@ -77,6 +79,21 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        let stripe = Stripe("@Environment.GetEnvironmentVariable("STRIPE__PUBLISHABLEKEY")");
+        let elements = stripe.elements();
+        let cardElement = elements.create("card");
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const cardDiv = document.getElementById("card-element");
+            if (cardDiv && cardDiv.children.length === 0) {
+                cardElement.mount("#card-element");
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

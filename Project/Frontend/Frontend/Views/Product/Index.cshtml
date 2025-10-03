@@ -11,7 +11,7 @@
     var userId = AuthHeader.userId;
 }
 
-@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products, IEnumerable<CartItemDTO> cartItems)
+@model (StoreDto Store, List<CategoryDTO> Categories, List<ProductBuyerDTO> Products, IEnumerable<CartItemDTO> cartItems, int TotalCartItems)
 
 @{
     ViewData["Title"] = "Store Menu";
@@ -20,19 +20,15 @@
 <div class="container mt-4">
     <!-- Store Info -->
     <div class="row mb-4">
-        <!-- Hình ảnh cửa hàng -->
         <div class="col-md-12">
             <div class="card shadow-sm border-0">
                 <div class="row g-0 align-items-center">
-                    <!-- Ảnh cửa hàng -->
                     <div class="col-md-4">
                         <img src="@Model.Store.StoreImage"
                              alt="@Model.Store.StoreName"
                              class="img-fluid rounded-start"
                              style="object-fit: cover; height: 220px; width: 100%;" />
                     </div>
-
-                    <!-- Thông tin cửa hàng -->
                     <div class="col-md-8">
                         <div class="card-body">
                             <h3 class="card-title">@Model.Store.StoreName</h3>
@@ -89,37 +85,78 @@
 
                         @foreach (var product in Model.Products.Where(p => p.CategoryId == cat.CategoryId))
                         {
-                            <div class="card mb-3 shadow-sm border-0">
-                                <div class="row g-0 align-items-center">
-                                    <div class="col-md-3">
-                                        <div class="card-body py-2">
-                                            <img src="@product.ProductImage" alt="@product.ProductName" class="img-fluid rounded-start"
-                                                 style="object-fit: cover; height: 194px; width: auto;" />
+                            @if (product.IsActive)
+                            {
+                                <div class="card mb-3 shadow-sm border-0">
+                                    <div class="row g-0 align-items-center">
+                                        <div class="col-md-3">
+                                            <div class="card-body py-2">
+                                                <img src="@product.ProductImage" alt="@product.ProductName" class="rounded-start product-img" />
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="col-md-6">
-                                        <div class="card-body py-2">
-                                            <h5 class="card-title mb-1">@product.ProductName</h5>
-                                            <p class="card-text text-muted small mb-1">@product.Description</p>
-                                            <span class="badge @(product.IsActive ? "bg-success" : "bg-secondary") mb-2">
-                                                @(product.IsActive ? "Đang bán" : "Ngừng bán")
-                                            </span>
-                                            <p class="card-text text-muted small mb-1">Số lượng: @product.Quantity</p>
-                                            <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+                                        <div class="col-md-6">
+                                            <div class="card-body py-2">
+                                                <h5 class="card-title mb-1">@product.ProductName</h5>
+                                                <p class="card-text text-muted small mb-1">@product.Description</p>
+                                                <span class="badge @(product.IsActive ? "bg-success" : "bg-secondary") mb-2">
+                                                    @(product.IsActive ? "Đang bán" : "Ngừng bán")
+                                                </span>
+                                                <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-3 text-center pe-3">
-                                        <div class="cart-actions" id="cart-actions-@product.ProductId" data-store-id="@product.StoreId">
-                                            <button class="btn btn-primary btn-sm add-to-cart"
-                                                    data-product-id="@product.ProductId"
-                                                    data-store-id="@product.StoreId">
-                                                +
-                                            </button>
+                                        <div class="col-md-3 text-center pe-3">
+                                            @{
+                                                var existingItem = Model.cartItems?.FirstOrDefault(i => i.ProductId == product.ProductId);
+                                            }
+                                            <div class="cart-actions"
+                                                 id="cart-actions-@product.ProductId"
+                                                 data-store-id="@product.StoreId"
+                                                 data-product-id="@product.ProductId"
+                                                 data-price="@product.SalePrice"
+                                                 @(existingItem != null ? $"data-cart-item-id=\"{existingItem.CartItemId}\"" : "")>
+
+                                                @if (!product.IsActive)
+                                                {
+                                                    <span class="text-muted small">Không thể thêm</span>
+                                                }
+                                                else if (existingItem != null)
+                                                {
+                                                    <div class="d-flex justify-content-end align-items-center">
+                                                        <button class="btn btn-sm btn-light border decrease"
+                                                                data-action="decrease"
+                                                                data-product-id="@product.ProductId"
+                                                                data-store-id="@product.StoreId"
+                                                                data-cart-item-id="@existingItem.CartItemId">
+                                                            -
+                                                        </button>
+
+                                                        <span class="mx-2 fw-bold qty-display" id="qty-card-@product.ProductId"
+                                                              data-product-id="@product.ProductId">@existingItem.Quantity</span>
+
+                                                        <button class="btn btn-sm btn-light border increase"
+                                                                data-action="increase"
+                                                                data-product-id="@product.ProductId"
+                                                                data-store-id="@product.StoreId"
+                                                                data-cart-item-id="@existingItem.CartItemId">
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-primary btn-sm add-to-cart"
+                                                            data-action="add"
+                                                            data-product-id="@product.ProductId"
+                                                            data-store-id="@product.StoreId">
+                                                        +
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            }
                         }
                     </div>
                 }
@@ -129,11 +166,13 @@
 </div>
 
 <!-- Floating Cart Button -->
-<a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#cartItemModal"
-   class="floating-cart-btn">
-    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
-         class="bi bi-cart" viewBox="0 0 16 16">
-        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5
+<div class="container-fluid">
+    <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#cartItemModal"
+       class="floating-cart-btn" data-user-id="@userId"
+       data-store-id="@Model.Store.StoreId">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+             class="bi bi-cart" viewBox="0 0 16 16">
+            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5
                  0 0 1 .485.379L2.89 3H14.5a.5.5
                  0 0 1 .491.592l-1.5 8A.5.5
                  0 0 1 13 12H4a.5.5
@@ -147,13 +186,16 @@
                  0 1-1 .001-2.001A1 1 0 0 1
                  5 13zm7-1a1 1 0 1-1
                  .001-2.001A1 1 0 0 1 12 12z" />
-    </svg>
-    <span id="cartBadgeFloating"
-          class="badge rounded-pill position-absolute top-0 start-0 translate-middle @(isLoggedIn ? "bg-danger" : "bg-secondary") ">
-        @(Model.cartItems?.Sum(i => i.Quantity) ?? 0)
-    </span>
-</a>
+        </svg>
+        <span id="cartBadgeFloating"
+              data-total-items="@Model.TotalCartItems"
+              class="badge rounded-pill position-absolute top-0 start-0 translate-middle @(isLoggedIn ? "bg-danger" : "bg-secondary")">
+            @(Model.cartItems?.Sum(i => i.Quantity) ?? 0)
+        </span>
+    </a>
+</div>
 
+<!-- Cart Modal -->
 <div class="modal fade" id="cartItemModal" tabindex="-1" aria-labelledby="CartItemModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -175,16 +217,22 @@
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <h6 class="mb-1">@item.ProductName</h6>
-                                    <div class="fw-bold text-danger mt-1">@item.Price.ToString("N0") đ</div>
+                                    <div class="fw-bold text-danger mt-1" data-price="@item.Price">
+                                        @item.Price.ToString("N0") đ
+                                    </div>
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <button class="btn btn-sm btn-outline-secondary decrease"
-                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                            data-product-id="@item.ProductId"
+                                            data-cart-item-id="@item.CartItemId"
+                                            data-store-id="@item.StoreId">
                                         -
                                     </button>
-                                    <span class="mx-2 fw-bold">@item.Quantity</span>
+                                    <span class="mx-2 fw-bold" id="qty-modal-@item.ProductId">@item.Quantity</span>
                                     <button class="btn btn-sm btn-outline-secondary increase"
-                                            data-product-id="@item.ProductId" data-store-id="@item.StoreId">
+                                            data-product-id="@item.ProductId"
+                                            data-cart-item-id="@item.CartItemId"
+                                            data-store-id="@item.StoreId">
                                         +
                                     </button>
                                 </div>
@@ -205,219 +253,24 @@
 
             <div class="modal-footer d-flex justify-content-between">
                 <div>
-                    <span class="fw-bold fs-5 text-danger" id="cart-total">@((Model.cartItems?.Sum(i => i.Quantity * i.Price) ?? 0).ToString("N0")) đ</span>
+                    <span class="fw-bold fs-5 text-danger" id="cart-total">
+                        @((Model.cartItems?.Sum(i => i.Quantity * i.Price) ?? 0).ToString("N0")) đ
+                    </span>
                 </div>
-                <button type="button" class="btn btn-danger px-4" id="btnCheckout">Tạo đơn hàng</button>
+
+                <!-- Form POST CreateOrder -->
+                <form asp-controller="Order" asp-action="CreateOrder" method="post" id="checkoutForm" class="m-0">
+                    <input type="hidden" name="userId" value="@userId" />
+                    <!-- JS sẽ append thêm selectedProducts[] vào đây -->
+                    <button type="button" class="btn btn-danger px-4" id="btnCheckout">
+                        Tạo đơn hàng
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const userId = "@userId";
-            const storeId = "@Model.Store.StoreId";
-
-            // -----------------------------
-            // 1. Thêm sản phẩm lần đầu (+)
-            // -----------------------------
-            document.querySelectorAll(".add-to-cart").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    const productId = btn.dataset.productId;
-
-                    if (!userId || userId === "0") {
-                        const currentUrl = window.location.pathname + window.location.search;
-                        window.location.href = `/Authentication/Login?returnUrl=${encodeURIComponent(currentUrl)}`;
-                        return;
-                    }
-
-                    const dto = { storeId, productId, quantity: 1 };
-
-                    try {
-                        const response = await fetch(`/Product/AddProductToCart?buyer=${userId}`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(dto)
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-
-                            // UI chuyển thành (- qty +)
-                            const container = document.getElementById(`cart-actions-${productId}`);
-                            container.innerHTML = `
-                                <div class="d-flex justify-content-end align-items-center">
-                                    <button class="btn btn-sm btn-light border decrease"
-                                            data-product-id="${productId}" data-store-id="${storeId}">-</button>
-                                    <span class="mx-2 fw-bold quantity-value" id="qty-${productId}">1</span>
-                                    <button class="btn btn-sm btn-light border increase"
-                                            data-product-id="${productId}" data-store-id="${storeId}">+</button>
-                                </div>`;
-
-                            updateBadges(result.countItems, result.countItemsInStore);
-                            bindQuantityButtons(productId, storeId, userId);
-                        } else {
-                            alert("❌ Lỗi thêm giỏ hàng");
-                        }
-                    } catch (err) {
-                        console.error("Network error:", err);
-                    }
-                });
-            });
-
-            // -----------------------------
-            // 2. Bind nút tăng giảm số lượng
-            // -----------------------------
-            function bindQuantityButtons(productId, storeId, userId) {
-                const container = document.getElementById(`cart-actions-${productId}`);
-                const qtySpan = document.getElementById(`qty-${productId}`);
-
-                container.querySelectorAll(".increase, .decrease").forEach(btn => {
-                    btn.addEventListener("click", async () => {
-                        let currentQty = parseInt(qtySpan.textContent);
-
-                        if (btn.classList.contains("increase")) {
-                            currentQty++;
-                        } else if (btn.classList.contains("decrease") && currentQty > 1) {
-                            currentQty--;
-                        } else if (btn.classList.contains("decrease") && currentQty === 1) {
-                            container.innerHTML = `
-                                <button class="btn btn-primary btn-sm add-to-cart"
-                                        data-product-id="${productId}" data-store-id="${storeId}">+</button>`;
-                            container.querySelector(".add-to-cart").addEventListener("click", () => {
-                                document.querySelector(`#cart-actions-${productId} .add-to-cart`).click();
-                            });
-                            return;
-                        }
-
-                        btn.disabled = true;
-                        qtySpan.textContent = "...";
-
-                        try {
-                            const response = await fetch(`/Order/update-quantity?buyer=${userId}&item=${productId}&store=${storeId}`, {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ productId, quantity: currentQty })
-                            });
-
-                            if (response.ok) {
-                                const result = await response.json();
-                                qtySpan.textContent = currentQty;
-                                updateBadges(result.data.totalItems, result.countItemsInStore);
-                            } else {
-                                qtySpan.textContent = currentQty;
-                                alert("❌ Lỗi cập nhật số lượng");
-                            }
-                        } catch (err) {
-                            console.error("Network error:", err);
-                            qtySpan.textContent = currentQty;
-                        } finally {
-                            btn.disabled = false;
-                        }
-                    });
-                });
-            }
-
-            // -----------------------------
-            // 3. Hàm update badge
-            // -----------------------------
-            function updateBadges(totalItems, countItemsInStore) {
-                const cartBadge = document.getElementById("cartBadge");
-                if (cartBadge) {
-                    cartBadge.textContent = totalItems;
-                    cartBadge.classList.remove("bg-secondary");
-                    cartBadge.classList.add("bg-danger");
-                }
-
-                const cartBadgeFloating = document.getElementById("cartBadgeFloating");
-                if (cartBadgeFloating) {
-                    cartBadgeFloating.textContent = countItemsInStore;
-                    cartBadgeFloating.classList.remove("bg-secondary");
-                    cartBadgeFloating.classList.add("bg-danger");
-                }
-            }
-
-            // -----------------------------
-            // 4. Khi mở modal giỏ hàng -> gọi API mới
-            // -----------------------------
-            document.getElementById("cartItemModal").addEventListener("show.bs.modal", async () => {
-                try {
-                    const res = await fetch(`/Order/get-cart-in-store?buyer=${userId}&storeId=${storeId}`);
-                    if (res.ok) {
-                        const result = await res.json();
-                        renderCartItems(result.data || []);
-                    } else {
-                        console.error("❌ Lỗi khi gọi GetCartItemInStore");
-                    }
-                } catch (err) {
-                    console.error("Network error:", err);
-                }
-            });
-
-            // -----------------------------
-            // 5. Render giỏ hàng trong modal
-            // -----------------------------
-            function renderCartItems(items) {
-                const container = document.getElementById("modal-body-item-list");
-                let total = 0;
-
-                if (!items || items.length === 0) {
-                    container.innerHTML = `<p class="text-center text-muted">Giỏ hàng trống</p>`;
-                    document.getElementById("cart-total").textContent = "0 đ";
-                    return;
-                }
-
-                let html = "";
-                items.forEach(item => {
-                    total += item.price * item.quantity;
-                    html += `
-                        <div class="d-flex align-items-center border-bottom py-2">
-                            <div class="flex-shrink-0">
-                                <img src="${item.productImage}" alt="${item.productName}"
-                                     class="img-thumbnail" style="width:60px; height:60px; object-fit:cover;">
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">${item.productName}</h6>
-                                <div class="fw-bold text-danger mt-1">${item.price.toLocaleString()} đ</div>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <button class="btn btn-sm btn-outline-secondary decrease"
-                                        data-product-id="${item.productId}" data-store-id="${item.storeId}">-</button>
-                                <span class="mx-2 fw-bold" id="qty-${item.productId}">${item.quantity}</span>
-                                <button class="btn btn-sm btn-outline-secondary increase"
-                                        data-product-id="${item.productId}" data-store-id="${item.storeId}">+</button>
-                            </div>
-                        </div>`;
-                });
-
-                container.innerHTML = html;
-                document.getElementById("cart-total").textContent = `${total.toLocaleString()} đ`;
-
-                // bind lại increase/decrease cho từng item
-                items.forEach(i => bindQuantityButtons(i.productId, i.storeId, userId));
-            }
-
-            // -----------------------------
-            // 6. Smooth scroll categories
-            // -----------------------------
-            document.querySelectorAll("#categoryList .category-link").forEach(link => {
-                link.addEventListener("click", () => {
-                    const targetId = link.getAttribute("data-target");
-                    const targetEl = document.getElementById(targetId);
-                    if (targetEl) {
-                        targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
-
-                        document.querySelectorAll("#categoryList .category-link")
-                            .forEach(el => el.classList.remove("active"));
-                        link.classList.add("active");
-                    }
-                });
-            });
-        });
-    </script>
+    <script src="~/js/product.js"></script>
 }
-
-
-
-

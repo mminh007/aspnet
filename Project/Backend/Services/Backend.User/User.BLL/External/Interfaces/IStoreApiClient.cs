@@ -1,7 +1,7 @@
 ﻿using User.Common.Models.Requests;
 using User.Common.Models.Responses;
 
-namespace User.BLL.External
+namespace User.BLL.External.Interfaces
 {
     public interface IStoreApiClient
     {

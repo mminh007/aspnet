@@ -77,18 +77,17 @@ namespace Frontend.HttpsClients.Orders
             return (parsed.Success, parsed.Message, parsed.statusCode);
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<OrderDTO> data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<OrderDTO> data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds)
         {
-            var url = _endpoints.Checkout;
+            var url = _endpoints.CreateOrder;
             var response = await _httpClient.PostAsJsonAsync(url, productIds);
-            return await ParseResponse<List<OrderDTO>>(response, "Checkout");
-        }
+            return await ParseResponse<List<OrderDTO>>(response, "CreateOrder");
+        }    
 
-       
 
-        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid userId, Guid cartItemId, UpdateQuantityModel request)
+        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid productId, UpdateQuantityModel request)
         {
-            var url = _endpoints.UpdateItemQuantity.Replace("{cartItemId}", cartItemId.ToString());
+            var url = _endpoints.UpdateItemQuantity.Replace("{productId}", productId.ToString());
 
             var response = await _httpClient.PutAsJsonAsync(url, request);
             var parsed = await ParseResponse<CartDTO>(response, "UpdateItemQuantity");

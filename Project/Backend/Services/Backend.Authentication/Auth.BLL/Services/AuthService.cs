@@ -118,5 +118,15 @@ namespace Auth.BLL.Services
             };
         }
 
+        public AuthResponseModel<string> GetTokenSystemAsync()
+        {
+            var sysToken = _tokenManager.GenerateInternalServiceToken();
+
+            return new AuthResponseModel<string>
+            {
+                Message = OperationResult.Success,
+                Data = sysToken
+            };
+        }
     }
 }

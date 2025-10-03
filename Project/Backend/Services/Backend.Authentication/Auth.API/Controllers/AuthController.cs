@@ -76,7 +76,17 @@ namespace API.Controllers
             return HandleResponse(result, "Token refreshed successfully!", "Invalid or expired refresh token");
         }
 
-        // ✅ Method dùng chung để trả response
+        [AllowAnonymous]
+        [HttpGet("system-token")]
+        public IActionResult GetTokenSystem()
+        {
+            var result = _authService.GetTokenSystemAsync();
+
+            return HandleResponse(result);
+        }
+
+
+         //✅ Method dùng chung để trả response
         private IActionResult HandleResponse<T>(AuthResponseModel<T> response, string? successMessage = null, string? failedMessage = null)
         {
             return response.Message switch

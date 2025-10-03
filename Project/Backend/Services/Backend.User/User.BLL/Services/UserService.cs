@@ -1,24 +1,27 @@
-﻿using User.BLL.External;
-using User.Common.Enums;
+﻿using User.Common.Enums;
 using User.Common.Models.Requests;
 using User.Common.Models.Responses;
 using User.DAL.Repository.Interfaces;
 
 using Microsoft.Extensions.Logging;
 using static User.Common.Models.DTOs;
+using User.BLL.External.Interfaces;
 
 namespace User.BLL.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IOrderApiClient _orderApi;
         private readonly IStoreApiClient _storeApi;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IUserRepository userRepository, IStoreApiClient storeApi, ILogger<UserService> logger)
+        public UserService(IUserRepository userRepository, IStoreApiClient storeApi, ILogger<UserService> logger,
+                           IOrderApiClient orderApi)
         {
             _userRepository = userRepository;
             _storeApi = storeApi;
+            _orderApi = orderApi;
             _logger = logger;
         }
 
@@ -36,60 +39,104 @@ namespace User.BLL.Services
                 };
             }
 
-            if (model.Role != "seller")
+            if (model.Role == "buyer")
             {
-                // Nếu không phải Seller thì chỉ tạo user, không tạo store
-                var newUserId = await _userRepository.CreateUserAsync(model, null);
-                _logger.LogInformation("User registered successfully {UserId}", newUserId);
-                return new UserApiResponse<Guid?>
+                try
                 {
-                    Message = OperationResult.Success,
-                    ErrorMessage = "User registered successfully",
-                    Data = newUserId
-                };
-            }
+                    var newUserId = await _userRepository.CreateUserAsync(model, null);
+                    _logger.LogInformation("User registered successfully {UserId}", newUserId);
 
-            try
-            {
-                var newUserId = await _userRepository.CreateUserAsync(model, null);
-                _logger.LogInformation("User created successfully {UserId}, attempting to create store", newUserId);
-
-                // Tạo store cho Seller
-                var storeResult = await _storeApi.RegisterStoreAsync(new RegisterStoreModel { UserId = newUserId.Value });
-
-                if (storeResult.Message == OperationResult.Success)
-                {
-                    var storeId = storeResult.Data;
-                    await _userRepository.UpdateUserAsync(new UserUpdateModel { UserId = newUserId.Value, StoreId = storeResult.Data });
-
-                    _logger.LogInformation("Seller registered successfully with store {UserId}, {StoreId}", newUserId, storeId);
-                    return new UserApiResponse<Guid?>
+                    if (newUserId == Guid.Empty)
                     {
-                        Message = OperationResult.Success,
-                        ErrorMessage = "Seller registered successfully with store",
-                        Data = newUserId
-                    };
+                        return new UserApiResponse<Guid?>
+                        {
+                            Message = OperationResult.Error,
+                            ErrorMessage = "Cannot register!",
+                            Data = null
+                        };
+                    }
+
+                    var newCart = await _orderApi.CreateCart(newUserId.Value);
+
+                    if (newCart.Message == OperationResult.Success)
+                    {
+                        return new UserApiResponse<Guid?>
+                        {
+                            Message = OperationResult.Success,
+                            ErrorMessage = "User registered successfully",
+                            Data = newUserId
+                        };
+                    }
+
+                    else
+                    {
+                        _logger.LogWarning("Create Cart failed for new user {UserId}: {ErrorMessage}", newUserId, newCart.ErrorMessage);
+                        return new UserApiResponse<Guid?>
+                        {
+                            Message = OperationResult.Success,
+                            ErrorMessage = "User created successfully but Cart creation failed. Please create store manually in admin panel.",
+                            Data = newUserId
+                        };
+                    }
+
                 }
-                else
+
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("Store registration failed for new user {UserId}: {ErrorMessage}", newUserId, storeResult.ErrorMessage);
+                    _logger.LogError(ex, "Exception occurred while registering new user");
                     return new UserApiResponse<Guid?>
                     {
                         Message = OperationResult.Failed,
-                        ErrorMessage = "User created successfully but store creation failed. Please create store manually in admin panel.",
-                        Data = newUserId
+                        ErrorMessage = "User created failed due to an internal error. Please create store manually in admin panel.",
+                    };
+                }
+                
+            }
+            else
+            {
+                try
+                {
+                    var newUserId = await _userRepository.CreateUserAsync(model, null);
+                    _logger.LogInformation("User created successfully {UserId}, attempting to create store", newUserId);
+
+                    // Tạo store cho Seller
+                    var storeResult = await _storeApi.RegisterStoreAsync(new RegisterStoreModel { UserId = newUserId.Value });
+
+                    if (storeResult.Message == OperationResult.Success)
+                    {
+                        var storeId = storeResult.Data;
+                        await _userRepository.UpdateUserAsync(new UserUpdateModel { UserId = newUserId.Value, StoreId = storeResult.Data });
+
+                        _logger.LogInformation("Seller registered successfully with store {UserId}, {StoreId}", newUserId, storeId);
+                        return new UserApiResponse<Guid?>
+                        {
+                            Message = OperationResult.Success,
+                            ErrorMessage = "Seller registered successfully with store",
+                            Data = newUserId
+                        };
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Store registration failed for new user {UserId}: {ErrorMessage}", newUserId, storeResult.ErrorMessage);
+                        return new UserApiResponse<Guid?>
+                        {
+                            Message = OperationResult.Failed,
+                            ErrorMessage = "User created successfully but store creation failed. Please create store manually in admin panel.",
+                            Data = newUserId
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception occurred while registering store for new user {UserId}");
+                    return new UserApiResponse<Guid?>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "User created successfully but store creation failed due to an internal error. Please create store manually in admin panel.",
                     };
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception occurred while registering store for new user {UserId}");
-                return new UserApiResponse<Guid?>
-                {
-                    Message = OperationResult.Failed,
-                    ErrorMessage = "User created successfully but store creation failed due to an internal error. Please create store manually in admin panel.",
-                };
-            }
+               
        
         }
 

@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using User.BLL.External.Interfaces;
+using User.Common.Urls.Store;
+using Microsoft.Extensions.Options;
 
 namespace User.BLL.External
 {
@@ -29,19 +32,20 @@ namespace User.BLL.External
             _logger.LogInformation("Calling Store API to register store for UserId: {UserId}", model.UserId);
             try
             {
-                // Lấy JWT từ request gốc
-                var token = GetJwtFromHeader();
+                //Lấy JWT từ request gốc
+               var token = GetJwtFromHeader();
                 if (string.IsNullOrEmpty(token))
                 {
                     return new UserApiResponse<Guid?>
                     {
                         ErrorMessage = "Missing JWT token",
                         Message = OperationResult.Error,
-                    }; 
+                    };
                 }
 
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
 
                 var response = await _httpClient.PostAsJsonAsync("api/store", model);
                 var raw = await response.Content.ReadAsStringAsync();
@@ -104,7 +108,7 @@ namespace User.BLL.External
         }
 
 
-    
+
 
         /// <summary>
         /// Map HTTP status code về OperationResult

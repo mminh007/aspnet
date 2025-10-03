@@ -1,0 +1,385 @@
+﻿html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+a {
+    text-decoration: none;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+html, body {
+    max-width: 100%;
+    overflow-x: hidden; /* tránh tràn ngang */
+}
+
+.navbar-nav .nav-link {
+    white-space: nowrap; /* giữ chữ không xuống dòng */
+}
+
+.navbar-brand {
+    font-size: 1.3rem;
+}
+
+.cart-login {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+
+/* ---------------- Home Page Banner ---------------- */
+.homepage-banner {
+    background: url('/images/background/main-banner.jpg') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+    width: 100%;
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .homepage-banner {
+        height: 500px; /* banner lớn hơn */
+    }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .homepage-banner {
+        height: 350px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .homepage-banner {
+        height: 220px; /* banner thấp hơn cho gọn */
+        background-attachment: scroll; /* tránh giật trên mobile */
+    }
+}
+
+
+.homepage-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    margin-top: 100px;
+}
+
+.location-search button {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.now-list-stores {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    height: auto;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+/* ---------------- Search Home Page ---------------- */
+.search-banner h2 {
+    font-size: 28px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+}
+
+.search-banner p {
+    font-size: 16px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ---------------- Cart + Login ---------------- */
+.cart-login {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#cartLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#cartBadge {
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    line-height: 1;
+    position: absolute;
+    right: -10px;
+}
+
+#cartBadgeFloating {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    line-height: 1;
+    position: absolute;
+}
+
+@media (max-width: 768px) {
+    .cart-login {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 10px;
+        gap: 8px;
+    }
+
+    #cartLink {
+        justify-content: flex-start;
+    }
+
+    #cartBadge {
+        top: -3px;
+        right: -8px;
+    }
+}
+
+/* ---------------- Store Card ---------------- */
+.item-restaurant {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.2s;
+}
+
+    .item-restaurant:hover {
+        transform: translateY(-3px);
+    }
+
+.item-content {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.img-restaurant img {
+    width: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 6px;
+}
+
+/* Responsive height cho ảnh restaurant */
+@media (min-width: 1200px) {
+    .img-restaurant img {
+        height: 220px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .img-restaurant img {
+        height: 180px;
+    }
+}
+
+@media (max-width: 767px) {
+    .img-restaurant img {
+        height: 140px;
+    }
+}
+
+.info-restaurant {
+    padding: 10px;
+}
+
+.name-res, .address-res, .content-promotion {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.name-res {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 5px;
+}
+
+.address-res {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 5px;
+}
+
+.content-promotion {
+    font-size: 13px;
+    color: #e53935;
+    margin: 0;
+}
+
+/* ---------------- Product Card ---------------- */
+.product-img {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+@media (min-width: 1200px) {
+    .product-img {
+        height: 220px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .product-img {
+        height: 180px;
+    }
+}
+
+@media (max-width: 767px) {
+    .product-img {
+        height: 140px;
+    }
+}
+
+/* ---------------- Floating Cart ---------------- */
+.floating-cart-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #ff6f00;
+    color: #fff;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1050;
+    transition: all 0.3s ease-in-out;
+}
+
+    .floating-cart-btn:hover {
+        background: #e65100;
+        transform: scale(1.1);
+    }
+
+    .floating-cart-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+
+/* ---------------- Cooperation ---------------- */
+body {
+    background: #f5f5f5;
+}
+
+.container-coporation {
+    background: #fff;
+    padding: 20px 150px 50px;
+    border-radius: 4px;
+    margin-top: 60px;
+    position: relative;
+    box-shadow: 0 2px 2px rgba(50, 50, 50, .1);
+}
+
+    .container-coporation img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+    }
+
+@media (max-width: 768px) {
+    .container-coporation {
+        padding: 20px;
+    }
+
+        .container-coporation .bg-cop {
+            position: static;
+            margin: 20px auto 0;
+            width: 80%;
+        }
+}
+
+/* ---------------- Cart / Order Page ---------------- */
+.cart-img, .order-img {
+    width: 100%;
+    max-width: 60px;
+    height: auto;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+/* ---------------- Footer ---------------- */
+.seo-footer {
+    margin: 50px;
+}
+
+.seo-footer-body {
+    column-count: 4;
+}
+
+.sub-item-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    list-style-type: none;
+    padding: 0;
+}
+
+.sub-item {
+    font-size: 13px;
+    color: #444;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+    .sub-item:hover {
+        color: #ff5722;
+    }
+
+/* ---------------- Animation ---------------- */
+.shake {
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+
+    25% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+    }
+
+    50% {
+        transform: translate(3px, 2px) rotate(1deg);
+    }
+
+    75% {
+        transform: translate(-3px, 1px) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(1px, -2px) rotate(-1deg);
+    }
+}
+body {
+}

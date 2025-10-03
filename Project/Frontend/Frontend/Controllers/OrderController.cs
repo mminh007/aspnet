@@ -12,11 +12,29 @@ namespace Frontend.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly ILogger<OrderController> _logger;
+        private readonly IConfiguration _config;
 
-        public OrderController(IOrderService orderService, ILogger<OrderController> logger)
+        public OrderController(IOrderService orderService, ILogger<OrderController> logger, IConfiguration config)
         {
             _orderService = orderService;
             _logger = logger;
+            _config = config;
+        }
+
+        [HttpGet("get-cart")]
+        public async Task<IActionResult> GetCart(Guid id)
+        {
+            var (message, status, data) = await _orderService.GetCartByUserId(id, "check");
+            if (status != 200 || data == null)
+            {
+                return StatusCode(status, new { message });
+            }
+
+            return Ok(new
+            {
+                message,
+                data // CartDTO
+            });
         }
 
         public async Task<IActionResult> CreateCart(Guid id)
@@ -49,12 +67,11 @@ namespace Frontend.Controllers
 
         [HttpPut("update-quantity")]
         public async Task<IActionResult> UpdateQuantity(
-            [FromQuery] Guid buyer, 
-            [FromQuery] Guid item,
+            [FromQuery] Guid buyer,
             [FromQuery] Guid store,
             [FromBody] UpdateQuantityModel request)
         {
-            var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, item, request);
+            var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, store, request);
 
             //_logger.LogInformation("CartDTO result: {CartJson}",
             //JsonSerializer.Serialize(data, new JsonSerializerOptions
@@ -82,13 +99,15 @@ namespace Frontend.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrder(Guid userId, [FromForm] List<Guid> selectedProducts)
         {
+            ViewBag.StripePublishableKey = _config["STRIPE:PUBLISHABLEKEY"];
+
             if (selectedProducts == null || !selectedProducts.Any())
             {
                 TempData["Error"] = "Bạn chưa chọn sản phẩm nào để tạo đơn hàng.";
                 return RedirectToAction("CreateCart", new { id = userId });
             }
 
-            var (msg, status, data) = await _orderService.Checkout(userId, selectedProducts);
+            var (msg, status, data) = await _orderService.CreateOrder(userId, selectedProducts);
 
             if (status != 200 || data == null)
             {

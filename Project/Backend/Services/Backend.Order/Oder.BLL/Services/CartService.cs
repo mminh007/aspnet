@@ -27,6 +27,34 @@ namespace Order.BLL.Services
             _logger = logger;
         }
 
+        public async Task<OrderResponseModel<int>> CreateCart(Guid userId)
+        {
+            var newCart = new CartModel {
+                UserId = userId
+            };
+
+            await _uow.Carts.CreateCartAsync(newCart);
+
+            var check = await _uow.SaveChangesAsync();
+
+            if (check == 1)
+            {
+                return new OrderResponseModel<int>
+                {
+                    Message = OperationResult.Success,
+                    Data = check
+                };
+            }
+            else
+            {
+                return new OrderResponseModel<int>
+                {
+                    Message = OperationResult.Failed,
+                    Data = check,
+                };
+            }
+        }
+
         public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act = "check")
         {
             var cart = await _uow.Carts.GetCartByUserIdAsync(userId);
@@ -70,8 +98,8 @@ namespace Order.BLL.Services
                     if (productDict.TryGetValue(item.ProductId, out var product) && product.IsActive)
                     {
                         item.ProductName = product.ProductName;
-                        item.Price = product.SalePrice;
                         item.ProductImage = product.ProductImage;
+
 
                         if (product.Quantity <= 0)
                         {
@@ -79,6 +107,12 @@ namespace Order.BLL.Services
                             item.ErrorMessage = "Product out of stock";
                             item.IsAvailable = false;
                         }
+                        else if (product.SalePrice != item.Price)
+                        {
+                            item.Price = product.SalePrice;
+                            item.ErrorMessage = "Product has been updated with a new price";
+                            item.IsAvailable = true;
+                        }    
                         else if (item.Quantity > product.Quantity)
                         {
                             item.Quantity = product.Quantity; // cập nhật entity
@@ -276,6 +310,7 @@ namespace Order.BLL.Services
                     item.ProductName = product.ProductName;
                     item.ProductImage = product.ProductImage;
                     item.UpdatedAt = DateTime.UtcNow;
+                    item.ErrorMessage = $"Product has just been updated with a new price";
                     await _uow.Carts.UpdateCartItemAsync(item);
                 }
 
@@ -316,20 +351,20 @@ namespace Order.BLL.Services
             }
 
             // ✅ VALIDATE các items trước khi checkout
-            var (isValid, errorMessage, validItems) = await ValidateCartItemsAsync(checkoutItems);
-            if (!isValid)
-            {
-                return new OrderResponseModel<List<CartItemDTO>>
-                {
-                    Success = false,
-                    Message = OperationResult.Error,
-                    ErrorMessage = errorMessage,
-                    Data = new List<CartItemDTO>()
-                };
-            }
+            //var (isValid, errorMessage, validItems) = await ValidateCartItemsAsync(checkoutItems);
+            //if (!isValid)
+            //{
+            //    return new OrderResponseModel<List<CartItemDTO>>
+            //    {
+            //        Success = false,
+            //        Message = OperationResult.Error,
+            //        ErrorMessage = errorMessage,
+            //        Data = new List<CartItemDTO>()
+            //    };
+            //}
 
-            // Lưu thay đổi nếu có cập nhật thông tin sản phẩm
-            await _uow.SaveChangesAsync();
+            //// Lưu thay đổi nếu có cập nhật thông tin sản phẩm
+            //await _uow.SaveChangesAsync();
 
             // Xóa các items đã checkout
             foreach (var item in checkoutItems)
@@ -350,7 +385,7 @@ namespace Order.BLL.Services
 
             await _uow.SaveChangesAsync();
 
-            var checkoutItemDtos = _mapper.Map<List<CartItemDTO>>(validItems);
+            var checkoutItemDtos = _mapper.Map<List<CartItemDTO>>(checkoutItems);
             return new OrderResponseModel<List<CartItemDTO>>
             {
                 Success = true,
@@ -420,9 +455,9 @@ namespace Order.BLL.Services
 
         }
 
-        public async Task<OrderResponseModel<CartDTO>> UpdateItemAsync(Guid buyerId, Guid cartItemId, UpdateQuantityRequest request)
+        public async Task<OrderResponseModel<CartDTO>> UpdateItemAsync(Guid buyerId, Guid productId, UpdateQuantityRequest request)
         {
-            var cartItem = await _uow.Carts.GetCartItemByIdAsync(cartItemId);
+            var cartItem = await _uow.Carts.GetCartItemByIdAsync(productId);
             if (cartItem == null)
             {
                 return new OrderResponseModel<CartDTO>
@@ -451,6 +486,6 @@ namespace Order.BLL.Services
             };
         }
 
-
+        
     }
 }

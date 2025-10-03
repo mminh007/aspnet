@@ -18,6 +18,10 @@ namespace Oder.BLL.Services.Interfaces
         Task<OrderResponseModel<OrderDTO>> UpdateOrderAsync(UpdateOrderRequest dto); // update payment status, payment method, order status, dont update products
         Task<OrderResponseModel<string>> DeleteOrderAsync(Guid orderId);
 
+        Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status);
+
+
+
         // Checkout từ cart
         Task<OrderResponseModel<IEnumerable<OrderDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds);
     }

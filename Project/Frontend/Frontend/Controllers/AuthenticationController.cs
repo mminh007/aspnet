@@ -9,9 +9,11 @@ namespace Frontend.Controllers
     public class AuthenticationController : Controller
     {
         private readonly IAuthService _authService;
-        public AuthenticationController(IAuthService authService)
+        private readonly ILogger<AuthenticationController> _logger;
+        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -40,6 +42,7 @@ namespace Frontend.Controllers
                 return View(model);
             }
 
+            _logger.LogInformation("Login - Token Accepted: {token}", accessToken);
             // add Access Token in Cookie
             Response.Cookies.Append("accessToken", accessToken, new CookieOptions
             {
@@ -60,6 +63,8 @@ namespace Frontend.Controllers
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
             }
+
+            
 
             // add user's info in Session
             HttpContext.Session.SetString("UserRole", role);
@@ -109,9 +114,24 @@ namespace Frontend.Controllers
             // Clear session
             HttpContext.Session.Clear();
 
-            // Clear token cookies
             Response.Cookies.Delete("accessToken");
             Response.Cookies.Delete("refreshToken");
+            // Clear token cookies
+           //Response.Cookies.Delete("accessToken", new CookieOptions
+           // {
+           //     HttpOnly = true,
+           //     Secure = true,
+           //     SameSite = SameSiteMode.None,
+           //     Path = "/"
+           // });
+           // Response.Cookies.Delete("refreshToken", new CookieOptions
+           // {
+           //     HttpOnly = true,
+           //     Secure = true,
+           //     SameSite = SameSiteMode.None,
+           //     Path = "/"
+           // });
+
 
             TempData["Message"] = "Logout Successfully!";
 
@@ -119,6 +139,9 @@ namespace Frontend.Controllers
             {
                 return Redirect(returnUrl);
             }
+
+            var hasCookie = Request.Cookies.ContainsKey("accessToken");
+            _logger.LogInformation("Before delete, accessToken exists in request? {HasCookie}", hasCookie);
 
             return RedirectToAction("Login", "Authentication");
         }

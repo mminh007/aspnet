@@ -10,20 +10,15 @@ namespace Payment.Common.Models.Requests
 {
     public class PaymentRequest
     {
-        [Required]
         public Guid OrderId { get; set; }
 
-        [Required]
         public Guid BuyerId { get; set; }
 
-        [Required]
         public PaymentMethod Method { get; set; }
 
-        [Required]
         [Range(0.01, double.MaxValue)]
         public decimal Amount { get; set; }
 
-        [Required]
         public string Currency { get; set; } = "VND";
     }
 }

@@ -235,6 +235,35 @@ body {
 /*---------------------------------------------------------------*/
 
 /*Store Detail (Product List)*/
+
+.product-img {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .product-img {
+        height: 220px;
+    }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .product-img {
+        height: 180px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .product-img {
+        height: 140px;
+    }
+}
+
+
 .category-link {
     cursor: pointer;
 }

@@ -28,12 +28,12 @@ namespace Frontend.Services
             string cacheKey = $"products:store:{storeId}";
 
             // Check cache first
-            var cachedData = await _cache.GetAsync<IEnumerable<DTOs.ProductBuyerDTO>>(cacheKey);
-            if (cachedData != null)
-            {
-                _logger.LogInformation("✅ Get Products from Redis for StoreId={StoreId}", storeId);
-                return ("OK (from cache)", 200, cachedData);
-            }
+            //var cachedData = await _cache.GetAsync<IEnumerable<DTOs.ProductBuyerDTO>>(cacheKey);
+            //if (cachedData != null)
+            //{
+            //    _logger.LogInformation("✅ Get Products from Redis for StoreId={StoreId}", storeId);
+            //    return ("OK (from cache)", 200, cachedData);
+            //}
 
             // Call API if not in cache
             var (success, message, statusCode, data) = await _productApiClient.GetByStoreAsync(storeId);

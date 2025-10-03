@@ -5,6 +5,9 @@ using Payment.Common.Enums;
 using Payment.Common.Models.Requests;
 using Payment.Common.Models.Responses;
 using Stripe;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace Payment.API.Controllers
 {
@@ -13,17 +16,30 @@ namespace Payment.API.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
-
-        public PaymentController(IPaymentService paymentService)
+        private readonly ILogger<PaymentController> _logger;
+        public PaymentController(IPaymentService paymentService, ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
+            _logger = logger;
         }
 
         // ✅ Create payment
         [HttpPost("create")]
-        [Authorize(Roles = "buyer")]
+        //[Authorize(Roles = "buyer")]
+        [AllowAnonymous]
         public async Task<IActionResult> CreatePayment([FromBody] PaymentRequest request)
         {
+
+            //_logger.LogInformation("=================== Request body {req}",
+            //JsonSerializer.Serialize(request, new JsonSerializerOptions
+            //{
+            //    WriteIndented = true
+            //}));
+
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+            request.BuyerId = userId;
+
             var result = await _paymentService.CreatePaymentAsync(request);
             return HandleResponse(result);
         }

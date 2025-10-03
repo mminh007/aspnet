@@ -77,5 +77,13 @@ namespace Order.DAL.Repositories
             await _context.Orders.AddAsync(order);
             return order;
         }
+
+        public async Task UpdateStatus(Guid orderId, string status)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            order.Status = status;
+
+        }
     }
 }

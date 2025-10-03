@@ -21,6 +21,14 @@ namespace Order.API.Controllers
             _cartService = cartService;
         }
 
+        [HttpPost("create-cart")]
+        public async Task<IActionResult> CreateCart(Guid user_id)
+        {
+            var response = await _cartService.CreateCart(user_id);
+
+            return HandleResponse(response);
+        }
+
         /// <summary>
         /// Lấy giỏ hàng của user
         /// </summary>

@@ -12,7 +12,7 @@ namespace Order.DAL.Repositories
         Task UpdateCartAsync(CartModel cart);
         Task DeleteCartAsync(Guid cartId);
 
-        Task<CartItemModel?> GetCartItemByIdAsync(Guid cartItemId);
+        Task<CartItemModel?> GetCartItemByIdAsync(Guid productId);
         Task AddCartItemAsync(CartItemModel item);
         Task UpdateCartItemAsync(CartItemModel item);
         Task RemoveCartItemAsync(Guid cartItemId);

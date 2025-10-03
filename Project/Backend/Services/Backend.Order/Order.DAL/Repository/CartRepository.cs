@@ -35,8 +35,8 @@ namespace Order.DAL.Repositories
             return cart?.Items.Where(i => i.StoreId == storeId).ToList() ?? new List<CartItemModel>();
         }
 
-        public async Task<CartItemModel?> GetCartItemByIdAsync(Guid cartItemId) =>
-            await _context.CartItems.FirstOrDefaultAsync(c => c.CartItemId == cartItemId);
+        public async Task<CartItemModel?> GetCartItemByIdAsync(Guid productId) =>
+            await _context.CartItems.FirstOrDefaultAsync(c => c.ProductId == productId);
 
         public async Task CreateCartAsync(CartModel cart)
         {

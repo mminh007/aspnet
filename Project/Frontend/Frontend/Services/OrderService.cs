@@ -5,6 +5,7 @@ using Frontend.Models.Orders.Requests;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Net.NetworkInformation;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 // UserId không cần phải truyền vào vì backend sẽ parse từ access token
 // Nhưng vì theo flow cũ nên vẫn sẽ truyền useId để tránh refactor quá nhiều và tránh bug
 namespace Frontend.Services
@@ -24,7 +25,7 @@ namespace Frontend.Services
             _cache = cache;
         }
 
-        public async Task<(string Message, int StatusCode, int CountItems, IEnumerable<DTOs.CartItemDTO> itemList)> AddProductToCart(Guid userId, RequestItemsToCartModel dto)
+        public async Task<(string Message, int StatusCode, int CountItems, DTOs.CartDTO? data)> AddProductToCart(Guid userId, RequestItemsToCartModel dto)
         {
             var (success, message, statusCode, cart) = await _client.AddItemsToCart(userId, dto);
 
@@ -42,12 +43,12 @@ namespace Frontend.Services
             var totalItems = cart.Items.Count;
 
             // filter by storeId
-            var productList = new List<DTOs.CartItemDTO>();
+            //var productList = new List<DTOs.CartItemDTO>();
 
-            foreach (var item in cart.Items)
-            {
-                if (item.StoreId == dto.StoreId) { productList.Add(item); }
-            }
+            //foreach (var item in cart.Items)
+            //{
+            //    if (item.StoreId == dto.StoreId) { productList.Add(item); }
+            //}
 
             // ✅ Luôn update cache bằng kết quả từ API
             string cacheKey_counting = $"cart:countItems:{userId}";
@@ -60,7 +61,7 @@ namespace Frontend.Services
 
             //var(_, _, _) = await GetCartByUserId(userId, "add");
 
-            return (message, statusCode, totalItems, productList);
+            return (message, statusCode, totalItems, cart);
         }
 
         public async Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId)
@@ -145,9 +146,15 @@ namespace Frontend.Services
      
         }
 
-        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid cartItemId, UpdateQuantityModel request)
+        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId, UpdateQuantityModel request)
         {
-            var result = await _client.UpdateItemQuantity(userId, cartItemId, request);
+            var result = await _client.UpdateItemQuantity(request.Productid, request);
+
+            string cacheKey = $"cart:cartStore:{userId}-{storeId}";
+
+            var productInStore = result.data.Items.Where(i => i.StoreId == storeId).ToList();
+
+            await _cache.SetAsync(cacheKey, productInStore.Count, _cacheDuration);
 
             return (result.Message, result.statusCode, result.data);
         }
@@ -166,17 +173,10 @@ namespace Frontend.Services
             return (result.Message ?? "No message", result.statusCode, result.data ?? new List<DTOs.OrderDTO>());
         }
 
- 
 
-        public async Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId)
+        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds)
         {
-            var result = await _client.DeleteOrder(orderId);
-            return (result.Message ?? "No message", result.statusCode);
-        }
-
-        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)> Checkout(Guid userId, IEnumerable<Guid> productIds)
-        {
-            var result = await _client.Checkout(userId, productIds);
+            var result = await _client.CreateOrder(userId, productIds);
 
             if (result.data != null)
             {
@@ -224,5 +224,11 @@ namespace Frontend.Services
             return (result.Message ?? string.Empty, result.statusCode, result.data);
         }
 
+        public async Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId)
+        {
+            var result = await _client.DeleteOrder(orderId);
+            return (result.Message ?? "No message", result.statusCode);
+        }
+      
     }
 }
