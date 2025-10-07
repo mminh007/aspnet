@@ -1,10 +1,14 @@
 ﻿using Adminstrator.HttpsClients.Interfaces;
 using Adminstrator.Models.Products;
+using Adminstrator.Models.Products.Requests;
+using Adminstrator.Models.Stores;
 using Adminstrator.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Sprache;
 
 namespace Adminstrator.Controllers
 {
+    [Route("Product")]
     public class ProductController : Controller
     {
         private readonly IStoreService _storeService;
@@ -21,7 +25,7 @@ namespace Adminstrator.Controllers
             _logger = logger;
         }
 
-        [Route("Product/Management/{storeId:guid}")]
+        [Route("Management/{storeId:guid}")]
         public async Task<IActionResult> Index(Guid storeId)
         {
 
@@ -58,5 +62,97 @@ namespace Adminstrator.Controllers
             return View(model);
         }
 
+        [HttpPost("update-product/{storeId}")]
+        public async Task<IActionResult> UpdateProduct(Guid storeId, UpdateProductModel model, IFormFile? ProductImageFile)
+        {
+            model.Quantity = 99;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);    
+            }
+
+            if (ProductImageFile != null && ProductImageFile.Length > 0)
+            {
+                // 🔹 Chỉ lấy tên file, bỏ hết path
+                var fileName = Path.GetFileName(ProductImageFile.FileName);
+                model.ProductImage = $"{storeId}/{ProductImageFile.FileName}";
+            }
+
+
+            var result = await _productService.Update(model.ProductId, model);
+
+            return RedirectToAction("Index", new { storeId });
+        }
+
+        [HttpPost("create-product")]
+        public async Task<IActionResult> CreateProduct(DTOs.ProductDTO model, IFormFile? NewImageFile)
+        {
+            model.Quantity = 99;
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (NewImageFile != null && NewImageFile.Length > 0)
+            {
+                // 🔹 Chỉ lấy tên file, bỏ hết path
+                var fileName = Path.GetFileName(NewImageFile.FileName);
+                model.ProductImage = $"{model.StoreId}/{NewImageFile.FileName}";
+            }
+
+            var result = await _productService.Create(model);
+
+            return RedirectToAction("Index", new { model.StoreId });
+        }
+
+        [HttpDelete("delete-product")]
+        public async Task<IActionResult> DeleteProduct(Guid productId, Guid storeId)
+        {
+            var result = await _productService.Delete(productId);
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message ?? "Đã xóa sản phẩm thành công."
+            });
+            //return RedirectToAction("Index", new { storeId });
+        }
+
+        [HttpPut("change-active")]
+        public async Task<IActionResult> ChangeActive([FromBody] ChangeActiveProduct request)
+        {
+            var result = await _productService.ChangeActiveProduct(request);
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message
+            });
+        }
+
+        [HttpPost("create-category")]
+        public async Task<IActionResult> CreateCategory([FromBody] DTOs.CategoryDTO request)
+        {
+            var result = await _productService.CreateCategoryAsync(request);
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message
+            });
+        }
+
+        [HttpDelete("delete-category")]
+        public async Task<IActionResult> DeleteCategory([FromQuery] string category_id)
+        {
+            var categoryId = Guid.Parse(category_id);
+            var result = await _productService.DeleteCategoryAsync(categoryId);
+
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message
+            });
+        }
     }
 }

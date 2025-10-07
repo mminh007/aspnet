@@ -372,16 +372,21 @@ namespace Order.BLL.Services
                 await _uow.Carts.RemoveCartItemAsync(item.CartItemId);
             }
 
-            // Kiểm tra nếu không còn items nào, xóa cart
             var remainingItems = dbCart.Items.Where(i => !productIdsList.Contains(i.ProductId)).ToList();
-            if (!remainingItems.Any())
-            {
-                await _uow.Carts.DeleteCartAsync(dbCart.CartId);
-            }
-            else
+
+            if (remainingItems.Any())
             {
                 await _uow.Carts.UpdateCartAsync(dbCart);
             }
+
+            //if (!remainingItems.Any())
+            //{
+            //    await _uow.Carts.DeleteCartAsync(dbCart.CartId);
+            //}
+            //else
+            //{
+            //    await _uow.Carts.UpdateCartAsync(dbCart);
+            //}
 
             await _uow.SaveChangesAsync();
 
@@ -397,7 +402,34 @@ namespace Order.BLL.Services
         public async Task<OrderResponseModel<List<CartItemDTO>>> GetCartItemsByStoreAsync(Guid userId, Guid storeId)
         {
             var items = await _uow.Carts.GetCartItemsByStoreAsync(userId, storeId);
+            if (items == null || !items.Any())
+            {
+                return new OrderResponseModel<List<CartItemDTO>>
+                {
+                    Success = true,
+                    Message = OperationResult.Failed,
+                    ErrorMessage = "No items in cart.",
+                    Data = new List<CartItemDTO>()
+                };
+            }
+
+            var itemIdList = items.Select(i => i.ProductId).ToList();
+            var checkItems = await _productService.GetProductInfoAsync(itemIdList);
+
             var itemDtos = _mapper.Map<List<CartItemDTO>>(items);
+
+            // ✅ Tạo map nhanh để lookup IsActive
+            var activeMap = (checkItems?.Data ?? new List<CartProductDTO>())
+                .Where(p => p != null)
+                .ToDictionary(p => p.ProductId, p => p.IsActive);
+
+            foreach (var item in itemDtos)
+            {
+                item.IsAvailable = activeMap.TryGetValue(item.ProductId, out var isActive) && isActive;
+            }
+
+            // return item has isActive = true
+            itemDtos = itemDtos.Where(i => i.IsAvailable).ToList();
 
             return new OrderResponseModel<List<CartItemDTO>>
             {

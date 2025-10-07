@@ -143,8 +143,12 @@ namespace Frontend.Controllers
         }
 
         [HttpGet("list-order")]
-        public async Task<IActionResult> GetOrderList(Guid buyer)
+        public async Task<IActionResult> GetOrderList()
         {
+            var buyerIdStr = HttpContext.Session.GetString("UserId");
+
+            var buyer = Guid.Parse(buyerIdStr);
+
             var (msg, status, data) = await _orderService.GetOrdersByUser(buyer);
 
             if (status != 200)

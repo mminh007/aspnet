@@ -30,6 +30,19 @@ namespace Store.API.Controllers
             return HandleResponse(result);
         }
 
+        [HttpGet("search-keyword")]
+        public async Task<IActionResult> SearchStoreByKeyword(string keyword)
+        {
+            var result = await _storeService.SearchStoreByKeywordAsync(keyword);
+            return HandleResponse(result);
+        }
+
+        [HttpGet("search-tag")]
+        public async Task<IActionResult> SearchStoreByTag(string tag)
+        {
+            var result = await _storeService.SearchStoreByTagAsync(tag);
+            return HandleResponse(result);
+        }
 
         [HttpGet("get")]
         [Authorize(Roles = "seller, system")]

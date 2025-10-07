@@ -26,6 +26,11 @@ html, body {
     overflow-x: hidden; /* tránh tràn ngang */
 }
 
+.nav-link.active {
+    border-bottom: 2px solid #EE4D2D;
+    color: #EE4D2D !important;
+}
+
 .navbar-nav .nav-link {
     white-space: nowrap; /* giữ chữ không xuống dòng */
 }

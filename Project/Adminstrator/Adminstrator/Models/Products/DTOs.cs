@@ -8,6 +8,12 @@ namespace Adminstrator.Models.Products
         {
             public string ProductName { get; set; }
 
+            public string? ProductImage { get; set; }
+
+            public Guid? StoreId { get; set; }
+
+            public Guid CategoryId { get; set; }
+
             public string Description { get; set; }
 
             [Column(TypeName = "decimal(18,2)")]
@@ -20,7 +26,7 @@ namespace Adminstrator.Models.Products
 
             public string Supplier { get; set; }
 
-            public CategoryDTO Category { get; set; }
+            public CategoryDTO? Category { get; set; }
             public bool IsActive { get; set; } = true;
         }
 
@@ -31,6 +37,8 @@ namespace Adminstrator.Models.Products
             public Guid CategoryId { get; set; }
 
             public string ProductName { get; set; }
+
+            public string ProductImage { get; set; }
             public string? Description { get; set; }
 
             public decimal SalePrice { get; set; }
@@ -46,7 +54,7 @@ namespace Adminstrator.Models.Products
 
         public class CategoryDTO
         {
-            public Guid CategoryId { get; set; }
+            public Guid? CategoryId { get; set; }
             public string CategoryName { get; set; }
 
             public Guid StoreId { get; set; }

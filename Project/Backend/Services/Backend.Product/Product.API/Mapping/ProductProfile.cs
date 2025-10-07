@@ -21,7 +21,8 @@ namespace API.Mapping
 
             // Update mapping 
             CreateMap<UpdateProductModel, ProductModel>()
-                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+                    .ForMember(dest => dest.ProductImage, opt => opt.Ignore()) 
+                    .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
 
             CreateMap<ProductModel, ProductSellerDTO>();

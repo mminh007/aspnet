@@ -24,13 +24,16 @@ namespace DAL.Repository
         // Create, Update, Delete 
         Task<ProductModel> AddProductAsync(ProductModel product);
 
-        Task<ProductModel?> UpdateProductAsync (ProductModel updateProduct, Guid ProductId);
+        Task<ProductModel> UpdateProductAsync (ProductModel updateProduct, Guid ProductId);
         Task<int> UpdateProductPriceAsync(Guid productId, decimal newPrice);
+
+        Task<int> UpdateActiveProduct(Guid productId, bool isActive);
 
         Task<int> DeleteProductAsync(Guid productId);
 
         Task<CategoryModel> CreateCategoryAsync(CategoryModel model);
 
+        Task<int> DeleteCategoryAsync(Guid categoryId);
 
         Task SaveChangesAsync();
     }

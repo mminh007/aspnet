@@ -1,6 +1,4 @@
-﻿
-
-namespace Common.Models.Requests
+﻿namespace Adminstrator.Models.Products.Requests
 {
     public class UpdateProductModel
     {

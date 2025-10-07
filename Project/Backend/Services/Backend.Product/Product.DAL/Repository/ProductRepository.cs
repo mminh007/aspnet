@@ -24,15 +24,6 @@ namespace DAL.Repository
             return product;
         }
 
-        public async Task<int> DeleteProductAsync(Guid productId)
-        {
-            var product = await _db.Products.FirstOrDefaultAsync(x => x.ProductId == productId);
-            if (product == null) return 0;
-
-            product.IsActive = false;
-            product.UpdatedAt = DateTime.UtcNow;
-            return await _db.SaveChangesAsync();
-        }
 
         public async Task<ProductModel?> GetByIdAsync(Guid productId)
         {
@@ -101,7 +92,7 @@ namespace DAL.Repository
                 .ToListAsync();
         }
 
-        public async Task<ProductModel?> UpdateProductAsync(ProductModel updateProduct, Guid productId)
+        public async Task<ProductModel> UpdateProductAsync(ProductModel updateProduct, Guid productId)
         {
             var product = await _db.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
             if (product == null) return null;
@@ -112,15 +103,18 @@ namespace DAL.Repository
                 await UpdateProductPriceAsync(productId, updateProduct.SalePrice);
             }
 
+            if(updateProduct.ProductImage != null)
+            {
+                product.ProductImage = updateProduct.ProductImage;
+            }
+
             // Cập nhật các field khác
             product.ProductName = updateProduct.ProductName;
             product.Description = updateProduct.Description;
-            product.ImportPrice = updateProduct.ImportPrice;
-            product.ProductImage = updateProduct.ProductImage;
+            product.ImportPrice = updateProduct.ImportPrice;   
             product.Quantity = updateProduct.Quantity;
             product.Supplier = updateProduct.Supplier;
             product.CategoryId = updateProduct.CategoryId;
-            product.IsActive = updateProduct.IsActive;
             product.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -143,10 +137,49 @@ namespace DAL.Repository
             return await _db.SaveChangesAsync();
         }
 
+        public async Task<int> UpdateActiveProduct(Guid productId, bool isActive)
+        {
+            var product = await _db.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+            if (product == null) return 0;
+
+            product.IsActive = isActive;
+            product.UpdatedAt = DateTime.UtcNow;
+            return await _db.SaveChangesAsync();
+        }
+
         public async Task SaveChangesAsync()
         {
             await _db.SaveChangesAsync();
         }
+
+        public async Task<int> DeleteProductAsync(Guid productId)
+        {
+            var product = await _db.Products.FirstOrDefaultAsync(x => x.ProductId == productId);
+            if (product == null) return 0;
+
+            product.IsActive = false;
+            product.UpdatedAt = DateTime.UtcNow;
+            return await _db.SaveChangesAsync();
+        }
+
+        public async Task<int> DeleteCategoryAsync(Guid categoryId)
+        {
+            var cat = await _db.Category.FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+            if (cat == null) return 0;
+
+            bool hasProducts = await _db.Products.AnyAsync(p => p.CategoryId == categoryId);
+            if (hasProducts)
+                return -1; // không cho phép xóa khi còn sản phẩm
+
+            // 3️⃣ Tiến hành xóa
+            _db.Category.Remove(cat);
+            await _db.SaveChangesAsync();
+
+            return 1; 
+
+        }
+
+
     }
 }
 

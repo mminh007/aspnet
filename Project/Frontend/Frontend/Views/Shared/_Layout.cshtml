@@ -25,8 +25,16 @@
                 <!-- Navbar links -->
                 <div class="collapse navbar-collapse justify-content-center" id="navbarContent">
                     <ul class="navbar-nav flex-wrap text-center">
-                        <li class="nav-item"><a class="nav-link fw-bold text-dark" asp-controller="Home" asp-action="Index">Đồ ăn</a></li>
-                        <li class="nav-item"><a class="nav-link fw-bold text-dark" href="#">Thực phẩm</a></li>
+                        <li class="nav-item"><a class="nav-link fw-bold text-dark" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold @(ViewData["SelectedTag"]?.ToString() == "Đồ ăn" ? "active text-primary" : "text-dark")"
+                               asp-controller="Home" asp-action="SearchStoreByTag" asp-route-tag="Đồ ăn">Đồ ăn</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold @(ViewData["SelectedTag"]?.ToString() == "Thực phẩm" ? "active text-primary" : "text-dark")"
+                               asp-controller="Home" asp-action="SearchStoreByTag" asp-route-tag="Thực phẩm">Thực phẩm</a>
+                        </li>
                         <li class="nav-item"><a class="nav-link fw-bold text-dark" href="#">Rượu bia</a></li>
                         <li class="nav-item"><a class="nav-link fw-bold text-dark" href="#">Hoa</a></li>
                         <li class="nav-item"><a class="nav-link fw-bold text-dark" href="#">Siêu thị</a></li>

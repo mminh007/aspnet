@@ -15,7 +15,7 @@
                             <p>Có hàng chục ngàn địa điểm ở TP. HCM từ 00:00 - 23:59</p>
 
                             <!-- Thanh Search -->
-                            <form asp-controller="Home" asp-action="Search" method="get" class="d-flex justify-content-center mt-3">
+                            <form asp-controller="Home" asp-action="SearchStoreByKeyword" method="get" class="d-flex justify-content-center mt-3">
                                 <input type="text" name="keyword" class="form-control w-75"
                                        placeholder="Tìm địa điểm, món ăn, địa chỉ..." />
                                 <button type="submit" class="btn btn-primary ms-2">Tìm</button>
@@ -23,10 +23,15 @@
 
                             <!-- Categories -->
                             <div class="categories mt-4 d-flex flex-wrap justify-content-center gap-2">
-                                <button class="btn btn-outline-light btn-sm">All</button>
-                                <button class="btn btn-outline-light btn-sm">Đồ ăn</button>
-                                <button class="btn btn-outline-light btn-sm">Đồ uống</button>
-                                <button class="btn btn-outline-light btn-sm">Pizza/Burger</button>
+                                <a asp-controller="Home" asp-action="SearchStoreByTag" asp-route-tag="Đồ ăn"
+                                   class="btn btn-outline-light btn-sm">Đồ ăn</a>
+
+                                <a asp-controller="Home" asp-action="SearchStoreByTag" asp-route-tag="Đồ uống"
+                                   class="btn btn-outline-light btn-sm">Đồ uống</a>
+
+                                <a asp-controller="Home" asp-action="SearchStoreByTag" asp-route-tag="Thực phẩm"
+                                   class="btn btn-outline-light btn-sm">Thực phẩm</a>
+
                                 <button class="btn btn-outline-light btn-sm">Bánh kem</button>
                                 <button class="btn btn-outline-light btn-sm">Tráng miệng</button>
                                 <button class="btn btn-outline-light btn-sm">Sushi</button>

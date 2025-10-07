@@ -1,4 +1,4 @@
-using Adminstrator.Configs.Auth;
+﻿using Adminstrator.Configs.Auth;
 using Adminstrator.Configs.Product;
 using Adminstrator.Configs.Store;
 using Adminstrator.Helpers;
@@ -91,11 +91,18 @@ namespace Adminstrator
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles(new StaticFileOptions
+
+            app.UseStaticFiles();
+
+            if (!string.IsNullOrEmpty(storeImagePath) && !string.IsNullOrEmpty(storeImageRequest))
             {
-                FileProvider = new PhysicalFileProvider(storeImagePath),
-                RequestPath = storeImageRequest
-            });
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new PhysicalFileProvider(storeImagePath),
+                    RequestPath = storeImageRequest
+                });
+            }
+
 
             app.UseRouting();
             app.UseSession();

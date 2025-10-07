@@ -43,34 +43,49 @@ namespace Adminstrator.Controllers
 
 
         [HttpPut]
-        public async Task<IActionResult> Update(UpdateStoreModel model, IFormFile? StoreImage)
+        public async Task<IActionResult> Update([FromQuery] Guid storeId, UpdateStoreModel model, IFormFile? StoreImage)
         {
-            var path = Environment.GetEnvironmentVariable("STORE_IMAGE_PATH");
-
-            var storeImagePath = path + model.StoreId.ToString();
-
-            if (StoreImage != null && StoreImage.Length > 0)
+            try
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(StoreImage.FileName);
-                var filePath = Path.Combine(storeImagePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Nếu có file upload
+                if (StoreImage != null && StoreImage.Length > 0)
                 {
-                    await StoreImage.CopyToAsync(stream);
+                    // 🔹 Chỉ lấy tên file, bỏ hết path
+                    var fileName = Path.GetFileName(StoreImage.FileName);
+                    model.StoreImage = $"{model.StoreId}/{StoreImage.FileName}";
+                    ;
                 }
 
-                model.StoreImage = fileName;
+                // 🔹 Gọi service cập nhật
+                var result = await _storeService.UpdateStoreAsync(model);
+
+                if (result.statusCode != 200)
+                {
+                    return StatusCode(result.statusCode, new
+                    {
+                        success = false,
+                        message = result.message
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Cập nhật thành công",
+                    data = result.data
+                });
             }
-
-            var result = await _storeService.UpdateStoreAsync(model);
-
-            return Ok(new
+            catch (Exception ex)
             {
-                success = true,
-                message = "Cập nhật thành công",
-                data = result.data
-            });
+                // Luôn trả JSON kể cả khi lỗi
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Lỗi máy chủ: " + ex.Message
+                });
+            }
         }
+
 
 
         [HttpPatch]

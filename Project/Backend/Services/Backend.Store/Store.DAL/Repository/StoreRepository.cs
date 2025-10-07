@@ -17,6 +17,18 @@ namespace Store.DAL.Repository
             _db = db;
         }
 
+        public async Task<IEnumerable<StoreModel>> SearchStoreByKeywordAsync(string keyword)
+        {
+            return await _db.Stores
+                .Where(p => (p.StoreName ?? "").Contains(keyword)).ToListAsync();
+        }
+
+        public async Task<IEnumerable<StoreModel>> SearchStoreByTagAsync(string keyword)
+        {
+            return await _db.Stores
+                .Where(p => (p.StoreCategory ?? "").Contains(keyword)).ToListAsync();
+        }
+
         public async Task<Guid> CreateStoreAsync(RegisterStoreModel model)
         {
             var newStore = new StoreModel

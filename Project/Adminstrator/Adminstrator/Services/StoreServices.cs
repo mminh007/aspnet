@@ -34,7 +34,7 @@ namespace Adminstrator.Services
             return (message, statusCode, data);
         }
 
-        public async Task<(string mesage, int statusCode, StoreDto data)> UpdateStoreAsync(UpdateStoreModel model)
+        public async Task<(string message, int statusCode, StoreDto data)> UpdateStoreAsync(UpdateStoreModel model)
         {
             var (success, message, statusCode, data) = await _storeApi.UpdateInfomationStore(model);
 

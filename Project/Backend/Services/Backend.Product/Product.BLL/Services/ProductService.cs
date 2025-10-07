@@ -8,6 +8,7 @@ using DAL.Models.Entities;
 using DAL.Repository;
 using Microsoft.Extensions.Options;
 using Product.Common.Configs;
+using Product.Common.Models.Requests;
 
 namespace BLL.Services
 {
@@ -127,7 +128,7 @@ namespace BLL.Services
             };
         }
 
-        public async Task<ProductResponseModel<DTOs.ProductSellerDTO>> CreateProductAsync(DTOs.ProductDTO dto)
+        public async Task<ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>> CreateProductAsync(DTOs.ProductDTO dto)
         {
             try
             {
@@ -135,20 +136,25 @@ namespace BLL.Services
                 var created = await _repo.AddProductAsync(entity);
                 await _repo.SaveChangesAsync();
 
-                var prodDto = _mapper.Map<DTOs.ProductSellerDTO>(created);
+                //var prodDto = _mapper.Map<DTOs.ProductSellerDTO>(created);
 
-                prodDto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{prodDto.ProductImage}";
+                //prodDto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{prodDto.ProductImage}";
 
-                return new ProductResponseModel<DTOs.ProductSellerDTO>
+                var products = await _repo.GetProductsByStoreIdAsync(dto.StoreId);
+
+                var productList = _mapper.Map<IEnumerable<DTOs.ProductSellerDTO>>(products);
+
+
+                return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
                 {
                     Success = true,
                     Message = OperationResult.Success,
-                    Data = prodDto
+                    Data = productList,
                 };
             }
             catch (Exception ex)
             {
-                return new ProductResponseModel<DTOs.ProductSellerDTO>
+                return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
                 {
                     Success = false,
                     Message = OperationResult.Error,
@@ -157,35 +163,37 @@ namespace BLL.Services
             }
         }
 
-        public async Task<ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>> UpdateProductAsync(IEnumerable<UpdateProductModel> dtoList)
+        public async Task<ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>> UpdateProductAsync(UpdateProductModel dto)
         {
             try
             {
-                var updatedList = new List<DTOs.ProductSellerDTO>();
-                var notFound = new List<Guid>();
+                
+                var product = _mapper.Map<ProductModel>(dto);
 
-                foreach (var dto in dtoList)
+                if(dto.ProductImage != null)
                 {
-                    var entity = _mapper.Map<ProductModel>(dto);
-                    entity.ProductId = dto.ProductId;
+                    product.ProductImage = dto.ProductImage;
+                }
 
-                    var updated = await _repo.UpdateProductAsync(entity, entity.ProductId);
-                    if (updated != null)
+                var newProduct = await _repo.UpdateProductAsync(product, product.ProductId);
+
+                if (newProduct != null)
+                {
+                    var products = await _repo.GetProductsByStoreIdAsync(newProduct.StoreId);
+
+                    var productList = _mapper.Map<IEnumerable<DTOs.ProductSellerDTO>>(products);
+
+                    return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
                     {
-                        updatedList.Add(_mapper.Map<DTOs.ProductSellerDTO>(updated));
-                    }
-                    else
-                    {
-                        notFound.Add(dto.ProductId);
-                    }
+                        Success = true,
+                        Data = productList,
+                    };
                 }
 
                 return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>
                 {
-                    Success = updatedList.Any(),
-                    Message = updatedList.Any() ? OperationResult.Success : OperationResult.NotFound,
-                    Data = updatedList,
-                    NotFoundProductIds = notFound
+                    Success = false,
+
                 };
             }
             catch (Exception ex)
@@ -231,6 +239,27 @@ namespace BLL.Services
             }
         }
 
+        public async Task<ProductResponseModel<object>> ChangeActiveProductAsync(ChangeActiveProduct request)
+        {
+            var result = await _repo.UpdateActiveProduct(request.ProductId, request.IsActive);
+
+            if (result == 0)
+            {
+                return new ProductResponseModel<object>
+                {
+                    Success = false,
+                    ErrorMessage = "Product not found!"
+                };
+            }
+
+            return new ProductResponseModel<object>
+            {
+                Success = true,
+
+            };
+        }
+
+
         //---------------------------
         // Category
         //---------------------------
@@ -274,6 +303,38 @@ namespace BLL.Services
                 Data = dtos
             };
         }
+
+        public async Task<ProductResponseModel<int>> DeleteCategoryAsync(Guid categoryId)
+        {
+            var result = await _repo.DeleteCategoryAsync(categoryId);
+
+            if (result == -1)
+            {
+                return new ProductResponseModel<int>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Any Product belong to category"
+                };
+            }
+
+            else if (result == 0) {
+                return new ProductResponseModel<int>
+                {
+                    Success = false,
+                    Message = OperationResult.Failed,
+                    ErrorMessage = "Category not found"
+                };
+            }
+
+            return new ProductResponseModel<int>
+            {
+                Success = true,
+                Message = OperationResult.Success,
+            };
+
+        }
+
 
         //---------------------------
         // Order Product Info
@@ -371,5 +432,6 @@ namespace BLL.Services
                 Data = dto
             };
         }
+
     }
 }

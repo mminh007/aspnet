@@ -300,6 +300,15 @@
             document.getElementById("cart-total").textContent = "0 đ";
             return;
         }
+
+        //const activeItems = items.filter(item => item.isAvailable === true || item.isActive === true);
+
+        //if (activeItems.length === 0) {
+        //    container.innerHTML = `<p class="text-center text-muted">Giỏ hàng trống</p>`;
+        //    document.getElementById("cart-total").textContent = "0 đ";
+        //    return;
+        //}
+
         let html = "";
         items.forEach(item => {
             total += item.isAvailable ? item.price * item.quantity : 0;

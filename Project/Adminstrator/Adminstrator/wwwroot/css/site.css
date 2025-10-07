@@ -99,3 +99,63 @@ html, body {
     padding: 6px 10px;
 }
 
+
+/*Modal Update Store*/
+.modal-content {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.modal-body .form-label {
+    font-weight: 500;
+}
+
+.modal-body input.form-control,
+.modal-body textarea.form-control {
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+#previewImage {
+    border: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+/*Product Card*/
+
+.product-img {
+    max-width: 120px; /* 👈 Giới hạn chiều rộng */
+    max-height: 120px; /* 👈 Giới hạn chiều cao */
+    width: auto; /* Giữ tỉ lệ thật */
+    height: auto;
+    object-fit: cover; /* Cắt khung nếu ảnh quá to */
+    border-radius: 8px;
+    margin: auto; /* Căn giữa trong cột */
+    display: block;
+}
+
+.product-card {
+    transition: all 0.2s ease-in-out;
+    padding: 0.5rem 1rem;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 992px) {
+    .product-img {
+        max-width: 100px;
+        max-height: 100px;
+    }
+}
+
+@media (max-width: 576px) {
+    .product-img {
+        max-width: 80px;
+        max-height: 80px;
+    }
+}
+}
+

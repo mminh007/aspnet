@@ -2,6 +2,7 @@
 using Frontend.HttpsClients.Stores;
 using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace Frontend.Services
 {
@@ -59,6 +60,39 @@ namespace Frontend.Services
 
             await _cache.SetAsync(cacheKey, data, _cacheDuration);
             return (message, statusCode, data);
+        }
+
+        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoreByKeywordAsync(string keyword)
+        {
+            string cacheKey = $"search: {keyword}";
+            var cachedData = await _cache.GetAsync<IEnumerable<StoreDto>>(cacheKey);
+
+            if (cachedData != null)
+            {
+                return ("OK (from cache)", 200, cachedData);
+            }
+
+            var (sucess, message, status, data) = await _storeApiClient.SearchStoreByKeywordAsync(keyword);
+
+            await _cache.SetAsync(cacheKey, data, _cacheDuration);
+            return (message, status, data);
+
+        }
+
+        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoreByTagAsync(string tag)
+        {
+            string cacheKey = $"search: {tag}";
+            var cachedData = await _cache.GetAsync<IEnumerable<StoreDto>>(cacheKey);
+
+            if (cachedData != null)
+            {
+                return ("OK (from cache)", 200, cachedData);
+            }
+
+            var (sucess, message, status, data) = await _storeApiClient.SearchStoreByKeywordAsync(tag);
+
+            await _cache.SetAsync(cacheKey, data, _cacheDuration);
+            return (message, status, data);
         }
     }
 }

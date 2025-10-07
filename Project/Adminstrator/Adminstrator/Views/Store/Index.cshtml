@@ -62,52 +62,65 @@
 </div>
 
 <!-- Modal Update Store -->
+<!-- Modal Update Store -->
 <div class="modal fade" id="updateStoreModal" tabindex="-1" aria-labelledby="updateStoreModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <form id="updateStoreForm" enctype="multipart/form-data">
                 <input type="hidden" name="StoreId" value="@Model.StoreId" />
 
-                <div class="mb-3">
-                    <label class="form-label">Hình ảnh cửa hàng</label>
-                    <input type="file" class="form-control" id="StoreImage" name="StoreImage" accept="image/*" />
-                    <small class="text-muted">Ảnh hiện tại:</small>
-                    <img id="previewImage" src="@($"{Environment.GetEnvironmentVariable("STORE_IMAGE_REQUEST")}/{Model.StoreImage}")"
-                         class="img-thumbnail mt-2" style="max-height:100px;" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="updateStoreModalLabel">Cập nhật cửa hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Tên cửa hàng</label>
-                    <input type="text" class="form-control" name="StoreName" value="@Model.StoreName" required />
-                </div>
+                <div class="modal-body">
+                    <div class="row g-4 align-items-start">
+                        <!-- Cột ảnh -->
+                        <div class="col-md-4 text-center">
+                            <label class="form-label fw-semibold">Hình ảnh cửa hàng</label>
+                            <input type="file" class="form-control mb-2" id="StoreImage" name="StoreImage" accept="image/*" />
+                            <small class="text-muted d-block">Ảnh hiện tại:</small>
+                            <img id="previewImage" src="@Model.StoreImage"
+                                 class="img-thumbnail mt-2 shadow-sm"
+                                 style="max-height: 150px; object-fit: cover;" />
+                        </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Mô tả</label>
-                    <textarea class="form-control" name="Description" rows="3">@Model.Description</textarea>
-                </div>
+                        <!-- Cột thông tin -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Tên cửa hàng</label>
+                                <input type="text" class="form-control" name="StoreName" value="@Model.StoreName" required />
+                            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Địa chỉ</label>
-                    <input type="text" class="form-control" name="Address" value="@Model.Address" required />
-                </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mô tả</label>
+                                <textarea class="form-control" name="Description" rows="2">@Model.Description</textarea>
+                            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Số điện thoại</label>
-                    <input type="text" class="form-control" name="Phone" value="@Model.Phone" />
-                </div>
+                            <div class="mb-3">
+                                <label class="form-label">Địa chỉ</label>
+                                <input type="text" class="form-control" name="Address" value="@Model.Address" required />
+                            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Danh mục</label>
-                    <input type="text" class="form-control" name="StoreCategory" value="@Model.StoreCategory" />
+                            <div class="mb-3">
+                                <label class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" name="Phone" value="@Model.Phone" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Danh mục</label>
+                                <input type="text" class="form-control" name="StoreCategory" value="@Model.StoreCategory" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-success">Xác nhận</button>
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-success px-4">Xác nhận</button>
                 </div>
             </form>
-
-
         </div>
     </div>
 </div>

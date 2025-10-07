@@ -1,3 +1,4 @@
+using API.Mapping;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -55,6 +56,7 @@ namespace Store
                 builder.Configuration.GetSection("StaticFiles"));
 
             // Register DI
+            builder.Services.AddAutoMapper(cfg => { }, typeof(StoreProfile));
             builder.Services.AddScoped<IStoreRepository, StoreRepository>();
             builder.Services.AddScoped<IStoreService, StoreService>();
 

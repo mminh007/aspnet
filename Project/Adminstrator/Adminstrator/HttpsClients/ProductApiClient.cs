@@ -1,6 +1,7 @@
 ﻿using Adminstrator.Configs.Product;
 using Adminstrator.HttpsClients.Interfaces;
 using Adminstrator.Models.Products;
+using Adminstrator.Models.Products.Requests;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,7 +11,6 @@ namespace Adminstrator.HttpsClients
     public class ProductApiClient : IProductApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
         private readonly ILogger<ProductApiClient> _logger;
         private readonly ProductEndpoints _endpoints;
 
@@ -48,6 +48,69 @@ namespace Adminstrator.HttpsClients
             var response = await _httpClient.GetAsync(url);
             return await ParseResponse<IEnumerable<DTOs.CategoryDTO>>(response, "SearchCategories");
         }
+
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.ProductSellerDTO>? Data)> UpdateProductAsync(Guid productId, UpdateProductModel model)
+        {
+            var url = _endpoints.Update.Replace("{productId}", productId.ToString());
+            var response = await _httpClient.PostAsJsonAsync(url, model);
+
+            return await ParseResponse<IEnumerable<DTOs.ProductSellerDTO>>(response, "UpdateProduct");
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode)> CreateProductAsync(DTOs.ProductDTO model)
+        {
+            var url = _endpoints.Create;
+            var response = await _httpClient.PostAsJsonAsync(url, model);
+
+            var result = await ParseResponse<IEnumerable<DTOs.ProductSellerDTO>>(response, "CreateProduct");
+
+            return (result.Success, result.Message, result.statusCode);
+            
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode)> UpdateActiveAsync(ChangeActiveProduct model)
+        {
+            var url = _endpoints.UpdateActive;
+
+            var response = await _httpClient.PutAsJsonAsync(url, model);
+
+            var result = await ParseResponse<object>(response, "ChangeActiveProduct");
+
+            return (result.Success, result.Message, result.statusCode);
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode)> CreateCategoryAsync(DTOs.CategoryDTO category)
+        {
+            var url = _endpoints.CreateCategory;
+
+            var response = await _httpClient.PostAsJsonAsync(url, category);
+
+            var result = await ParseResponse<DTOs.CategoryDTO>(response, "CreateCategory");
+
+            return (result.Success, result.Message, result.statusCode);
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode, string data)> DeleteProductAsync(Guid productId)
+        {
+            var url = _endpoints.Delete.Replace("{productId}", productId.ToString());
+
+            var response = await _httpClient.DeleteAsync(url);
+
+            return await ParseResponse<string>(response, "DeleteProduct");
+        }
+
+
+        public async Task<(bool Success, string? Message, int statusCode)> DeleteCategoryAsync(Guid categoryId)
+        {
+            var url = _endpoints.DeleteCategory.Replace("{categoryId}", categoryId.ToString());
+            var response = await _httpClient.DeleteAsync(url);
+
+            var result = await ParseResponse<int>(response, "DeleteCategory");
+
+            return (result.Success, result.Message, result.statusCode);
+        }
+
+
 
         private async Task<(bool Success, string? Message, int statusCode, T? Data)>
             ParseResponse<T>(HttpResponseMessage response, string action)

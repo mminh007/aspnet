@@ -6,13 +6,14 @@ using Common.Models.Requests;
 using Common.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Product.Common.Models.Requests;
 using System.Security.Claims;
 
 namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "seller,admin,system")]
+    
     public class ProductController : ControllerBase
     {
         private readonly IProductService _service;
@@ -29,6 +30,7 @@ namespace API.Controllers
         
 
         [HttpGet("search/{id:guid}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> GetProductById(Guid id)
         {
             //var productId = Guid.Parse(id);
@@ -38,6 +40,7 @@ namespace API.Controllers
 
 
         [HttpGet("get-product/{storeId:guid}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> GetProductsByStore(Guid storeId)
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -48,6 +51,7 @@ namespace API.Controllers
 
 
         [HttpGet("get/{storeId:guid}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> GetProductsByStoreAndCategory(Guid storeId, [FromQuery] Guid category_id)
         {
             //var StoreId = Guid.Parse(storeId);
@@ -59,6 +63,7 @@ namespace API.Controllers
 
 
         [HttpGet("search-product/{storeId:guid}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> SearchProductsByStore(Guid storeId, [FromQuery] string keyword)
         {
             //var StoreId = Guid.Parse(storeId);
@@ -68,6 +73,7 @@ namespace API.Controllers
 
 
         [HttpPost("create-product")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> CreateProduct([FromBody] DTOs.ProductDTO dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -77,19 +83,32 @@ namespace API.Controllers
         }
 
 
-        [HttpPut("update/{productId:guid}")]
-        public async Task<IActionResult> UpdateProduct([FromBody] IEnumerable<UpdateProductModel> dto, Guid productId)
+        [HttpPost("update/{productId:guid}")]
+        [Authorize(Roles = "seller")]
+        public async Task<IActionResult> UpdateProduct([FromBody] UpdateProductModel dto, Guid productId)
         {
             var response = await _service.UpdateProductAsync(dto);
             return HandleResponse(response);
         }
 
+        [HttpPut("update-active")]
+        [Authorize(Roles = "seller")]
+        public async Task<IActionResult> UpdateProductActive([FromBody] ChangeActiveProduct request)
+        {
+            var result = await _service.ChangeActiveProductAsync(request);
+
+            return HandleResponse(result);
+        }
+
         [HttpDelete("delete/{id}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var response = await _service.DeleteProductAsync(id);
             return HandleResponse(response);
         }
+
+
 
         // ---------------------------
         // Category APIs
@@ -97,6 +116,7 @@ namespace API.Controllers
 
 
         [HttpPost("create-category")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> CreateCategory([FromBody] DTOs.CategoryDTO category)
         {
             var response = await _service.CreateCategoryAsync(category);
@@ -104,11 +124,21 @@ namespace API.Controllers
         }
 
         [HttpGet("search-category/{storeId:guid}")]
+        [Authorize(Roles = "seller")]
         public async Task<IActionResult> SearchCategories(Guid storeId)
         {
             //var StoreId = Guid.Parse(storeId);
             var response = await _service.SearchCategoriesAsync(storeId);
             return HandleResponse(response);
+        }
+
+        [HttpDelete("delete-category/{categoryId}")]
+        [Authorize(Roles = "seller")]
+        public async Task<IActionResult> DeleteCategory(Guid categoryId)
+        {
+            var result = await _service.DeleteCategoryAsync(categoryId);
+
+            return HandleResponse(result);
         }
 
         // ---------------------------

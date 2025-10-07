@@ -1,5 +1,6 @@
 ﻿using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
+using Store.DAL.Models.Entities;
 
 namespace Store.BLL.Services
 {
@@ -19,5 +20,9 @@ namespace Store.BLL.Services
         Task<StoreResponseModel<PaginatedStoreResponse>> GetActiveStoresWithPaginationAsync(int page, int pageSize);
 
         Task<StoreResponseModel<StoreDTO>> GetStoreDetailByIdAsync(Guid storeId);
+
+        Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByKeywordAsync(string keyword);
+
+        Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByTagAsync(string tag);
     }
 }

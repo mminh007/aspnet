@@ -1,4 +1,5 @@
 ﻿
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,11 +18,13 @@ namespace Store.BLL.Services
         private readonly IStoreRepository _storeRepository;
         private readonly ILogger<StoreService> _logger;
         private readonly StaticFileConfig _staticFileConfig;
+        private readonly IMapper _mapper;
 
-        public StoreService(IStoreRepository storeRepository, ILogger<StoreService> logger, IOptions<StaticFileConfig> staticFileConfig)
+        public StoreService(IStoreRepository storeRepository, ILogger<StoreService> logger, IOptions<StaticFileConfig> staticFileConfig, IMapper mapper)
         {
             _storeRepository = storeRepository;
             _logger = logger;
+            _mapper = mapper;
 
             _staticFileConfig = staticFileConfig.Value;
 
@@ -334,6 +337,32 @@ namespace Store.BLL.Services
                     ErrorMessage = "Unexpected error while getting store list"
                 };
             }
+        }
+
+        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByKeywordAsync(string keyword)
+        {
+            var result = await _storeRepository.SearchStoreByKeywordAsync(keyword);
+
+            var dto = _mapper.Map<IEnumerable<StoreDTO>>(result);
+
+            return new StoreResponseModel<IEnumerable<StoreDTO>>()
+            {
+                Message = OperationResult.Success,
+                Data = dto
+            };
+        }
+
+        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByTagAsync(string tag)
+        {
+            var result = await _storeRepository.SearchStoreByTagAsync(tag);
+
+            var dto = _mapper.Map<IEnumerable<StoreDTO>>(result);
+
+            return new StoreResponseModel<IEnumerable<StoreDTO>>()
+            {
+                Message = OperationResult.Success,
+                Data = dto
+            };
         }
     }
 }

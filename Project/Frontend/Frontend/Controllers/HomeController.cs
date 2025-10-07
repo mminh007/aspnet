@@ -1,7 +1,9 @@
 ﻿using Frontend.HttpsClients.Stores;
 using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Frontend.Controllers
 {
@@ -39,6 +41,34 @@ namespace Frontend.Controllers
             }
 
             return PartialView("_StoreCardPartial", data); // trả về HTML partial
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SearchStoreByTag(string tag)
+        {
+            var(message, statusCode, data) = await _storeService.GetStoreByTagAsync(tag);
+
+            ViewData["SelectedTag"] = tag; 
+            ViewData["Title"] = tag;
+
+            if (data == null)
+                return View("SearchStoreByTag", Enumerable.Empty<StoreDto>());
+
+            return View("SearchStoreByTag", data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SearchStoreByKeyword(string keyword)
+        {
+            var (message, statusCode, data) = await _storeService.GetStoreByTagAsync(keyword);
+
+            ViewData["SelectedKeyword"] = keyword; 
+            ViewData["Title"] = keyword;
+
+            if (data == null)
+                return View("SelectedKeyword", Enumerable.Empty<StoreDto>());
+
+            return View("SelectedKeyword", data);
         }
     }
 }

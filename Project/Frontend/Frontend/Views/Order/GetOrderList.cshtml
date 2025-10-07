@@ -46,6 +46,18 @@
                                             data-order-items='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(order.OrderItems))'>
                                         Chi tiết
                                     </button>
+
+                                    @if(order.Status == "Pending")
+                                    {
+                                        <button class="btn btn-sm btn-success payment-info"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#paymentModal"
+                                                data-order-id="@order.OrderId"
+                                                data-amount="@order.TotalAmount">
+                                            Thanh toán
+
+                                        </button>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -80,8 +92,172 @@
     </div>
 </div>
 
+
+<!-- Model Payment-->
+<div class="modal" tabindex="-1" id="paymentModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="paymentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thanh toán đơn hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="OrderId" id="OrderId" />
+                    <input type="hidden" name="Amount" id="Amount" />
+
+                    <div class="mb-3">
+                        <label>Mã đơn hàng</label>
+                        <input type="text" id="OrderIdDisplay" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Phương thức thanh toán</label>
+                        <select name="Method" class="form-select">
+                            <option value="CreditCard">Credit Card</option>
+                            <option value="DebitCard">Debit Card</option>
+                            <option value="BankTransfer">Bank Transfer</option>
+                            <option value="EWallet">E-Wallet</option>
+                            <option value="QRCode">QR Code</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Tổng tiền</label>
+                        <input type="text" id="AmountDisplay" class="form-control" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Tiền tệ</label>
+                        <select name="Currency" class="form-select">
+                            <option value="VND">VND</option>
+                            <option value="USD">USD</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Thông tin thẻ</label>
+                        <div id="card-element" class="form-control"></div>
+                        <div id="card-errors" class="text-danger mt-2"></div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Xác nhận thanh toán</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script src="~/js/order.js" asp-append-version="true"></script>
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let currentOrderId = null;
+
+            document.querySelectorAll(".view-details").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    currentOrderId = btn.dataset.orderId;
+
+                    document.getElementById("modalOrderId").textContent = btn.dataset.orderId;
+                    document.getElementById("modalOrderDate").textContent = btn.dataset.orderDate;
+                    document.getElementById("modalOrderStatus").textContent = btn.dataset.orderStatus;
+                    document.getElementById("modalOrderTotal").textContent = btn.dataset.orderTotal;
+
+                    const items = JSON.parse(btn.dataset.orderItems);
+                    const itemsContainer = document.getElementById("modalOrderItems");
+                    itemsContainer.innerHTML = "";
+                    items.forEach(it => {
+                        itemsContainer.innerHTML += `
+                            <li class="mb-2 d-flex align-items-center">
+                                <img src="${it.ProductImage}" alt="${it.ProductName}"
+                                     style="width:40px; height:40px; object-fit:cover;" />
+                                <span class="ms-2">${it.ProductName} (x${it.Quantity}) - ${Number(it.Price).toLocaleString()} đ</span>
+                            </li>`;
+                    });
+                });
+            });
+
+            var paymentModal = document.getElementById('paymentModal');
+            paymentModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var orderId = button.getAttribute('data-order-id');
+                var amount = button.getAttribute('data-amount');
+
+                document.getElementById('OrderId').value = orderId;
+                document.getElementById('Amount').value = amount;
+
+                document.getElementById('OrderIdDisplay').value = orderId;
+                document.getElementById('AmountDisplay').value = parseFloat(amount).toLocaleString("vi-VN") + " đ";
+            });
+
+            // Submit form -> gọi API + Stripe confirm
+            document.getElementById("paymentForm").addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const orderId = formData.get("OrderId");
+                const request = {
+                    orderId: orderId,
+                    buyerId: null,
+                    method: formData.get("Method"),
+                    amount: parseFloat(formData.get("Amount")),
+                    currency: formData.get("Currency")
+                };
+
+                try {
+                    const response = await fetch(`/payment/create-payment?order_id=${orderId}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(request)
+                    });
+
+                    if (!response.ok) {
+                        const text = await response.text();
+                        alert("❌ Lỗi backend: " + text);
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (result.data?.clientSecret) {
+                        // Dùng cardElement đã được mount trong Layout
+                        const { paymentIntent, error } = await stripe.confirmCardPayment(result.data.clientSecret, {
+                            payment_method: { card: cardElement }
+                        });
+
+                        if (error) {
+                            alert("❌ Thanh toán thất bại: " + error.message);
+                        } else if (paymentIntent.status === "succeeded") {
+                            // Gửi confirm về backend
+                            const confirmResponse = await fetch("/payment/confirm-payment", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    orderId: request.orderId,
+                                    paymentIntentId: paymentIntent.id
+                                })
+                            });
+
+                            if (confirmResponse.ok) {
+                                alert("🎉 Thanh toán thành công và đã cập nhật đơn hàng!");
+                                location.reload();
+                            } else {
+                                const confirmResult = await confirmResponse.json();
+                                alert("⚠️ Thanh toán xong nhưng chưa confirm order: " + confirmResult.message);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("❌ Exception:", err);
+                    alert("❌ Exception: " + err.message);
+                }
+            });
+        });
+
+    </script>
 }
 
 

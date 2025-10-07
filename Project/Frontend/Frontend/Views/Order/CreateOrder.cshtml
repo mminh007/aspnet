@@ -133,7 +133,7 @@
 
 @section Scripts {
     <script>
-        // Khi mở modal -> gán thông tin order
+
         var paymentModal = document.getElementById('paymentModal');
         paymentModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
@@ -196,6 +196,7 @@
 
                         if (confirmResponse.ok) {
                             alert("🎉 Thanh toán thành công và đã cập nhật đơn hàng!");
+                            window.location.href = '@Url.Action("GetOrderList", "Order")';
                         } else {
                             const confirmResult = await confirmResponse.json();
                             alert("⚠️ Thanh toán xong nhưng chưa confirm order: " + confirmResult.message);

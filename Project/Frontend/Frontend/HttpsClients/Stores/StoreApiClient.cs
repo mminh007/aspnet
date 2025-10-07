@@ -41,6 +41,23 @@ namespace Frontend.HttpsClients.Stores
             return await ParseResponse<StoreDto>(response, "GetStoreById");
         }
 
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByKeywordAsync(string keyword)
+        {
+            var url = _endpoints.GetStoreByKeyword.Replace("{keyword}", keyword.ToString());
+            var response = await _httpClient.GetAsync(url);
+
+            return await ParseResponse<IEnumerable<StoreDto>>(response, "SearchByKeyword");
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByTag(string tag)
+        {
+            var url = _endpoints.GetStoreByTag.Replace("{tag}", tag.ToString());
+            var response = await _httpClient.GetAsync(url);
+
+            return await ParseResponse<IEnumerable<StoreDto>>(response, "SearchByTag");
+        }
+
+
         private async Task<(bool Success, string? Message, int statusCode, T? Data)>
             ParseResponse<T>(HttpResponseMessage response, string action)
         {
@@ -64,6 +81,8 @@ namespace Frontend.HttpsClients.Stores
                 return (false, $"Exception: {ex.Message}", (int)response.StatusCode, default);
             }
         }
+
+     
 
         private class StoreApiResponse<T>
         {
