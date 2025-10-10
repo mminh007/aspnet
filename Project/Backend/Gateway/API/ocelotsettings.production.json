@@ -1,4 +1,4 @@
-﻿{
+{
   "Routes": [
     // -------------------------
     // AUTHENTICATION SERVICE
@@ -9,7 +9,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7272
+          "Port": 7001
         }
       ],
       "UpstreamPathTemplate": "/auth/register",
@@ -22,7 +22,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7272
+          "Port": 7001
         }
       ],
       "UpstreamPathTemplate": "/auth/login",
@@ -35,40 +35,13 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7272
+          "Port": 7001
         }
       ],
       "UpstreamPathTemplate": "/auth/refresh",
       "UpstreamHttpMethod": [ "POST" ]
       // AllowAnonymous 
     },
-    {
-      "DownstreamPathTemplate": "/api/auth/verify-email",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 7272
-        }
-      ],
-      "UpstreamPathTemplate": "/auth/verify-email",
-      "UpstreamHttpMethod": [ "POST" ]
-      // AllowAnonymous 
-    },
-    {
-      "DownstreamPathTemplate": "/api/auth/resend-code",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 7272
-        }
-      ],
-      "UpstreamPathTemplate": "/auth/resend-code",
-      "UpstreamHttpMethod": [ "POST" ]
-      // AllowAnonymous 
-    },
-
 
     // -------------------------
     // USER SERVICE
@@ -79,7 +52,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7105
+          "Port": 5501
         }
       ],
       "UpstreamPathTemplate": "/user/register",
@@ -97,7 +70,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7105
+          "Port": 5501
         }
       ],
       "UpstreamPathTemplate": "/user/{id}",
@@ -112,7 +85,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7105
+          "Port": 5501
         }
       ],
       "UpstreamPathTemplate": "/user",
@@ -127,7 +100,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7105
+          "Port": 5501
         }
       ],
       "UpstreamPathTemplate": "/user/update",
@@ -142,7 +115,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7105
+          "Port": 5501
         }
       ],
       "UpstreamPathTemplate": "/user/delete",
@@ -161,7 +134,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store",
@@ -179,7 +152,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/get",
@@ -197,7 +170,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/search-keyword",
@@ -212,7 +185,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/search-tag",
@@ -227,7 +200,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/update",
@@ -245,7 +218,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/delete",
@@ -263,7 +236,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/change-active",
@@ -282,7 +255,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/get-detail",
@@ -299,7 +272,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/all",
@@ -313,7 +286,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7153
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/store/public",
@@ -333,7 +306,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/search/{productId}",
@@ -348,7 +321,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/get-product/{storeId}",
@@ -365,7 +338,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/get/{storeId}",
@@ -380,7 +353,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/search-product/{storeId}",
@@ -396,7 +369,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/create-product",
@@ -411,7 +384,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/update/{productId}",
@@ -426,7 +399,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/update-active",
@@ -441,7 +414,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/delete/{productId}",
@@ -460,7 +433,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/create-category",
@@ -475,7 +448,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/search-category/{storeId}",
@@ -490,7 +463,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/product/delete-category/{categoryId}",
@@ -510,7 +483,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/buyerproduct/search/store",
@@ -522,7 +495,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7038
+          "Port": 6001
         }
       ],
       "UpstreamPathTemplate": "/buyerproduct/search/categories",
@@ -537,7 +510,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/get-order",
@@ -549,7 +522,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/user/get",
@@ -561,7 +534,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/seller",
@@ -573,7 +546,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/update-order",
@@ -585,7 +558,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/delete-order",
@@ -597,7 +570,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/order/create-order",
@@ -612,7 +585,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/get-cart",
@@ -624,7 +597,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/counting-item",
@@ -636,7 +609,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/add-item",
@@ -648,7 +621,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/checkout-items-list",
@@ -660,7 +633,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/delete-item",
@@ -672,7 +645,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/delete-cart",
@@ -684,7 +657,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/get-item",
@@ -696,7 +669,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7070
+          "Port": 6501
         }
       ],
       "UpstreamPathTemplate": "/cart/update-item",
@@ -711,7 +684,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/create",
@@ -723,7 +696,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/confirm",
@@ -735,7 +708,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/confirm-test",
@@ -748,7 +721,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/{paymentId}",
@@ -760,7 +733,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/order/{orderId}",
@@ -772,7 +745,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/user/{userId}",
@@ -784,7 +757,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7190
+          "Port": 8001
         }
       ],
       "UpstreamPathTemplate": "/payment/cancel/{paymentId}",
@@ -794,6 +767,6 @@
   ],
 
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:7048"
+    "BaseUrl": "https://localhost:5001"
   }
 }

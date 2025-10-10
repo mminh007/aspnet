@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Order.BLL.External.Interfaces;
@@ -234,17 +235,42 @@ namespace Order.BLL.Services
                 };
             }
 
-            await _uow.Carts.RemoveCartItemAsync(item.CartItemId);
-            await _uow.SaveChangesAsync();
+            try
+            {
+                // ✅ Gọi repository chuẩn
+                await _uow.Carts.RemoveCartItemAsync(cartItemId);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogWarning(ex, "Concurrency conflict when removing CartItem {CartItemId}", cartItemId);
+                return new OrderResponseModel<CartDTO>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Item already removed or modified by another process"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error removing CartItem {CartItemId}", cartItemId);
+                return new OrderResponseModel<CartDTO>
+                {
+                    Success = false,
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Unexpected error when removing item"
+                };
+            }
 
-            var newCart = await GetCartAsync(userId, "");
+            // ✅ Trả về giỏ hàng mới nhất sau khi xóa
+            var updatedCart = await GetCartAsync(userId, "");
             return new OrderResponseModel<CartDTO>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = newCart.Data,
+                Data = updatedCart.Data
             };
         }
+
 
         public async Task<OrderResponseModel<string>> ClearCartAsync(Guid userId)
         {

@@ -11,5 +11,8 @@ namespace Auth.BLL.Services.Interfaces
         Task<AuthResponseModel<string>> RegisterWithUserApiAsync(RegisterRequestModel request);
 
         AuthResponseModel<string> GetTokenSystemAsync();
+
+        //Task<AuthResponseModel<string>> VerifyEmailAsync(string email, string code);
+        //Task<AuthResponseModel<string>> ResendVerificationCodeAsync(string email);
     }
 }

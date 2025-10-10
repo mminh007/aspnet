@@ -1,6 +1,6 @@
 ﻿using Frontend.Helpers;
 using Frontend.HttpsClients.Auths;
-using Frontend.Models.Auth;
+using Frontend.Models.Auth.Requests;
 using Frontend.Services.Interfaces;
 using System.Net.WebSockets;
 
@@ -15,20 +15,21 @@ namespace Frontend.Services
             _authApi = authApi;
         }
 
-        public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, string UserId, string Message, int StatusCode)> Login(LoginModel model)
+        public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, string UserId, string Message, 
+            int StatusCode, bool? verifyEmail)> Login(LoginModel model)
         {
             model.ClientType = "frontend";
 
-            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role)
+            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role, verifyEmail)
                 = await _authApi.LoginAsync(model);
 
             if (!success || string.IsNullOrEmpty(accessToken))
-                return (false, "", "", 0, "", "", message ?? "Login failed", statusCode);
+                return (false, "", "", 0, "", "", message ?? "Login failed", statusCode, verifyEmail);
 
             // Parse token để lấy userId
             var (isAuth, userId, Email, _) = AuthHelper.ParseUserIdFromToken(accessToken);
 
-            return (isAuth, accessToken, refreshToken, expiresIn, role, userId, message ?? "Login successful", statusCode);
+            return (isAuth, accessToken, refreshToken, expiresIn, role, userId, message ?? "Login successful", statusCode, null);
         }
 
         public async Task<(bool Success, string newAccessToken, string newRefreshToken, int expiresIn, string Role, string Message, int statusCode)> RefreshToken(string refreshToken)
@@ -42,6 +43,16 @@ namespace Frontend.Services
         {
             var (success, message, statusCode) = await _authApi.RegisterAsync(model);
             return (success, message ?? (success ? "Register successful" : "Register failed"), statusCode);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ResendCode(ResendCodeRequest model)
+        {
+            return await _authApi.ResendCodeAsync(model);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> VerifyEmail(VerifyEmailRequest model)
+        {
+            return await _authApi.VerifyEmailAsync(model);
         }
     }
 }

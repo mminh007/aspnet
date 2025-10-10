@@ -15,8 +15,11 @@ using Frontend.Middlewares;
 using Frontend.Services;
 using Frontend.Services.Interfaces;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.StackExchangeRedis;
 
 
 namespace Frontend
@@ -27,6 +30,7 @@ namespace Frontend
         {
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
             DotNetEnv.Env.Load($".env.{env.ToLower()}");
+            Console.WriteLine($"Redis env var: {Environment.GetEnvironmentVariable("ConnectionStrings__Redis")}");
 
             var builder = WebApplication.CreateBuilder(args);
 
@@ -88,22 +92,37 @@ namespace Frontend
             builder.Services.AddScoped<IOrderService, OrderService>();  
             builder.Services.AddScoped<IPaymentService, PaymentService>();
 
-            builder.Services.AddSession(options =>
-            {
-                options.IdleTimeout = TimeSpan.FromMinutes(30); // session timeout
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-            });
 
-            // Redis Cache
+            // Redis Connection
             builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
                 var configuration = builder.Configuration.GetConnectionString("Redis");
                 return ConnectionMultiplexer.Connect(configuration);
             });
 
+            // Data Protection - lưu keys vào Redis
+            builder.Services.AddDataProtection()
+                .PersistKeysToStackExchangeRedis(
+                    builder.Services.BuildServiceProvider().GetRequiredService<IConnectionMultiplexer>(),
+                    "DataProtection-Keys"
+                )
+                .SetApplicationName("Frontend");
 
-            // Đăng ký RedisCacheService
+
+            // Redis Cache cho Session
+            builder.Services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = builder.Configuration.GetConnectionString("Redis") + ",defaultDatabase=1";
+                options.InstanceName = "Frontend_Session_";
+            });
+
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
+
             builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 
             //JWT Authentication
@@ -132,7 +151,7 @@ namespace Frontend
 
             app.UseRouting();
             app.UseSession();
-
+            app.UseMiddleware<SessionDebugMiddleware>();
             app.UseMiddleware<SessionRestoreMiddleware>();
             app.UseMiddleware<RefreshTokenMiddleware>();
 

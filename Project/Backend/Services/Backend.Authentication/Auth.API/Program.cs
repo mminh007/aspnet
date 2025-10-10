@@ -94,6 +94,7 @@ namespace Auth.API
             builder.Services.AddScoped<IAuthRepository, AuthRepository>();
             builder.Services.AddScoped<ITokenManager, TokenManager>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IPasswordHasher<IdentityModel>, PasswordHasher<IdentityModel>>();
 
             builder.Services.AddDbContext<AuthDbContext>(options =>

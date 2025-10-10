@@ -72,12 +72,11 @@ namespace Order.DAL.Repositories
 
         public async Task RemoveCartItemAsync(Guid cartItemId)
         {
-            var item = await _context.CartItems.FindAsync(cartItemId);
-            if (item != null)
-            {
-                _context.CartItems.Remove(item);
-            }
+            await _context.CartItems
+                .Where(c => c.CartItemId == cartItemId)
+                .ExecuteDeleteAsync();
         }
+
 
         // === Business use case ===
         public async Task ClearCartAsync(Guid cartId)

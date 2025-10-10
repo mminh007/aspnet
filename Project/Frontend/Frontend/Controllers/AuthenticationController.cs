@@ -1,5 +1,5 @@
 ﻿using Frontend.HttpsClients.Auths;
-using Frontend.Models.Auth;
+using Frontend.Models.Auth.Requests;
 using Frontend.Services;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -32,11 +32,18 @@ namespace Frontend.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var (success, accessToken, refreshToken, expiresIn, role, userId, message, statusCode)
+            var (success, accessToken, refreshToken, expiresIn, role, userId, message, statusCode, verifyEmail)
                = await _authService.Login(model);
+
+            if (verifyEmail == false)
+            {
+                TempData["Error"] = "Your email is not verified. Please check your inbox.";
+                return RedirectToAction("VerifyEmail", new { email = model.Email });
+            }
 
             if (!success || string.IsNullOrEmpty(accessToken))
             {
+             
                 SetErrorMessage(statusCode, $"{message} - {statusCode}", "Login");
                 ViewData["ReturnUrl"] = returnUrl;
                 return View(model);
@@ -95,8 +102,6 @@ namespace Frontend.Controllers
                 return View(model);
             }
 
-            //model.Role = "buyer"; // Default role
-
             var (success, message, statusCode) = await _authService.Register(model);
 
             if (!success)
@@ -105,8 +110,61 @@ namespace Frontend.Controllers
                 return View(model);
             }
 
-            TempData["Message"] = message ?? "Register successfully, please login!";
-            return RedirectToAction("Login");
+            // ✅ Nếu đăng ký thành công, chuyển sang trang VerifyEmail
+            TempData["RegisterMessage"] = message;
+            TempData["RegisterEmail"] = model.EmailAddress;
+
+            return RedirectToAction("VerifyEmail", new { email = model.EmailAddress });
+        }
+
+        [HttpGet]
+        public IActionResult VerifyEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewBag.Email = email;
+            ViewBag.Message = TempData["RegisterMessage"];
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyEmail(VerifyEmailRequest model)
+        {
+            var (success, message, statusCode, data) = await _authService.VerifyEmail(model);
+
+            if (success)
+            {
+                TempData["Message"] = "Email verified successfully! Please login.";
+                return RedirectToAction("Login");
+            }
+
+            // ✅ Nếu hết hạn hoặc sai mã
+            ViewBag.Error = message ?? "Invalid or expired verification code.";
+            ViewBag.Email = model.Email;
+            ViewBag.CanResend = true; // để View hiện nút resend
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResendCode(ResendCodeRequest model)
+        {
+            var (success, message, statusCode, data) = await _authService.ResendCode(model);
+
+            if (!success)
+            {
+                ViewBag.Error = message ?? "Failed to resend code.";
+            }
+            else
+            {
+                ViewBag.Message = "A new code has been sent to your email.";
+            }
+
+            ViewBag.Email = model.Email;
+            ViewBag.CanResend = false;
+            return View("VerifyEmail");
         }
 
         public IActionResult Logout(string? returnUrl = null)
@@ -116,22 +174,6 @@ namespace Frontend.Controllers
 
             Response.Cookies.Delete("accessToken");
             Response.Cookies.Delete("refreshToken");
-            // Clear token cookies
-           //Response.Cookies.Delete("accessToken", new CookieOptions
-           // {
-           //     HttpOnly = true,
-           //     Secure = true,
-           //     SameSite = SameSiteMode.None,
-           //     Path = "/"
-           // });
-           // Response.Cookies.Delete("refreshToken", new CookieOptions
-           // {
-           //     HttpOnly = true,
-           //     Secure = true,
-           //     SameSite = SameSiteMode.None,
-           //     Path = "/"
-           // });
-
 
             TempData["Message"] = "Logout Successfully!";
 

@@ -60,5 +60,16 @@ namespace Auth.DAL.Repository.Interfaces
         {
             return await _db.IdentityModels.FirstOrDefaultAsync(u => u.Id == identityId);
         }
+
+        public async Task<IdentityModel?> GetByEmailAsync(string email)
+        {
+            return await _db.IdentityModels.FirstOrDefaultAsync(x => x.Email == email);
+        }
+
+        public async Task<int> UpdateVerificationAsync(IdentityModel user)
+        {
+            _db.IdentityModels.Update(user);
+            return await _db.SaveChangesAsync();
+        }
     }
 }

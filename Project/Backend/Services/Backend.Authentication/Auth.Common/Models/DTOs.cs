@@ -17,6 +17,8 @@
             public int ExpiresIn { get; set; }
             public string TokenType { get; set; } = "Bearer";
             public string Roles { get; set; }
+
+            public bool? VerifyEmail { get; set; }
         }
     }
 }

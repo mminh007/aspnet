@@ -1,7 +1,9 @@
 ﻿
 using Frontend.Configs.Auth;
 using Frontend.Models.Auth;
+using Frontend.Models.Auth.Requests;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -23,11 +25,15 @@ namespace Frontend.HttpsClients.Auths
         }
 
         public async Task<(bool Success, string? AccessToken, string? RefreshToken, int ExpiresIn,
-                          string? Message, int statusCode, string Role)>
+                          string? Message, int statusCode, string Role, bool? IsVerifyEmail)>
             LoginAsync(LoginModel model)
         {
             var response = await _httpClient.PostAsJsonAsync(_endpoints.Login, model);
-            return await ParseResponse(response, "Login");
+            var result = await ParseResponse<DTOs.TokenData>(response, "Login");
+
+            return (result.Success, result.Data?.AccessToken, result.Data?.RefreshToken,
+                    result.Data?.ExpiresIn ?? 0, result.Message, result.statusCode,
+                    result.Data?.Roles ?? "" ,result.Data?.VerifyEmail);
         }
 
         public async Task<(bool Success, string? Message, int statusCode)> RegisterAsync(RegisterModel model)
@@ -46,44 +52,33 @@ namespace Frontend.HttpsClients.Auths
             request.Headers.Add("Cookie", $"refreshToken={refreshToken}");
 
             var response = await _httpClient.SendAsync(request);
-            return await ParseResponse(response, "RefreshToken");
+            var result = await ParseResponse<DTOs.TokenData>(response, "RefreshToken");
+
+            return (result.Success, result.Data?.AccessToken, result.Data?.RefreshToken,
+                    result.Data?.ExpiresIn ?? 0, result.Message, result.statusCode,
+                    result.Data?.Roles ?? "");
+
         }
 
-        private async Task<(bool Success, string? AccessToken, string? RefreshToken, int ExpiresIn,
-                           string? Message, int statusCode, string Role)>
-            ParseResponse(HttpResponseMessage response, string action)
+        public async Task<(bool Success, string? Message, int statusCode, string? Data)> VerifyEmailAsync(VerifyEmailRequest model)
         {
-            var content = await response.Content.ReadAsStringAsync();
-            try
-            {
-                var result = JsonSerializer.Deserialize<AuthApiResponse<DTOs.TokenData>>(content,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var url = _endpoints.VerifyEmail;
 
-                if (!response.IsSuccessStatusCode || result?.Data == null)
-                {
-                    return (false, null, null, 0,
-                        result?.Message ?? $"[{action}] Failed: {content}",
-                        (int)response.StatusCode, null);
-                }
+            var response = await _httpClient.PostAsJsonAsync(url, model);
 
-                return (true,
-                    result.Data.AccessToken,
-                    result.Data.RefreshToken,
-                    result.Data.ExpiresIn,
-                    result.Message,
-                    result.StatusCode,
-                    result.Data.Roles);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Exception while parsing {Action}", action);
-                return (false, null, null, 0,
-                    $"Exception: {ex.Message}", (int)response.StatusCode, null);
-            }
+            return await ParseResponse<string>(response, "VerifyEmail");
         }
 
-        private async Task<(bool Success, string? Message, int statusCode, T? Data)>
-            ParseResponse<T>(HttpResponseMessage response, string action)
+        public async Task<(bool Success, string? Message, int statusCode, string? Data)> ResendCodeAsync(ResendCodeRequest model)
+        {
+            var url = _endpoints.ResendCode;
+
+            var response = await _httpClient.PostAsJsonAsync(url, model);
+
+            return await ParseResponse<string>(response, "ResendCode");
+        }
+
+        private async Task<(bool Success, string? Message, int statusCode, T Data)>ParseResponse<T>(HttpResponseMessage response, string action)
         {
             var content = await response.Content.ReadAsStringAsync();
             try
@@ -93,8 +88,7 @@ namespace Frontend.HttpsClients.Auths
 
                 if (!response.IsSuccessStatusCode || result == null)
                 {
-                    return (false, result?.Message ?? $"[{action}] Failed: {content}",
-                        (int)response.StatusCode, default);
+                    return (false, result?.Message ?? $"[{action}] Request failed: {content}", (int)response.StatusCode, default);
                 }
 
                 return (true, result.Message, result.StatusCode, result.Data);
@@ -105,6 +99,7 @@ namespace Frontend.HttpsClients.Auths
                 return (false, $"Exception: {ex.Message}", (int)response.StatusCode, default);
             }
         }
+
 
         private class AuthApiResponse<T>
         {

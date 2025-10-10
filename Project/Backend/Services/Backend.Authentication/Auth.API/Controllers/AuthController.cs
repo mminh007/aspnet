@@ -60,6 +60,27 @@ namespace API.Controllers
             return HandleResponse(result, "Login successfully!", "Invalid login credentials");
         }
 
+        //[AllowAnonymous]
+        //[HttpPost("verify-email")]
+        //public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest model)
+        //{
+        //    _logger.LogInformation("Email verification attempt for {Email}", model.Email);
+        //    var result = await _authService.VerifyEmailAsync(model.Email, model.Code);
+        //    return HandleResponse(result, "Email verified successfully!", "Email verification failed");
+        //}
+
+        //[AllowAnonymous]
+        //[HttpPost("resend-code")]
+        //public async Task<IActionResult> ResendCode([FromBody] ResendCodeRequest model)
+        //{
+        //    _logger.LogInformation("Resend verification code request for {Email}", model.Email);
+
+        //    var result = await _authService.ResendVerificationCodeAsync(model.Email);
+        //    return HandleResponse(result, "Verification code resent successfully!", "Failed to resend verification code");
+        //}
+
+
+
         [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh()

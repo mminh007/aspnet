@@ -37,15 +37,15 @@ namespace API
             });
 
             var ocelotFile = $"ocelotsettings.{env.ToLower()}.json";
-            if (!File.Exists(ocelotFile))
-            {
-                Console.WriteLine($"⚠️ {ocelotFile} not found. Using default ocelotsettings.json");
-                ocelotFile = "ocelotsettings.json";
-            }
-            else
-            {
-                Console.WriteLine($"✅ Using {ocelotFile} for Ocelot configuration");
-            }
+            //if (!File.Exists(ocelotFile))
+            //{
+            //    Console.WriteLine($"⚠️ {ocelotFile} not found. Using default ocelotsettings.json");
+            //    ocelotFile = "ocelotsettings.json";
+            //}
+            //else
+            //{
+            //    Console.WriteLine($"✅ Using {ocelotFile} for Ocelot configuration");
+            //}
 
             builder.Configuration.AddJsonFile(ocelotFile, optional: false, reloadOnChange: true);
 

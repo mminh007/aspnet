@@ -143,11 +143,11 @@
     }
 
     function removeItemFromModal(productId) {
-        const modalRow = document.querySelector(`#qty-modal-${productId}`)?.closest(".d-flex");
+        const modalRow = document.querySelector(`#modal-body-item-list #qty-modal-${productId}`)?.closest(".border-bottom");
         if (modalRow) {
             modalRow.remove();
             updateCartTotal();
-            const remainingItems = document.querySelectorAll("#modal-body-item-list .d-flex");
+            const remainingItems = document.querySelectorAll("#modal-body-item-list .border-bottom");
             if (remainingItems.length === 0) {
                 document.getElementById("modal-body-item-list").innerHTML =
                     `<p class="text-center text-muted">Giỏ hàng trống</p>`;

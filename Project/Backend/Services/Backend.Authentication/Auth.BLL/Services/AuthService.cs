@@ -17,18 +17,21 @@ namespace Auth.BLL.Services
         private readonly IPasswordHasher<IdentityModel> _passwordHasher;
         private readonly ITokenManager _tokenManager;
         private readonly UserApiService _userApiService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(IAuthRepository repository,
                            IPasswordHasher<IdentityModel> passwordHasher,
                            ITokenManager tokenManager,
                            UserApiService userApiService,
+                           IEmailService emailService,
                            ILogger<AuthService> logger)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
             _tokenManager = tokenManager;
             _userApiService = userApiService;
+            _emailService = emailService;
             _logger = logger;
         }
 
@@ -60,6 +63,17 @@ namespace Auth.BLL.Services
             var user = await _repository.AuthenticateAsynce(request.Email);
             if (user == null)
                 return new AuthResponseModel<TokenDto> { Message = OperationResult.NotFound, ErrorMessage = "Email not exists" };
+
+            //if (!user.IsVerified)
+            //    return new AuthResponseModel<TokenDto> 
+            //    { 
+            //        Message = OperationResult.Failed, 
+            //        ErrorMessage = "Email not verified",
+            //        Data = new TokenDto
+            //        {
+            //            VerifyEmail = false,
+            //        }
+            //    };
 
             var verifyPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHashing, request.Password);
             if (verifyPassword == PasswordVerificationResult.Failed)
@@ -105,18 +119,133 @@ namespace Auth.BLL.Services
 
             var response = await _userApiService.RegisterUserAsync(userCheck);
 
-            if (response.Message == OperationResult.Success)
+            if (response.Message != OperationResult.Success)
             {
-                var userId = response.Data;
-                return await RegisterAsync(request, userId);
+                return new AuthResponseModel<string>
+                {
+                    Message = response.Message,
+                    ErrorMessage = response.ErrorMessage
+                };
             }
 
-            return new AuthResponseModel<string>
+            var userId = response.Data;
+            var passwordHash = _passwordHasher.HashPassword(null!, request.Password);
+
+            // ✅ Tạo mã xác minh
+            //var verifyCode = new Random().Next(100000, 999999).ToString();
+            //var expiry = DateTime.UtcNow.AddMinutes(10);
+
+            var newUser = new IdentityModel
             {
-                Message = response.Message,
-                ErrorMessage = response.ErrorMessage
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Email = request.Email,
+                Role = request.Role,
+                //PasswordHashing = passwordHash,
+                //VerificationCode = verifyCode,
+                //VerificationExpiry = expiry
             };
+
+            try
+            {
+                await _repository.CreateIdentityAsync(newUser);
+
+                // ✅ Gửi email xác minh
+                //await _emailService.SendVerificationEmailAsync(request.Email, verifyCode);
+
+                return new AuthResponseModel<string>
+                {
+                    Message = OperationResult.Success,
+                    Data = "Registration successful. Please check your email to verify your account."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while registering user {Email}", request.Email);
+                return new AuthResponseModel<string>
+                {
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Registration failed"
+                };
+            }
         }
+
+        //public async Task<AuthResponseModel<string>> VerifyEmailAsync(string email, string code)
+        //{
+        //    var user = await _repository.GetByEmailAsync(email);
+        //    if (user == null)
+        //        return new AuthResponseModel<string> { Message = OperationResult.NotFound, ErrorMessage = "User not found" };
+
+        //    if (user.IsVerified)
+        //        return new AuthResponseModel<string> { Message = OperationResult.Conflict, ErrorMessage = "Email already verified" };
+
+        //    //if (user.VerificationCode != code)
+        //    //    return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Invalid verification code" };
+
+        //    if (user.VerificationExpiry < DateTime.UtcNow)
+        //        return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Verification code expired" };
+
+        //    user.IsVerified = true;
+        //    user.VerifiedAt = DateTime.UtcNow;
+        //    user.VerificationCode = null;
+        //    user.VerificationExpiry = null;
+
+        //    await _repository.UpdateVerificationAsync(user);
+
+        //    return new AuthResponseModel<string>
+        //    {
+        //        Message = OperationResult.Success,
+        //        Data = "Email verified successfully"
+        //    };
+        //}
+
+        //public async Task<AuthResponseModel<string>> ResendVerificationCodeAsync(string email)
+        //{
+        //    var user = await _repository.GetByEmailAsync(email);
+
+        //    if (user == null)
+        //        return new AuthResponseModel<string>
+        //        {
+        //            Message = OperationResult.NotFound,
+        //            ErrorMessage = "User not found"
+        //        };
+
+        //    if (user.IsVerified)
+        //        return new AuthResponseModel<string>
+        //        {
+        //            Message = OperationResult.Conflict,
+        //            ErrorMessage = "Email already verified"
+        //        };
+
+
+        //    if (user.VerificationExpiry != null && user.VerificationExpiry > DateTime.UtcNow)
+        //    {
+        //        var remaining = user.VerificationExpiry.Value.Subtract(DateTime.UtcNow).TotalMinutes;
+        //        return new AuthResponseModel<string>
+        //        {
+        //            Message = OperationResult.Failed,
+        //            ErrorMessage = $"Verification code still valid. Please wait {remaining:F0} minutes or check your email."
+        //        };
+        //    }
+
+        //    // ✅ Tạo mã mới
+        //    var newCode = new Random().Next(100000, 999999).ToString();
+        //    user.VerificationCode = newCode;
+        //    user.VerificationExpiry = DateTime.UtcNow.AddMinutes(10);
+
+        //    await _repository.UpdateVerificationAsync(user);
+
+        //    // ✅ Gửi email xác minh mới
+        //    await _emailService.SendVerificationEmailAsync(user.Email, newCode);
+
+        //    return new AuthResponseModel<string>
+        //    {
+        //        Message = OperationResult.Success,
+        //        Data = "A new verification code has been sent to your email."
+        //    };
+        //}
+
+
 
         public AuthResponseModel<string> GetTokenSystemAsync()
         {
