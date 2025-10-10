@@ -40,6 +40,8 @@ ScaffoldingReadMe.txt
 
 .env
 .env.*
+/Project/**/.env*
+
 
 # Others
 ~$*
