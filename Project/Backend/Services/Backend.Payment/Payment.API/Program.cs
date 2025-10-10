@@ -28,6 +28,7 @@ namespace Payment.API
     {
         public static void Main(string[] args)
         {
+            // Load environment variables from .env file
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
             DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
