@@ -38,11 +38,14 @@ ScaffoldingReadMe.txt
 
 .vs/
 
-# Ignore environment config files
+
+# Ignore environment files
 .env
 .env.*
 */.env
 */.env.*
+**/.env
+**/.env.*
 
 
 # Others
