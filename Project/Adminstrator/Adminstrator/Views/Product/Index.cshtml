@@ -111,6 +111,11 @@
                                                 <p class="card-text text-muted small mb-2">@product.Description</p>
 
                                                 <div class="row small">
+                                                    <div class="col-sm-6"><strong>Giá nhập:</strong> @product.ImportPrice.ToString("N0") đ</div>
+                                                    
+                                                </div>
+
+                                                <div class="row small">
                                                     <div class="col-sm-6"><strong>Giá bán:</strong> @product.SalePrice.ToString("N0") đ</div>
                                                     @* <div class="col-sm-6"><strong>Số lượng:</strong> @product.Quantity</div> *@
                                                 </div>
@@ -233,12 +238,12 @@
                                                     <div class="row">
                                                         <div class="col-md-6 mb-3">
                                                             <label class="form-label">Giá nhập</label>
-                                                            <input type="number" name="ImportPrice" value="@product.ImportPrice" class="form-control" required />
+                                                            <input type="text" name="ImportPrice" value="@string.Format("{0:N0}", product.ImportPrice)" class="form-control" required />
                                                         </div>
 
                                                         <div class="col-md-6 mb-3">
                                                             <label class="form-label">Giá bán</label>
-                                                            <input type="number" name="SalePrice" value="@product.SalePrice" class="form-control" required />
+                                                            <input type="text" name="SalePrice" value="@string.Format("{0:N0}", product.SalePrice)" class="form-control" required />
                                                         </div>
                                                         @* <div class="col-md-6 mb-3">
                                                             <label class="form-label">Số lượng</label>

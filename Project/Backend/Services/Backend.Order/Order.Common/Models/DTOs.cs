@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Order.Common.Models
 {
@@ -55,6 +56,8 @@ namespace Order.Common.Models
             public ICollection<OrderItemDTO> OrderItems { get; set; } = new List<OrderItemDTO>();
             public decimal TotalAmount => OrderItems?.Sum(i => i.LineTotal) ?? 0;
             public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+            public string StoreName { get; set; }
+            public string OrderName { get; set; }
         }
 
         public class CartProductDTO
@@ -73,6 +76,24 @@ namespace Order.Common.Models
             public Guid UserId { get; set; }
             public Guid CartId { get; set; }
             public int CountItems { get; set; }
+        }
+
+        public class StoreDTO
+        {
+            public Guid? StoreId { get; set; }
+            public string StoreName { get; set; }
+
+            public string StoreCategory { get; set; }
+
+            public string Description { get; set; }
+            public string StoreImage { get; set; }
+
+            public string Address { get; set; }
+
+            public string Phone { get; set; }
+
+            public bool IsActive { get; set; }
+
         }
     }
 }

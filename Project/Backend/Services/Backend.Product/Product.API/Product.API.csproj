@@ -24,4 +24,10 @@
     <ProjectReference Include="..\Product.Common\Product.Common.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<None Update=".env.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>

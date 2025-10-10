@@ -38,11 +38,30 @@ namespace Store.API.Controllers
         }
 
         [HttpGet("search-tag")]
-        public async Task<IActionResult> SearchStoreByTag(string tag)
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchStoreByTag(
+            [FromQuery] string tag,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 9)
         {
-            var result = await _storeService.SearchStoreByTagAsync(tag);
+            if (string.IsNullOrWhiteSpace(tag))
+                tag = ""; // Mặc định lấy tất cả nếu không có tag
+
+            var result = await _storeService.SearchStoreByTagPagedAsync(tag, page, pageSize);
+
+            //if (result.Message == OperationResult.Success)
+            //{
+            //    return Ok(new
+            //    {
+            //        statusCode = 200,
+            //        message = "Operation successful",
+            //        data = result.Data,
+            //    });
+            //}
+
             return HandleResponse(result);
         }
+
 
         [HttpGet("get")]
         [Authorize(Roles = "seller, system")]

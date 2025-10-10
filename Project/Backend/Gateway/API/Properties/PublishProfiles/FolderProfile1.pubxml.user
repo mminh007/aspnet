@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>D:\Deploy\GatewayAPI</_PublishTargetUrl>
+    <History>True|2025-10-09T07:14:07.2181471Z||;True|2025-10-09T13:48:57.6124089+07:00||;True|2025-10-09T13:46:39.8720868+07:00||;True|2025-10-09T13:43:21.4587296+07:00||;True|2025-10-09T10:15:11.2412670+07:00||;True|2025-10-09T09:22:35.8550106+07:00||;True|2025-10-08T16:55:32.3519081+07:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>

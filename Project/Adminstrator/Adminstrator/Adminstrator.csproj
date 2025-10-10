@@ -14,5 +14,10 @@
   <ItemGroup>
     <Folder Include="Models\Auths\Responses\" />
   </ItemGroup>
-
+	
+	<ItemGroup>
+		<None Update=".env.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

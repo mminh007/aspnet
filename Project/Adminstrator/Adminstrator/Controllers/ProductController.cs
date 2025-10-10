@@ -65,6 +65,12 @@ namespace Adminstrator.Controllers
         [HttpPost("update-product/{storeId}")]
         public async Task<IActionResult> UpdateProduct(Guid storeId, UpdateProductModel model, IFormFile? ProductImageFile)
         {
+            if (decimal.TryParse(model.ImportPriceString?.Replace(".", ""), out var importPrice))
+                model.ImportPrice = importPrice;
+
+            if (decimal.TryParse(model.SalePriceString?.Replace(".", ""), out var salePrice))
+                model.SalePrice = salePrice;
+
             model.Quantity = 99;
             if (!ModelState.IsValid)
             {

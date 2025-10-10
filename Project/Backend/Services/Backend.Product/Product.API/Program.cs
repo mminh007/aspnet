@@ -27,9 +27,12 @@ namespace API
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Configuration.AddEnvironmentVariables();
 
             // Add services to the container.
 
@@ -179,11 +182,12 @@ namespace API
 
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
 
             var staticFileConfig = app.Configuration
                 .GetSection("StaticFiles:ImageUrl")

@@ -24,6 +24,8 @@ namespace Store.DAL.Databases
 
                 entity.HasIndex(e => e.UserId);
 
+                entity.HasIndex(e => e.StoreCategorySlug); // ✅ index cho tìm kiếm slug
+
                 entity.Property(e => e.StoreName)
                       .IsRequired()
                       .HasMaxLength(50);

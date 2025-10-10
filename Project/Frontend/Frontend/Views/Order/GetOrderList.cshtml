@@ -32,13 +32,14 @@
                         @foreach (var order in group)
                         {
                             <tr>
-                                <td>@order.OrderId</td>
+                                <td>@order.OrderName</td>
                                 <td>@order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                                 <td class="fw-bold text-danger">@order.TotalAmount.ToString("N0") đ</td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary view-details"
                                             data-bs-toggle="modal"
                                             data-bs-target="#orderDetailModal"
+                                            data-order-name="@order.OrderName",
                                             data-order-id="@order.OrderId"
                                             data-order-status="@order.Status"
                                             data-order-date="@order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")"
@@ -53,6 +54,7 @@
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#paymentModal"
                                                 data-order-id="@order.OrderId"
+                                                data-order-name="@order.OrderName"
                                                 data-amount="@order.TotalAmount">
                                             Thanh toán
 
@@ -77,7 +79,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body">
-                <p><strong>Mã đơn:</strong> <span id="modalOrderId"></span></p>
+                <p><strong>Mã đơn:</strong> <span id="modalOrderName"></span></p>
                 <p><strong>Ngày tạo:</strong> <span id="modalOrderDate"></span></p>
                 <p><strong>Trạng thái:</strong> <span id="modalOrderStatus"></span></p>
                 <p><strong>Tổng tiền:</strong> <span id="modalOrderTotal"></span></p>
@@ -109,7 +111,7 @@
 
                     <div class="mb-3">
                         <label>Mã đơn hàng</label>
-                        <input type="text" id="OrderIdDisplay" class="form-control" readonly />
+                        <input type="text" id="OrderNameDisplay" class="form-control" readonly />
                     </div>
 
                     <div class="mb-3">
@@ -162,7 +164,7 @@
                 btn.addEventListener("click", () => {
                     currentOrderId = btn.dataset.orderId;
 
-                    document.getElementById("modalOrderId").textContent = btn.dataset.orderId;
+                    document.getElementById("modalOrderName").textContent = btn.dataset.orderName;
                     document.getElementById("modalOrderDate").textContent = btn.dataset.orderDate;
                     document.getElementById("modalOrderStatus").textContent = btn.dataset.orderStatus;
                     document.getElementById("modalOrderTotal").textContent = btn.dataset.orderTotal;
@@ -185,12 +187,13 @@
             paymentModal.addEventListener('show.bs.modal', function (event) {
                 var button = event.relatedTarget;
                 var orderId = button.getAttribute('data-order-id');
+                var orderName = button.getAttribute('data-order-name');
                 var amount = button.getAttribute('data-amount');
 
                 document.getElementById('OrderId').value = orderId;
                 document.getElementById('Amount').value = amount;
 
-                document.getElementById('OrderIdDisplay').value = orderId;
+                document.getElementById('OrderNameDisplay').value = orderName;
                 document.getElementById('AmountDisplay').value = parseFloat(amount).toLocaleString("vi-VN") + " đ";
             });
 

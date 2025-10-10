@@ -17,12 +17,15 @@ namespace Adminstrator
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var storeImagePath = Environment.GetEnvironmentVariable("STORE_IMAGE_PATH");
             var storeImageRequest = Environment.GetEnvironmentVariable("STORE_IMAGE_REQUEST");           
 
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Configuration.AddEnvironmentVariables();
 
             SettingsHelper.Configure(builder.Configuration);
 
@@ -36,27 +39,30 @@ namespace Adminstrator
             // Connect API Product Backend Service
             builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                var baseUrl = builder.Configuration["OCELOT:BASEURL"];
+                client.BaseAddress = new Uri(baseUrl);
+                Console.WriteLine($"OCELOT BaseURL: {baseUrl}");
             });
+            
 
             builder.Services.Configure<AuthEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Auth:Endpoints"));
+                builder.Configuration.GetSection("OCELOT:SERVICEURLS:AUTH:ENDPOINTS"));
 
             builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                client.BaseAddress = new Uri(builder.Configuration["OCELOT:BASEURL"]);
             }).AddHttpMessageHandler<HeaderHandler>();
 
             builder.Services.Configure<StoreEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
+                builder.Configuration.GetSection("OCELOT:SERVICEURLS:STORE:ENDPOINTS"));
 
             builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
             {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                client.BaseAddress = new Uri(builder.Configuration["OCELOT:BASEURL"]);
             }).AddHttpMessageHandler<HeaderHandler>();
 
             builder.Services.Configure<ProductEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
+                builder.Configuration.GetSection("OCELOT:SERVICEURLS:PRODUCT:ENDPOINTS"));
 
             // Connect Auth Service
 

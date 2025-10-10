@@ -56,7 +56,13 @@ namespace Order.DAL.Databases
                 .Property(o => o.TotalAmount)
                 .HasColumnType("decimal(18,2)");
 
-            
+            // ✅ Cấu hình cho OrderName
+            modelBuilder.Entity<OrderModel>()
+                .Property(o => o.OrderName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+
         }
     }
 }

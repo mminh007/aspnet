@@ -1,4 +1,6 @@
-﻿namespace Adminstrator.Models.Products.Requests
+﻿using System.Text.Json.Serialization;
+
+namespace Adminstrator.Models.Products.Requests
 {
     public class UpdateProductModel
     {
@@ -12,5 +14,11 @@
         public string? Supplier { get; set; }
 
         public Guid? CategoryId { get; set; }
+
+        [JsonIgnore]
+        public string? ImportPriceString { get; set; }
+
+        [JsonIgnore]
+        public string? SalePriceString { get; set; }
     }
 }

@@ -59,6 +59,8 @@ namespace Frontend.Models.Orders
             public Guid UserId { get; set; }
             public Guid StoreId { get; set; }
             public string Status { get; set; } = "Pending";
+            public string StoreName { get; set; }
+            public string OrderName { get; set; }
 
             public ICollection<OrderItemDTO> OrderItems { get; set; } = new List<OrderItemDTO>();
             public decimal TotalAmount => OrderItems?.Sum(i => i.LineTotal) ?? 0;

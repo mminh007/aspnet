@@ -1,56 +1,88 @@
 ﻿@using Frontend.Helpers;
-@model IEnumerable<Frontend.Models.Stores.StoreDto>
+@model Frontend.Models.Stores.PaginatedStoreResponse
 
 @{
+    ViewData["Title"] = $"Kết quả cho tag '{ViewData["SelectedTag"] ?? "Tất cả"}'";
+    var tag = ViewData["SelectedTag"]?.ToString() ?? "Tất cả";
     var token = Context.Request.Cookies["accessToken"];
     var isLoggedIn = !string.IsNullOrEmpty(token);
-
     var AuthHeader = AuthHelper.GetUserInfo(Context);
     var userId = AuthHeader.userId;
 }
 
-@foreach (var item in Model)
-{
-    <div class="col-md-4 mb-4">
-        <div class="item-restaurant">
-            <a target="_blank" class="item-content"
-               href="@Url.Action("Index", "Product", new { store = item.StoreId, user = userId })">
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary">
+        Kết quả tìm kiếm theo thẻ: <span class="text-danger">@tag</span>
+    </h2>
 
-                <!-- Hình ảnh cửa hàng -->
-                <div class="img-restaurant">
-                    <img src="@item.StoreImage" alt="@item.StoreName" class="img-fluid" />
+    <div id="store-results" class="row">
+        @if (Model != null && Model.Stores.Any())
+        {
+            @await Html.PartialAsync("_StoreCardPartial", Model.Stores)
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-warning text-center">
+                    Không có cửa hàng nào thuộc thẻ "@tag".
                 </div>
+            </div>
+        }
+    </div>
 
-                <!-- Thông tin -->
-                <div class="info-restaurant">
-                    <div class="info-basic-res">
-                        <h4 class="name-res" title="@item.StoreName">@item.StoreName</h4>
-                        <div class="address-res" title="@item.Address">@item.Address</div>
-                    </div>
+    <!-- ✅ PHÂN TRANG -->
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4">
+            <ul class="pagination pagination-sm">
 
-                    <!-- Promotion -->
-                    @if (!string.IsNullOrEmpty(item.Description))
+                <!-- Nút Previous -->
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       href="@Url.Action("SearchStoreByTag", new { tag = tag, page = Model.CurrentPage - 1, pageSize = Model.PageSize })">
+                        &laquo;
+                    </a>
+                </li>
+
+                @{
+                    int visiblePages = 7;
+                    int startPage = Math.Max(1, Model.CurrentPage - visiblePages / 2);
+                    int endPage = Math.Min(Model.TotalPages, startPage + visiblePages - 1);
+
+                    if (startPage > 1)
                     {
-                        <p class="content-promotion">
-                            <i class="fas fa-tag"></i> @item.Description
-                        </p>
+                        <li class="page-item"><a class="page-link" href="@Url.Action("SearchStoreByTag", new { tag = tag, page = 1 })">1</a></li>
+                        if (startPage > 2)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
                     }
 
-                    <!-- Status -->
-                    <div class="opentime-status">
-                        @if (item.IsActive)
-                        {
-                            <span class="stt online" title="Mở cửa"></span>
-                        }
-                        else
-                        {
-                            <span class="stt offline" title="Đóng cửa"></span>
-                        }
-                    </div>
+                    for (int i = startPage; i <= endPage; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("SearchStoreByTag", new { tag = tag, page = i })">@i</a>
+                        </li>
+                    }
 
+                    if (endPage < Model.TotalPages)
+                    {
+                        if (endPage < Model.TotalPages - 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                        <li class="page-item"><a class="page-link" href="@Url.Action("SearchStoreByTag", new { tag = tag, page = Model.TotalPages })">@Model.TotalPages</a></li>
+                    }
+                }
 
-                </div>
-            </a>
-        </div>
-    </div>
-}
+                <!-- Nút Next -->
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       href="@Url.Action("SearchStoreByTag", new { tag = tag, page = Model.CurrentPage + 1, pageSize = Model.PageSize })">
+                        &raquo;
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

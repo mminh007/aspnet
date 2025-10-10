@@ -1,4 +1,4 @@
-
+﻿
 using API.Middlewares;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -6,6 +6,7 @@ using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 using System.Security.Claims;
 using System.Text;
+using DotNetEnv;
 
 namespace API
 {
@@ -13,7 +14,13 @@ namespace API
     {
         public static async Task Main(string[] args)
         {
+
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            Env.Load($".env.{env.ToLower()}");
+
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Configuration.AddEnvironmentVariables();
 
             // Add services to the container.
 
@@ -29,7 +36,24 @@ namespace API
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gateway", Version = "v1" });
             });
 
-            builder.Services.AddOcelot(builder.Configuration.AddJsonFile("ocelotsettings.json").Build());
+            var ocelotFile = $"ocelotsettings.{env.ToLower()}.json";
+            if (!File.Exists(ocelotFile))
+            {
+                Console.WriteLine($"⚠️ {ocelotFile} not found. Using default ocelotsettings.json");
+                ocelotFile = "ocelotsettings.json";
+            }
+            else
+            {
+                Console.WriteLine($"✅ Using {ocelotFile} for Ocelot configuration");
+            }
+
+            builder.Configuration.AddJsonFile(ocelotFile, optional: false, reloadOnChange: true);
+
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
+
+            builder.Services.AddOcelot(builder.Configuration);
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
@@ -55,11 +79,12 @@ namespace API
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
 
             app.UseHttpsRedirection();
 

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
 using Store.DAL.Models.Entities;
 
@@ -24,6 +25,14 @@ namespace API.Mapping
             //        .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<StoreModel, StoreDTO>().ReverseMap();
+
+            CreateMap<UpdateStoreModel, StoreModel>()
+            .ForMember(dest => dest.StoreId, opt => opt.Ignore())
+            .ForMember(dest => dest.StoreCategorySlug, opt => opt.Ignore()) // Không map slug
+            .ForMember(dest => dest.StoreImage, opt => opt.Ignore()) // Xử lý thủ công trong service
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null)); // ✅ chỉ map khi != null
+
 
         }
     }

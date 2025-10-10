@@ -11,10 +11,14 @@ using Order.BLL.External;
 using Order.BLL.External.Interfaces;
 using Order.BLL.Services;
 using Order.Common.Configs;
+using Order.Common.Urls.Auth;
+using Order.Common.Urls.Product;
+using Order.Common.Urls.Store;
 using Order.DAL.Databases;
 using Order.DAL.Repositories;
 using Order.DAL.Repository.Interfaces;
 using Order.DAL.UnitOfWork.Interfaces;
+using Order.Helpers;
 using StackExchange.Redis;
 using System.Security.Claims;
 using System.Text;
@@ -26,9 +30,14 @@ namespace Order.API
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var builder = WebApplication.CreateBuilder(args);
+            
+            builder.Configuration.AddEnvironmentVariables();
+
+            builder.Services.AddHttpContextAccessor();
 
             var jwt = builder.Configuration.GetSection("Jwt");
             var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
@@ -86,13 +95,7 @@ namespace Order.API
 
             builder.Services.AddAuthorization();
 
-            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Product:BaseUrl"]);
-                client.DefaultRequestHeaders.Add("User-Agent", "AuthService/1.0");
-            });
-
-            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<HeaderHandler>();
 
             builder.Services.AddScoped<ICartRepository, CartRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -100,6 +103,33 @@ namespace Order.API
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<ICartService, CartService>();
 
+            // ========== HTTP CLIENTS ==========
+            builder.Services.Configure<AuthEndpoints>(
+                builder.Configuration.GetSection("ServiceUrls:Auth:Endpoints"));
+
+            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Auth:BaseUrl"]);
+                client.DefaultRequestHeaders.Add("Auth-Agent", "AuthService/1.0");
+            });
+
+            builder.Services.Configure<ProductEndpoints>(
+                builder.Configuration.GetSection("ServiceUrls:Product:Endpoints"));
+
+            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Product:BaseUrl"]);
+                client.DefaultRequestHeaders.Add("Product-Agent", "AuthService/1.0");
+            }).AddHttpMessageHandler<HeaderHandler>();
+
+            builder.Services.Configure<StoreEndpoints>(
+                builder.Configuration.GetSection("ServiceUrls:Store:Endpoints"));
+
+            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Store:BaseUrl"]);
+                client.DefaultRequestHeaders.Add("Store-Agent", "AuthService/1.0");
+            }).AddHttpMessageHandler<HeaderHandler>();
 
             builder.Services.AddAutoMapper(cfg => { }, typeof(OrderProfile));
 
@@ -127,15 +157,18 @@ namespace Order.API
             //});
             //builder.Services.AddScoped<RedisCartService>();
 
+            // ========== DB ==========
             builder.Services.AddDbContext<OrderDbContext>(options =>
-               options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+
 
             builder.Services.AddControllers()
             .AddJsonOptions(opt =>
             {
                 opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             });
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+            // ========== Swagger ==========
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -169,11 +202,12 @@ namespace Order.API
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
 
             app.UseHttpsRedirection();
 

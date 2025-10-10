@@ -1,7 +1,9 @@
 ﻿using Frontend.Configs;
 using Frontend.Configs.Store;
+using Frontend.Helpers;
 using Frontend.Models.Stores;
 using Microsoft.Extensions.Options;
+using Slugify;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,6 +14,7 @@ namespace Frontend.HttpsClients.Stores
         private readonly HttpClient _httpClient;
         private readonly ILogger<StoreApiClient> _logger;
         private readonly StoreEndpoints _endpoints;
+        private readonly ISlugHelper _slugHelper;
 
         public StoreApiClient(HttpClient httpClient,
                               ILogger<StoreApiClient> logger,
@@ -20,6 +23,9 @@ namespace Frontend.HttpsClients.Stores
             _httpClient = httpClient;
             _logger = logger;
             _endpoints = endpoints.Value;
+
+            _slugHelper = new VietnameseSlugHelper();
+           
         }
 
         public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto?>? Data)>
@@ -49,12 +55,29 @@ namespace Frontend.HttpsClients.Stores
             return await ParseResponse<IEnumerable<StoreDto>>(response, "SearchByKeyword");
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByTag(string tag)
+        public async Task<(bool Success, string? Message, int statusCode, PaginatedStoreResponse data)>
+            SearchStoreByTag(string tag, int page, int pageSize)
         {
-            var url = _endpoints.GetStoreByTag.Replace("{tag}", tag.ToString());
+            // ✅ Nếu tag null hoặc rỗng thì để trống
+            string slugTag = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+
+                // "Đồ ăn" → "do-an", "Mỹ phẩm, Dược phẩm" → "my-pham-duoc-pham"
+                slugTag = _slugHelper.GenerateSlug(tag);
+            }
+
+            var url = _endpoints.GetStoreByTag
+                                .Replace("{tag}", slugTag)
+                                .Replace("{page}", page.ToString())
+                                .Replace("{pageSize}", pageSize.ToString());
+
+            _logger.LogInformation("🔗 Requesting Store Search: {Url}", url);
+
             var response = await _httpClient.GetAsync(url);
 
-            return await ParseResponse<IEnumerable<StoreDto>>(response, "SearchByTag");
+            return await ParseResponse<PaginatedStoreResponse>(response, "SearchByTag");
         }
 
 

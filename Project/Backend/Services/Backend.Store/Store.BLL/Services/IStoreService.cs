@@ -23,6 +23,6 @@ namespace Store.BLL.Services
 
         Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByKeywordAsync(string keyword);
 
-        Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByTagAsync(string tag);
+        Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByTagPagedAsync(string tag, int page, int pageSize);
     }
 }

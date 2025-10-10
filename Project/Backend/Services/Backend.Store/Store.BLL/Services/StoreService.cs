@@ -3,10 +3,13 @@ using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Slugify;
+using Store.BLL.Helper;
 using Store.Common.Configs;
 using Store.Common.Enums;
 using Store.Common.Models.Requests;
 using Store.Common.Models.Responses;
+using Store.DAL.Models.Entities;
 using Store.DAL.Repository;
 using System.Net.WebSockets;
 
@@ -19,6 +22,7 @@ namespace Store.BLL.Services
         private readonly ILogger<StoreService> _logger;
         private readonly StaticFileConfig _staticFileConfig;
         private readonly IMapper _mapper;
+        private readonly ISlugHelper _slugHelper;
 
         public StoreService(IStoreRepository storeRepository, ILogger<StoreService> logger, IOptions<StaticFileConfig> staticFileConfig, IMapper mapper)
         {
@@ -28,7 +32,7 @@ namespace Store.BLL.Services
 
             _staticFileConfig = staticFileConfig.Value;
 
-
+            _slugHelper = new VietnameseSlugHelper();
         }
 
         public async Task<StoreResponseModel<object>> ChangeActive(ChangeActiveRequest model)
@@ -126,10 +130,11 @@ namespace Store.BLL.Services
                 storeInfo.StoreImage =
                     $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{storeInfo.StoreImage}";
 
+                var dto = _mapper.Map<StoreDTO>(storeInfo);
                 return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
-                    Data = storeInfo
+                    Data = dto
                 };
             }
 
@@ -149,18 +154,43 @@ namespace Store.BLL.Services
         {
             try
             {
-
-                await _storeRepository.UpdateStoreAsync(model);
-
                 var store = await _storeRepository.GetStoreDetailById(model.storeId);
+                if (store == null)
+                {
+                    return new StoreResponseModel<StoreDTO>
+                    {
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "Store not found"
+                    };
+                }
 
+                // Nếu category thay đổi → sinh slug mới
+                if (store.StoreCategory != model.StoreCategory)
+                {
+                    store.StoreCategorySlug = _slugHelper.GenerateSlug(model.StoreCategory);
+                }
+
+                // Cập nhật ảnh nếu có
+                if (!string.IsNullOrWhiteSpace(model.StoreImage))
+                {
+                    store.StoreImage = model.StoreImage;
+                }
+
+                // ⚡ Map đè từ model sang entity đang tracked (AutoMapper xử lý partial update)
+                _mapper.Map(model, store);
+
+                // Cập nhật thời gian
+                store.UpdatedAt = DateTime.UtcNow;
+
+                await _storeRepository.SaveChangesAsync();
+
+                var dto = _mapper.Map<StoreDTO>(store);
                 return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
-                    Data = store
+                    Data = dto
                 };
             }
-
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while updating Store Infomation");
@@ -172,6 +202,7 @@ namespace Store.BLL.Services
                 };
             }
         }
+
 
         // ✅ New: Get store detail by StoreId
         public async Task<StoreResponseModel<StoreDTO>> GetStoreDetailByIdAsync(Guid storeId)
@@ -192,10 +223,11 @@ namespace Store.BLL.Services
                 store.StoreImage =
                     $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
 
+                var dto = _mapper.Map<StoreDTO>(store);
                 return new StoreResponseModel<StoreDTO>
                 {
                     Message = OperationResult.Success,
-                    Data = store
+                    Data = dto,
                 };
             }
             catch (Exception ex)
@@ -352,17 +384,70 @@ namespace Store.BLL.Services
             };
         }
 
-        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByTagAsync(string tag)
+        public async Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByTagPagedAsync(string tagSlug, int page, int pageSize)
         {
-            var result = await _storeRepository.SearchStoreByTagAsync(tag);
-
-            var dto = _mapper.Map<IEnumerable<StoreDTO>>(result);
-
-            return new StoreResponseModel<IEnumerable<StoreDTO>>()
+            try
             {
-                Message = OperationResult.Success,
-                Data = dto
-            };
+                var stores = await _storeRepository.SearchStoreByTagPagedAsync(tagSlug, page, pageSize);
+                var totalRecords = await _storeRepository.CountStoreByTagAsync(tagSlug);
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                if (stores == null || !stores.Any())
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "Không tìm thấy cửa hàng nào."
+                    };
+                }
+
+                foreach (var store in stores)
+                {
+                    store.StoreImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
+                }
+
+                var response = new PaginatedStoreResponse
+                {
+                    Stores = stores,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Success,
+                    Data = response
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while searching stores by tag with pagination (Tag={Tag})", tagSlug);
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Unexpected error while searching stores by tag"
+                };
+            }
         }
+
+        private string GenerateSlug(string? categoryString)
+        {
+            if (string.IsNullOrWhiteSpace(categoryString)) return string.Empty;
+
+            var helper = new SlugHelper();
+
+            // tách nhiều tag: "Mỹ phẩm, Dược phẩm" → ["Mỹ phẩm", "Dược phẩm"]
+            var tags = categoryString
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => helper.GenerateSlug(t.Trim()))
+                .ToList();
+
+            return string.Join(",", tags); // => "my-pham,duoc-pham"
+        }
+
     }
 }

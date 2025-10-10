@@ -15,18 +15,19 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between">
-                        <span><strong>Đơn hàng:</strong> @order.OrderId</span>
+                        <span><strong>Đơn hàng:</strong> @order.OrderName</span>
                         <span><strong>Trạng thái:</strong> @order.Status</span>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p><strong>Store:</strong> @order.StoreId</p>
+                    <p><strong>Store:</strong> @order.StoreName</p>
                     <p><strong>Ngày tạo:</strong> @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
 
                     <button class="payment-info btn btn-success"
                             data-bs-toggle="modal"
                             data-bs-target="#paymentModal"
                             data-order-id="@order.OrderId"
+                            data-order-name="@order.OrderName"
                             data-amount="@order.TotalAmount">
                         Thanh toán
                     </button>
@@ -139,11 +140,12 @@
             var button = event.relatedTarget;
             var orderId = button.getAttribute('data-order-id');
             var amount = button.getAttribute('data-amount');
+            var orderName = button.getAttribute('data-order-name');
 
             document.getElementById('OrderId').value = orderId;
             document.getElementById('Amount').value = amount;
 
-            document.getElementById('OrderIdDisplay').value = orderId;
+            document.getElementById('OrderIdDisplay').value = orderName;
             document.getElementById('AmountDisplay').value = parseFloat(amount).toLocaleString("vi-VN") + " đ";
         });
 

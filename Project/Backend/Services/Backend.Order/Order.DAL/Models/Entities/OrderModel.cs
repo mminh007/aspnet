@@ -28,6 +28,9 @@ namespace Order.DAL.Models.Entities
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        [NotMapped]        
+        public string StoreName { get; set; }
+        public string OrderName { get; set; }
         // Navigation properties
         public virtual ICollection<OrderItemModel> OrderItems { get; set; } = new List<OrderItemModel>();
     }

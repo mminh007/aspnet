@@ -82,6 +82,10 @@ namespace Store.DAL.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("StoreCategorySlug")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("StoreImage")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -100,6 +104,8 @@ namespace Store.DAL.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("StoreId");
+
+                    b.HasIndex("StoreCategorySlug");
 
                     b.HasIndex("UserId");
 

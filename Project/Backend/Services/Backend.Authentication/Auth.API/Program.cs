@@ -1,4 +1,4 @@
-
+﻿
 using Auth.Services;
 using Auth.BLL.External;
 using Auth.BLL.Services;
@@ -20,9 +20,14 @@ namespace Auth.API
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            Console.WriteLine($"ASPNETCORE_ENVIRONMENT = {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
+
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Configuration.AddEnvironmentVariables();
 
             var jwt = builder.Configuration.GetSection("Jwt");
             var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
@@ -123,16 +128,63 @@ namespace Auth.API
                 });
             });
 
+            // ==========================================
+            // SSL Configuration
+            // ==========================================
+            if (builder.Environment.IsDevelopment())
+            {
+                // ⚠️ DEVELOPMENT ONLY - Accept any certificate
+                builder.Services.AddHttpClient("", client => { })
+                    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback =
+                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    });
+            }
+            else if (builder.Environment.IsProduction())
+            {
+                // ✅ PRODUCTION - Trust specific certificates only
+                var trustedThumbprints = builder.Configuration
+                    .GetSection("TrustedCertificates:Thumbprints")
+                    .Get<string[]>() ?? Array.Empty<string>();
+
+                builder.Services.AddHttpClient("", client => { })
+                    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                        {
+                            // Option 1: No errors = valid certificate from CA
+                            if (errors == System.Net.Security.SslPolicyErrors.None)
+                                return true;
+
+                            // Option 2: Trust specific internal certificates
+                            if (cert != null && trustedThumbprints.Contains(cert.Thumbprint))
+                                return true;
+
+                            return false;
+                        }
+                    });
+            }
 
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            //// Configure the HTTP request pipeline.
+            //app.UseSwagger();
+            //app.UseSwaggerUI();
+
+            //if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+            //{
+            //    app.UseSwagger();
+            //    app.UseSwaggerUI();
+            //}
+
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
 
             app.UseHttpsRedirection();
 

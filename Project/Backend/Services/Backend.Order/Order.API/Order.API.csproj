@@ -23,5 +23,11 @@
     <ProjectReference Include="..\Oder.BLL\Order.BLL.csproj" />
     <ProjectReference Include="..\Order.Common\Order.Common.csproj" />
   </ItemGroup>
+	
+	<ItemGroup>
+		<None Update=".env.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>

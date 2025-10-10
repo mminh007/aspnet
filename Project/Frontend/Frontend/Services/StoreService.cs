@@ -17,7 +17,7 @@ namespace Frontend.Services
             _cache = cache;
         }
 
-        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoresPagedAsync(int page, int pageSize)
+        public async Task<(string message, int statusCode, IEnumerable<StoreDto?> data)> GetStoresPagedAsync(int page, int pageSize)
         {
             string cacheKey = $"stores:page:{page}:size:{pageSize}";
 
@@ -42,7 +42,7 @@ namespace Frontend.Services
             return (message, statusCode, data);
         }
 
-        public async Task<(string message, int statusCode, StoreDto?)> GetStoresDetailAsync(Guid storeId)
+        public async Task<(string message, int statusCode, StoreDto? data)> GetStoresDetailAsync(Guid storeId)
         {
             string cacheKey = $"store:{storeId}";
 
@@ -62,7 +62,7 @@ namespace Frontend.Services
             return (message, statusCode, data);
         }
 
-        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoreByKeywordAsync(string keyword)
+        public async Task<(string message, int statusCode, IEnumerable<StoreDto?> data)> GetStoreByKeywordAsync(string keyword)
         {
             string cacheKey = $"search: {keyword}";
             var cachedData = await _cache.GetAsync<IEnumerable<StoreDto>>(cacheKey);
@@ -79,20 +79,29 @@ namespace Frontend.Services
 
         }
 
-        public async Task<(string message, int statusCode, IEnumerable<StoreDto?>)> GetStoreByTagAsync(string tag)
+        public async Task<(string message, int statusCode, PaginatedStoreResponse data)> GetStoresByTagPagedAsync(string tag, int page = 1, int pageSize = 9)
         {
-            string cacheKey = $"search: {tag}";
-            var cachedData = await _cache.GetAsync<IEnumerable<StoreDto>>(cacheKey);
+            string cacheKey = $"tag:page:{page}:size:{pageSize}";
 
+            // Check Cache first
+            var cachedData = await _cache.GetAsync<PaginatedStoreResponse>(cacheKey);
             if (cachedData != null)
             {
                 return ("OK (from cache)", 200, cachedData);
             }
 
-            var (sucess, message, status, data) = await _storeApiClient.SearchStoreByKeywordAsync(tag);
+            // Call API if not in cache
+            var (success, message, statusCode, data) = await _storeApiClient.SearchStoreByTag(tag, page, pageSize);
 
+            if (!success || data == null)
+            {
+                return (message, statusCode, null);
+            }
+
+            // Store in Cache
             await _cache.SetAsync(cacheKey, data, _cacheDuration);
-            return (message, status, data);
+
+            return (message, statusCode, data);
         }
     }
 }

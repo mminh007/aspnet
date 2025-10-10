@@ -9,6 +9,6 @@ namespace Frontend.HttpsClients.Stores
 
         Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByKeywordAsync(string keyword);
 
-        Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByTag(string tag);
+        Task<(bool Success, string? Message, int statusCode, PaginatedStoreResponse data)> SearchStoreByTag(string tag, int page, int pageSize);
     }
 }

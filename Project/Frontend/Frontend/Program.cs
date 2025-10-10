@@ -25,10 +25,12 @@ namespace Frontend
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Configuration.AddEnvironmentVariables();
             // Setting Helper
             SettingsHelper.Configure(builder.Configuration);
             builder.Services.AddHttpContextAccessor();
@@ -100,7 +102,6 @@ namespace Frontend
                 return ConnectionMultiplexer.Connect(configuration);
             });
 
-            // Static File
 
             // Đăng ký RedisCacheService
             builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();

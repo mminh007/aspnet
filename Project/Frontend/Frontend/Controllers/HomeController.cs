@@ -44,31 +44,31 @@ namespace Frontend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchStoreByTag(string tag)
+        public async Task<IActionResult> SearchStoreByTag(string tag, int page = 1, int pageSize = 9)
         {
-            var(message, statusCode, data) = await _storeService.GetStoreByTagAsync(tag);
+            var (message, statusCode, data) = await _storeService.GetStoresByTagPagedAsync(tag, page, pageSize);
 
-            ViewData["SelectedTag"] = tag; 
-            ViewData["Title"] = tag;
+            ViewData["SelectedTag"] = tag;
 
             if (data == null)
-                return View("SearchStoreByTag", Enumerable.Empty<StoreDto>());
+                return View("SearchStoreByTag", new PaginatedStoreResponse { Stores = new List<StoreDto>() });
 
             return View("SearchStoreByTag", data);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> SearchStoreByKeyword(string keyword)
-        {
-            var (message, statusCode, data) = await _storeService.GetStoreByTagAsync(keyword);
 
-            ViewData["SelectedKeyword"] = keyword; 
-            ViewData["Title"] = keyword;
+        //[HttpGet]
+        //public async Task<IActionResult> SearchStoreByKeyword(string keyword)
+        //{
+        //    var (message, statusCode, data) = await _storeService.GetStoreByTagAsync(keyword);
 
-            if (data == null)
-                return View("SelectedKeyword", Enumerable.Empty<StoreDto>());
+        //    ViewData["SelectedKeyword"] = keyword; 
+        //    ViewData["Title"] = keyword;
 
-            return View("SelectedKeyword", data);
-        }
+        //    if (data == null)
+        //        return View("SelectedKeyword", Enumerable.Empty<StoreDto>());
+
+        //    return View("SelectedKeyword", data);
+        //}
     }
 }

@@ -14,6 +14,9 @@ namespace Store.DAL.Models.Entities
         public string? StoreName { get; set; }
 
         public string? StoreCategory { get; set; }
+
+        [MaxLength(255)]
+        public string? StoreCategorySlug { get; set; }
         public string? StoreImage { get; set; }
 
         [Phone]

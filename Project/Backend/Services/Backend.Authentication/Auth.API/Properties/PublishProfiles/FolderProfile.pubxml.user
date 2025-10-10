@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>D:\Deploy\AuthAPI</_PublishTargetUrl>
+    <History>True|2025-10-09T07:13:42.3608495Z||;True|2025-10-09T13:49:14.3439269+07:00||;True|2025-10-09T13:47:21.2811101+07:00||;True|2025-10-09T10:27:58.1433712+07:00||;True|2025-10-09T10:15:23.2522268+07:00||;True|2025-10-09T08:56:59.5123796+07:00||;True|2025-10-09T08:37:49.8694862+07:00||;True|2025-10-08T16:56:07.5480215+07:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>

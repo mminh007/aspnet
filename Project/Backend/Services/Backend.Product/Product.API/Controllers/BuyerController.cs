@@ -29,7 +29,8 @@ namespace API.Controllers
         //}
 
         // Get Price for Order Service
-        [HttpPost("order/prices")]   // 18/9
+        [HttpPost("order/prices")]
+        [Authorize(Roles = "system")]// 18/9
         public async Task<IActionResult> OrderGetProductInfo2([FromBody] List<Guid> productIds)
         {
             var response = await _service.OrderGetProductInfo2(productIds);
@@ -37,6 +38,7 @@ namespace API.Controllers
         }
 
         [HttpPost("order/validate-product")]
+        [Authorize(Roles = "system")]
         public async Task<IActionResult> OrderValidateProduct(Guid id)
         {
             var response = await _service.OrderGetProductInfo(id);

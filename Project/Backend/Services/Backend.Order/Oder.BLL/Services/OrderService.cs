@@ -7,6 +7,7 @@ using Order.Common.Models.Responses;
 using Order.DAL.Models.Entities;
 using Order.DAL.UnitOfWork.Interfaces;
 using static Order.Common.Models.DTOs;
+using System.Security.Cryptography;
 
 namespace Order.BLL.Services
 {
@@ -16,13 +17,16 @@ namespace Order.BLL.Services
         private readonly IMapper _mapper;
         private readonly ICartService _cartService;
         private readonly IProductApiClient _productService;
+        private readonly IStoreApiClient _storeService;
 
-        public OrderService(IUnitOfWork uow, IMapper mapper, ICartService cartService, IProductApiClient productApiClient)
+        public OrderService(IUnitOfWork uow, IMapper mapper, ICartService cartService, IProductApiClient productApiClient,
+                            IStoreApiClient storeApiClient)
         {
             _uow = uow;
             _mapper = mapper;
             _cartService = cartService;
             _productService = productApiClient;
+            _storeService = storeApiClient;
         }
 
         public async Task<OrderResponseModel<OrderDTO>> CreateOrderAsync(OrderDTO dto)
@@ -114,6 +118,8 @@ namespace Order.BLL.Services
 
             // Gọi ProductService để lấy thông tin sản phẩm
             var productResponse = await _productService.GetProductInfoAsync(productIds);
+
+             //var storeinfo = await _storeService.GetStoreInfoAsync(storeGroup.Key);
 
             // Map entity -> DTO
             var orderDtos = entities.Select(e => _mapper.Map<OrderDTO>(e)).ToList();
@@ -231,6 +237,7 @@ namespace Order.BLL.Services
 
             foreach (var storeGroup in groupedByStore)
             {
+                var storeinfo = await _storeService.GetStoreInfoAsync(storeGroup.Key); 
                 // Tạo Order cho mỗi store
                 var orderEntity = new OrderModel
                 {
@@ -239,6 +246,8 @@ namespace Order.BLL.Services
                     StoreId = storeGroup.Key,
                     Status = "Pending",
                     TotalAmount = storeGroup.Sum(i => i.Price * i.Quantity),
+                    StoreName = storeinfo.Data.StoreName,
+                    OrderName = $"SPF{DateTime.UtcNow:yyMMdd}{GenerateRandomDigits(7)}",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = storeGroup.Select(item => new OrderItemModel
@@ -308,6 +317,19 @@ namespace Order.BLL.Services
                 Message = OperationResult.Success,
                 Data = status
             };
+        }
+
+        private static string GenerateRandomDigits(int length)
+        {
+            var bytes = new byte[length];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            // Chuyển byte sang số (0–9)
+            var digits = bytes.Select(b => (b % 10).ToString());
+            return string.Concat(digits);
         }
     }
 }

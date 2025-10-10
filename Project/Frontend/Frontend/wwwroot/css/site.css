@@ -96,7 +96,37 @@ body {
     font-size: 16px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
+/* ---------------- Search Store ---------------- */
+.pagination {
+    gap: 4px;
+}
 
+.pagination .page-link {
+    border-radius: 50% !important;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d0021b;
+    font-weight: 500;
+    border: none;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #d0021b;
+    color: #fff;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #ccc;
+    background-color: transparent;
+}
+
+.pagination .page-link:hover {
+    background-color: #ffe6e6;
+    color: #d0021b;
+}
 /* ---------------- Giỏ hàng + Login ---------------- */
 
 .cart-login {

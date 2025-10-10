@@ -23,11 +23,36 @@ namespace Store.DAL.Repository
                 .Where(p => (p.StoreName ?? "").Contains(keyword)).ToListAsync();
         }
 
-        public async Task<IEnumerable<StoreModel>> SearchStoreByTagAsync(string keyword)
+        public async Task<IEnumerable<StoreDTO>> SearchStoreByTagPagedAsync(string tagSlug, int page, int pageSize)
+        {
+            var skip = (page - 1) * pageSize;
+
+            var query = _db.Stores
+                .Where(s => string.IsNullOrEmpty(tagSlug) || s.StoreCategorySlug.Contains(tagSlug))
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(s => new StoreDTO
+                {
+                    StoreId = s.StoreId,
+                    StoreCategory  = s.StoreCategory,
+                    StoreName = s.StoreName,
+                    Address = s.Address,
+                    Description = s.Description,
+                    StoreImage = s.StoreImage,
+                    IsActive = s.IsActive
+                });
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<int> CountStoreByTagAsync(string tagSlug)
         {
             return await _db.Stores
-                .Where(p => (p.StoreCategory ?? "").Contains(keyword)).ToListAsync();
+                .Where(s => string.IsNullOrEmpty(tagSlug) || s.StoreCategorySlug.Contains(tagSlug))
+                .CountAsync();
         }
+
 
         public async Task<Guid> CreateStoreAsync(RegisterStoreModel model)
         {
@@ -62,37 +87,7 @@ namespace Store.DAL.Repository
 
         }
 
-
-        public async Task<int> UpdateStoreAsync(UpdateStoreModel model)
-        {
-            var store = await _db.Stores
-                .FirstOrDefaultAsync(s => s.StoreId == model.storeId);
-            if (store == null) return 0;
-
-            if (!string.IsNullOrEmpty(model.StoreName))
-                store.StoreName = model.StoreName;
-
-            if (!string.IsNullOrEmpty(model.StoreCategory))
-                store.StoreCategory = model.StoreCategory;
-
-            if (!string.IsNullOrEmpty(model.Description))
-                store.Description = model.Description;
-
-            if (!string.IsNullOrEmpty(model.StoreImage))
-                store.StoreImage = model.StoreImage;
-
-            if (!string.IsNullOrEmpty(model.Address))
-                store.Address = model.Address;
-
-            if (!string.IsNullOrEmpty(model.Phone))
-                store.Phone = model.Phone;
-
-            store.UpdatedAt = DateTime.UtcNow;
-
-            return await _db.SaveChangesAsync();
-        }
-
-        public async Task<StoreDTO> GetStoreInfo(Guid userId)
+        public async Task<StoreModel> GetStoreInfo(Guid userId)
         {
             var store = await _db.Stores.FirstOrDefaultAsync(
                 s => s.UserId == userId);
@@ -102,44 +97,45 @@ namespace Store.DAL.Repository
                 return null;
             }
 
-            var info = new StoreDTO
-            {
-                StoreId = store.StoreId,
-                StoreName = store.StoreName,
-                StoreCategory = store.StoreCategory,
-                Description = store.Description,
-                StoreImage = store.StoreImage,
-                IsActive = store.IsActive,
-                Address = store.Address,
-                Phone = store.Phone
+            //var info = new StoreDTO
+            //{
+            //    StoreId = store.StoreId,
+            //    StoreName = store.StoreName,
+            //    StoreCategory = store.StoreCategory,
+            //    Description = store.Description,
+            //    StoreImage = store.StoreImage,
+            //    IsActive = store.IsActive,
+            //    Address = store.Address,
+            //    Phone = store.Phone
                 
-            };
+            //};
 
-            return info;
+            return store;
         }
 
-        public Task<StoreDTO> GetStoreByKeyword(string keyword)
+        public Task<StoreModel> GetStoreByKeyword(string keyword)
         {
             throw new NotImplementedException();
         }
 
         // ✅ New: Get store detail by StoreId
-        public async Task<StoreDTO?> GetStoreDetailById(Guid storeId)
+        public async Task<StoreModel?> GetStoreDetailById(Guid storeId)
         {
             var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
             if (store == null) return null;
 
-            return new StoreDTO
-            {
-                StoreId = store.StoreId,
-                StoreName = store.StoreName,
-                StoreCategory = store.StoreCategory,
-                Description = store.Description,
-                StoreImage = store.StoreImage,
-                IsActive = store.IsActive,
-                Address = store.Address,
-                Phone = store.Phone
-            };
+            return store;
+            //return new StoreDTO
+            //{
+            //    StoreId = store.StoreId,
+            //    StoreName = store.StoreName,
+            //    StoreCategory = store.StoreCategory,
+            //    Description = store.Description,
+            //    StoreImage = store.StoreImage,
+            //    IsActive = store.IsActive,
+            //    Address = store.Address,
+            //    Phone = store.Phone
+            //};
         }
 
       
@@ -187,6 +183,11 @@ namespace Store.DAL.Repository
             store.UpdatedAt = DateTime.UtcNow;
 
             return await _db.SaveChangesAsync();
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _db.SaveChangesAsync();
         }
     }
 }

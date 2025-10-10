@@ -17,9 +17,12 @@ namespace Store
     {
         public static void Main(string[] args)
         {
-            DotNetEnv.Env.Load();
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            DotNetEnv.Env.Load($".env.{env.ToLower()}");
 
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Configuration.AddEnvironmentVariables();
 
             // JWT
             var jwt = builder.Configuration.GetSection("Jwt");
@@ -92,11 +95,12 @@ namespace Store
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
 
             // Static file middleware
             var staticFileConfig = app.Configuration
