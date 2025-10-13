@@ -1,5 +1,4 @@
-﻿
-using API.BackgroundServices;
+﻿using API.BackgroundServices;
 using API.Mapping;
 using BLL.Services;
 using BLL.Services.Interfaces;
@@ -18,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Product.Common.Configs;
 using RabbitMQ.Client;
+using Serilog;
 using System.Security.Claims;
 using System.Text;
 
@@ -27,187 +27,204 @@ namespace API
     {
         public static void Main(string[] args)
         {
+            // 🧱 Load eNV
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
             DotNetEnv.Env.Load($".env.{env.ToLower()}");
+            Console.WriteLine($"ASPNETCORE_ENVIRONMENT = {env}");
 
             var builder = WebApplication.CreateBuilder(args);
 
+            
             builder.Configuration.AddEnvironmentVariables();
 
-            // Add services to the container.
+            // ==========================
+            // 🧾 Serilog
+            // ==========================
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
+            builder.Host.UseSerilog(); 
+
+            try
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.Product", Version = "v1" });
+                Log.Information("🚀 Starting Product API...");
 
+                // ==========================
+                // 🔐 JWT Authentication
+                // ==========================
+                var jwt = builder.Configuration.GetSection("Jwt");
+                var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Description = "Input Token: Bearer {token}"
-                });
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                builder.Services
+                    .AddAuthentication(options =>
                     {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-            });
-
-            builder.Services.AddDbContext<ProductDbContext>(option =>
-                    option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
-
-            var jwt = builder.Configuration.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
-
-            builder.Services
-                .AddAuthentication(options =>
-                {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = true;
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
+                        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    })
+                    .AddJwtBearer(options =>
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwt["Issuer"],
-                        ValidAudience = jwt["Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        ClockSkew = TimeSpan.Zero,
-                        RoleClaimType = ClaimTypes.Role
-                    };
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnAuthenticationFailed = context =>
+                        options.RequireHttpsMetadata = true;
+                        options.SaveToken = true;
+                        options.TokenValidationParameters = new TokenValidationParameters
                         {
-                            if (context.Exception is SecurityTokenExpiredException)
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = jwt["Issuer"],
+                            ValidAudience = jwt["Audience"],
+                            IssuerSigningKey = new SymmetricSecurityKey(key),
+                            ClockSkew = TimeSpan.Zero,
+                            RoleClaimType = ClaimTypes.Role
+                        };
+                        options.Events = new JwtBearerEvents
+                        {
+                            OnAuthenticationFailed = context =>
                             {
-                                context.Response.Headers["Token-Expired"] = "true";
-                                context.Response.StatusCode = 401;
-                                context.Response.ContentType = "application/json";
-
-                                var jsonResponse = System.Text.Json.JsonSerializer.Serialize(new
-                                {
-                                    message = "Access token has expired"
-                                });
-                                return context.Response.WriteAsJsonAsync(jsonResponse);
+                                Log.Warning("❌ JWT Authentication failed: {Message}", context.Exception.Message);
+                                return Task.CompletedTask;
+                            },
+                            OnTokenValidated = context =>
+                            {
+                                Log.Information("✅ JWT validated for user: {User}", context.Principal?.Identity?.Name);
+                                return Task.CompletedTask;
                             }
+                        };
+                    });
 
-                            Console.WriteLine("Authentication failed: " + context.Exception.Message);
-                            return Task.CompletedTask;
-                        },
+                builder.Services.AddAuthorization();
 
-                        OnChallenge = context =>
+                // ==========================
+                // ⚙️ Database & Repository
+                // ==========================
+                builder.Services.AddDbContext<ProductDbContext>(options =>
+                    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+
+                builder.Services.AddScoped<IProductRepository, ProductRepository>();
+                builder.Services.AddScoped<IProductService, ProductService>();
+
+                // ==========================
+                // 🧩 Static file config
+                // ==========================
+                builder.Services.Configure<StaticFileConfig>(
+                    builder.Configuration.GetSection("StaticFiles"));
+
+                // ==========================
+                // 🧠 AutoMapper
+                // ==========================
+                builder.Services.AddAutoMapper(cfg => { }, typeof(ProductProfile));
+
+                // ==========================
+                // 🧱 Swagger
+                // ==========================
+                builder.Services.AddControllers();
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.Product", Version = "v1" });
+
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Description = "Input Token: Bearer {token}"
+                    });
+
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
                         {
-                            Console.WriteLine("Challenge: " + context.ErrorDescription);
-                            return Task.CompletedTask;
+                            new OpenApiSecurityScheme {
+                                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                            },
+                            Array.Empty<string>()
                         }
-                    };
+                    });
                 });
-               
 
-            builder.Services.AddAuthorization();
+                // ==========================
+                // 🐇 (Optional) RabbitMQ / EventBus
+                // ==========================
+                // builder.Services.Configure<RabbitMQSettings>(
+                //     builder.Configuration.GetSection("RabbitMQ"));
+                //
+                // builder.Services.AddSingleton<IEventBus>(sp =>
+                // {
+                //     var config = sp.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
+                //
+                //     var factory = new ConnectionFactory
+                //     {
+                //         HostName = config.HostName,
+                //         UserName = config.UserName,
+                //         Password = config.Password,
+                //         Port = config.Port,
+                //         VirtualHost = config.VirtualHost
+                //     };
+                //
+                //     return new RabbitMQEventBus(factory, sp);
+                // });
+                //
+                // builder.Services.AddScoped<IIntegrationEventLogRepository, IntegrationEventLogRepository>();
+                // builder.Services.AddScoped<IIntegrationEventService, IntegrationEventService>();
+                // builder.Services.AddHostedService<OutboxPublisherService>();
+                // builder.Services.AddTransient<ProductPriceChangedIntegrationEventHandler>();
+                // builder.Services.AddTransient<ProductQuantityZeroIntegrationEventHandler>();
 
-            // Bind StaticFiles config
-            builder.Services.Configure<StaticFileConfig>(
-                builder.Configuration.GetSection("StaticFiles"));
+                var app = builder.Build();
 
-            builder.Services.AddAutoMapper(cfg => { }, typeof(ProductProfile));
+                // ==========================
+                // 🌐 Configure HTTP Pipeline
+                // ==========================
+                if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
+                }
 
-            builder.Services.AddScoped<IProductRepository, ProductRepository>();
-            builder.Services.AddScoped<IProductService, ProductService>();
+                // Static file config
+                var staticFileConfig = app.Configuration
+                    .GetSection("StaticFiles:ImageUrl")
+                    .Get<ImageUrlConfig>();
 
+                if (staticFileConfig != null && Directory.Exists(staticFileConfig.PhysicalPath))
+                {
+                    app.UseStaticFiles(new StaticFileOptions
+                    {
+                        FileProvider = new PhysicalFileProvider(staticFileConfig.PhysicalPath),
+                        RequestPath = staticFileConfig.RequestPath
+                    });
+                    Log.Information("🖼️ Serving static files from {Path}", staticFileConfig.PhysicalPath);
+                }
+                else
+                {
+                    Log.Warning("⚠️ Static file path is not configured or does not exist.");
+                }
 
-            builder.Services.AddDbContext<ProductDbContext>(option =>
-                option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
+                app.UseHttpsRedirection();
+                app.UseAuthentication();
+                app.UseAuthorization();
 
-            //// EventBus
-            //builder.Services.Configure<RabbitMQSettings>(
-            //    builder.Configuration.GetSection("RabbitMQ"));
+                app.MapControllers();
 
-            //// Register EventBus
-            //builder.Services.AddSingleton<IEventBus>(sp =>
-            //{
-            //    var config = sp.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
-
-            //    var factory = new ConnectionFactory
-            //    {
-            //        HostName = config.HostName,
-            //        UserName = config.UserName,
-            //        Password = config.Password,
-            //        Port = config.Port,
-            //        VirtualHost = config.VirtualHost
-            //    };
-
-            //    return new RabbitMQEventBus(factory, sp);
-            //});
-
-            //builder.Services.AddScoped<IIntegrationEventLogRepository, IntegrationEventLogRepository>();
-            //builder.Services.AddScoped<IIntegrationEventService, IntegrationEventService>();
-
-            //// Hosted Service to process outbox messages
-            //builder.Services.AddHostedService<OutboxPublisherService>();
-
-            //// Handlers
-            //builder.Services.AddTransient<ProductPriceChangedIntegrationEventHandler>();
-            //builder.Services.AddTransient<ProductQuantityZeroIntegrationEventHandler>();
-
-            var app = builder.Build();
-
-            //var eventBus = app.Services.GetRequiredService<IEventBus>();
-
-            //// Subscriptions
-            //eventBus.Subscribe<ProductPriceChangedIntegrationEvent, ProductPriceChangedIntegrationEventHandler>(
-            //    "product_exchange", "product-service-queue", "product.price.changed");
-
-            //eventBus.Subscribe<ProductQuantityZeroIntegrationEvent, ProductQuantityZeroIntegrationEventHandler>(
-            //    "product_exchange", "product-service-queue", "product.quantity.zero");
-
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                // ==========================
+                // ✅ Run Application
+                // ==========================
+                Log.Information("✅ Product API started successfully.");
+                app.Run();
             }
-
-
-            var staticFileConfig = app.Configuration
-                .GetSection("StaticFiles:ImageUrl")
-                .Get<ImageUrlConfig>();
-
-            app.UseStaticFiles(new StaticFileOptions
+            catch (Exception ex)
             {
-                FileProvider = new PhysicalFileProvider(staticFileConfig.PhysicalPath),
-                RequestPath = staticFileConfig.RequestPath
-            });
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
+                Log.Fatal(ex, "❌ Product API terminated unexpectedly");
+            }
+            finally
+            {
+                Log.Information("🧹 Shutting down Product API...");
+                Log.CloseAndFlush();
+            }
         }
     }
 }

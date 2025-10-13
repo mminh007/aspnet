@@ -510,7 +510,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/get-order",
@@ -522,7 +522,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/user/get",
@@ -534,7 +534,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/seller",
@@ -546,7 +546,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/update-order",
@@ -558,7 +558,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/delete-order",
@@ -570,7 +570,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/order/create-order",
@@ -585,7 +585,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/get-cart",
@@ -597,7 +597,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/counting-item",
@@ -609,7 +609,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/add-item",
@@ -621,7 +621,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/checkout-items-list",
@@ -633,7 +633,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/delete-item",
@@ -645,7 +645,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/delete-cart",
@@ -657,7 +657,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/get-item",
@@ -669,7 +669,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 6501
+          "Port": 7501
         }
       ],
       "UpstreamPathTemplate": "/cart/update-item",

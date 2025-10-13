@@ -2,9 +2,12 @@
     const floatingBtn = document.querySelector(".floating-cart-btn");
     const userId = floatingBtn?.dataset.userId || "";
     const storeId = floatingBtn?.dataset.storeId || "";
+    
 
     if (!userId || !storeId) {
         console.error("❌ Missing userId or storeId");
+        console.log("⚠️ Script stopped early because userId or storeId missing:", { userId, storeId });
+
         return;
     }
 
@@ -15,6 +18,8 @@
         const cartBadgeFloating = document.getElementById("cartBadgeFloating");
         if (cartBadgeFloating) {
             cartBadgeFloating.textContent = countItemsInStore;
+            cartBadgeFloating.dataset.totalItems = totalItems;
+
             cartBadgeFloating.classList.toggle("bg-danger", countItemsInStore > 0);
             cartBadgeFloating.classList.toggle("bg-secondary", countItemsInStore === 0);
         }
@@ -41,6 +46,7 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
 
+            console.log("✅ Added result:", JSON.stringify(result, null, 2));
             console.log("✅ Added:", result);
             updateBadges(result.countItems || 0, result.countItemsInStore || 0);
             return result;
@@ -51,12 +57,14 @@
     }
 
     async function updateQuantity(productId, storeId, userId, quantity, cartItemId) {
+
         try {
+
             // đổi query param: buyer thay vì item=userId
-            const res = await fetch(`/Order/update-quantity?buyer=${userId}&store=${storeId}`, {
+            const res = await fetch(`/Order/update-qty?buyer=${userId}&id=${cartItemId}&store=${storeId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId, quantity })
+                body: JSON.stringify({ productId, quantity, cartItemId })
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
@@ -99,7 +107,19 @@
                 storeItems = result.data.items
                     .filter(i => String(i.storeId) === String(storeId))
                     .reduce((s, i) => s + (i.quantity || 0), 0);
+            } else {
+                // ⚠️ Fallback: Tính lại từ DOM sau khi xóa
+                const currentBadge = document.getElementById("cartBadgeFloating");
+                const oldTotal = parseInt(currentBadge?.dataset.totalItems || 0);
+                const oldStore = parseInt(currentBadge?.textContent || 0);
+
+                // Lấy quantity của item vừa xóa
+                const deletedQty = parseInt(document.getElementById(`qty-modal-${productId}`)?.textContent || 0);
+
+                totalItems = Math.max(0, oldTotal - deletedQty);
+                storeItems = Math.max(0, oldStore - deletedQty);
             }
+
             updateBadges(totalItems, storeItems);
 
             return result;
@@ -164,10 +184,14 @@
         const qtyEl = document.getElementById(`qty-card-${productId}`);
         let currentQty = parseInt(qtyEl?.textContent || 0);
 
+        //const btnInDom = cardContainer?.querySelector('button.increase, button.decrease');
+        //const cartItemId = btnInDom?.dataset.cartItemId;
         if (isAdd) {
             const result = await addToCart(productId, storeId, userId);
+
             if (result) {
                 const newItem = result.cartStore?.items?.find(i => i.productId === productId);
+
                 const newCartItemId = newItem?.cartItemId || "";
                 cardContainer.innerHTML = `
                     <div class="d-flex justify-content-end align-items-center">
@@ -181,6 +205,13 @@
                                 data-store-id="${storeId}"
                                 data-cart-item-id="${newCartItemId}">+</button>
                     </div>`;
+                const modalRow = document.querySelector(`#modal-body-item-list #qty-modal-${productId}`)?.closest(".border-bottom");
+                if (modalRow) {
+                    modalRow.querySelectorAll(`button.increase, button.decrease`).forEach(btn => {
+                        btn.dataset.cartItemId = newCartItemId;
+                    });
+                }
+
                 const modalQtyEl = document.getElementById(`qty-modal-${productId}`);
                 if (modalQtyEl) {
                     modalQtyEl.textContent = "1";
@@ -210,6 +241,7 @@
     }
 
     async function handleModalQuantity(productId, storeId, cartItemId, isIncrease) {
+
         const qtyEl = document.getElementById(`qty-modal-${productId}`);
         let currentQty = parseInt(qtyEl?.textContent || 0);
 

@@ -15,10 +15,20 @@ namespace Order.DAL.Repositories
             _context = context;
         }
 
-        public Task<CartModel?> GetCartByUserIdAsync(Guid userId) =>
-            _context.Carts
+        public Task<CartModel?> GetCartByUserIdAsync(Guid userId, bool noTracking = false)
+        {
+            if (noTracking)
+            {
+                return _context.Carts
+                    .AsNoTracking()
+                    .Include(c => c.Items)
+                    .FirstOrDefaultAsync(c => c.UserId == userId);
+            }
+            
+            return _context.Carts
                 .Include(c => c.Items)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
+        }
 
         public Task<CartModel?> GetCartByIdAsync(Guid cartId) =>
             _context.Carts
@@ -35,8 +45,8 @@ namespace Order.DAL.Repositories
             return cart?.Items.Where(i => i.StoreId == storeId).ToList() ?? new List<CartItemModel>();
         }
 
-        public async Task<CartItemModel?> GetCartItemByIdAsync(Guid productId) =>
-            await _context.CartItems.FirstOrDefaultAsync(c => c.ProductId == productId);
+        public async Task<CartItemModel?> GetCartItemByIdAsync(Guid cartItemId) =>
+            await _context.CartItems.FirstOrDefaultAsync(c => c.CartItemId == cartItemId);
 
         public async Task CreateCartAsync(CartModel cart)
         {

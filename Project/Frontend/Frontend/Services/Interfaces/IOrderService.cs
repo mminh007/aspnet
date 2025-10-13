@@ -11,7 +11,7 @@ namespace Frontend.Services.Interfaces
 
         Task<(string Message, int StatusCode, DTOs.CartDTO? data)> GetCartByUserId(Guid userId, string status);
 
-        Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId, UpdateQuantityModel request);
+        Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId,  Guid cartItemId, UpdateQuantityModel request);
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.CartItemDTO> itemList)> GetCartInStore(Guid userId, Guid storeId);
 

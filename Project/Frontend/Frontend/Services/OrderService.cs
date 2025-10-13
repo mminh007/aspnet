@@ -146,9 +146,9 @@ namespace Frontend.Services
      
         }
 
-        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId, UpdateQuantityModel request)
+        public async Task<(string Message, int StatusCode, DTOs.CartDTO data)> UpdateItemsInCart(Guid userId, Guid storeId, Guid cartItemId, UpdateQuantityModel request)
         {
-            var result = await _client.UpdateItemQuantity(request.Productid, request);
+            var result = await _client.UpdateItemQuantity(cartItemId, request);
 
             string cacheKey = $"cart:cartStore:{userId}-{storeId}";
 

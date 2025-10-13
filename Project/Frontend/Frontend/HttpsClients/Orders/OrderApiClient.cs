@@ -85,9 +85,9 @@ namespace Frontend.HttpsClients.Orders
         }    
 
 
-        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid productId, UpdateQuantityModel request)
+        public async Task<(bool Success, string? Message, int statusCode, CartDTO data)> UpdateItemQuantity(Guid cartItemId, UpdateQuantityModel request)
         {
-            var url = _endpoints.UpdateItemQuantity.Replace("{productId}", productId.ToString());
+            var url = _endpoints.UpdateItemQuantity.Replace("{cartItemId}", cartItemId.ToString());
 
             var response = await _httpClient.PutAsJsonAsync(url, request);
             var parsed = await ParseResponse<CartDTO>(response, "UpdateItemQuantity");

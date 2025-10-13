@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -16,11 +15,11 @@ using Payment.DAL.Repository.Interfaces;
 using Payment.DAL.UnitOfWork;
 using Payment.DAL.UnitOfWork.Interfaces;
 using Payment.Helpers;
+using Serilog;
 using Stripe;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-
 
 namespace Payment.API
 {
@@ -28,152 +27,192 @@ namespace Payment.API
     {
         public static void Main(string[] args)
         {
-            // Load environment variables from .env file
+            // ================================
+            // 🌍 Load .env
+            // ================================
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
             DotNetEnv.Env.Load($".env.{env.ToLower()}");
+            Console.WriteLine($"ASPNETCORE_ENVIRONMENT = {env}");
 
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration.AddEnvironmentVariables();
 
-            builder.Services.AddHttpContextAccessor();
+            // ================================
+            // 🧾 Serilog
+            // ================================
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
 
-            var jwt = builder.Configuration.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
+            builder.Host.UseSerilog();
 
-            builder.Services
-                .AddAuthentication(options =>
-                {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = true;
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
+            try
+            {
+                Log.Information("🚀 Starting Payment API...");
+
+                builder.Services.AddHttpContextAccessor();
+
+                // ================================
+                // 🔐 JWT Authentication
+                // ================================
+                var jwt = builder.Configuration.GetSection("Jwt");
+                var key = Encoding.UTF8.GetBytes(jwt["Key"] ?? throw new InvalidOperationException("JWT Key missing"));
+
+                builder.Services
+                    .AddAuthentication(options =>
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwt["Issuer"],
-                        ValidAudience = jwt["Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        ClockSkew = TimeSpan.Zero,
-                        RoleClaimType = ClaimTypes.Role
-                    };
-                    options.Events = new JwtBearerEvents
+                        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    })
+                    .AddJwtBearer(options =>
                     {
-                        OnAuthenticationFailed = context =>
+                        options.RequireHttpsMetadata = true;
+                        options.SaveToken = true;
+                        options.TokenValidationParameters = new TokenValidationParameters
                         {
-                            if (context.Exception is SecurityTokenExpiredException)
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = jwt["Issuer"],
+                            ValidAudience = jwt["Audience"],
+                            IssuerSigningKey = new SymmetricSecurityKey(key),
+                            ClockSkew = TimeSpan.Zero,
+                            RoleClaimType = ClaimTypes.Role
+                        };
+                        options.Events = new JwtBearerEvents
+                        {
+                            OnAuthenticationFailed = context =>
                             {
-                                context.Response.Headers["Token-Expired"] = "true";
-                                context.Response.StatusCode = 401;
-                                context.Response.ContentType = "application/json";
-
-                                var jsonResponse = System.Text.Json.JsonSerializer.Serialize(new
-                                {
-                                    message = "Access token has expired"
-                                });
-                                return context.Response.WriteAsJsonAsync(jsonResponse);
+                                Log.Warning("❌ Authentication failed: {Message}", context.Exception.Message);
+                                return Task.CompletedTask;
+                            },
+                            OnChallenge = context =>
+                            {
+                                Log.Warning("⚠️ JWT Challenge: {ErrorDescription}", context.ErrorDescription);
+                                return Task.CompletedTask;
                             }
+                        };
+                    });
 
-                            Console.WriteLine("Authentication failed: " + context.Exception.Message);
-                            return Task.CompletedTask;
-                        },
+                builder.Services.AddAuthorization();
 
-                        OnChallenge = context =>
-                        {
-                            Console.WriteLine("Challenge: " + context.ErrorDescription);
-                            return Task.CompletedTask;
-                        }
-                    };
-                });
+                // ================================
+                // 💳 Stripe Config
+                // ================================
+                StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-            builder.Services.AddAuthorization();
+                // ================================
+                // 🧠 AutoMapper
+                // ================================
+                builder.Services.AddAutoMapper(cfg => { }, typeof(PaymentProfile));
 
-            builder.Services.AddAutoMapper(cfg => { }, typeof(PaymentProfile));
-
-            builder.Services.AddDbContext<PaymentDbContext>(options =>
+                // ================================
+                // 💾 Database
+                // ================================
+                builder.Services.AddDbContext<PaymentDbContext>(options =>
                     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 
-            builder.Services.AddControllers()
-            .AddJsonOptions(opt =>
-            {
-                opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            });
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.PaymentService", Version = "v1" });
+                // ================================
+                // 🧩 Dependency Injection
+                // ================================
+                builder.Services.AddScoped<HeaderHandler>();
+                builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+                builder.Services.AddScoped<IPaymentService, PaymentService>();
+                builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                // Auth API client
+                builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
                 {
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Description = "Input Token: Bearer {token}"
+                    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Auth:BaseUrl"]);
                 });
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                builder.Services.Configure<AuthEndpoints>(
+                    builder.Configuration.GetSection("ServiceUrls:Auth:Endpoints"));
+
+                // Order API client
+                builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
                 {
+                    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Order:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
+
+                builder.Services.Configure<OrderEndpoints>(
+                    builder.Configuration.GetSection("ServiceUrls:Order:Endpoints"));
+
+                // ================================
+                // 🌐 Controllers & JSON options
+                // ================================
+                builder.Services.AddControllers()
+                    .AddJsonOptions(opt =>
                     {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
+                        opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    });
+
+                // ================================
+                // 📘 Swagger
+                // ================================
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.PaymentService", Version = "v1" });
+
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Description = "Input Token: Bearer {token}"
+                    });
+
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
                 });
-            });
 
-            // Stripe Config
-            StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+                // ================================
+                // 🚀 Build app
+                // ================================
+                var app = builder.Build();
 
-            builder.Services.AddScoped<HeaderHandler>();
-            builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-            builder.Services.AddScoped<IPaymentService, PaymentService>();
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+                // ================================
+                // 🔧 Middleware pipeline
+                // ================================
+                if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
+                }
 
-            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Auth:BaseUrl"]);
-            });
+                app.UseHttpsRedirection();
 
-            builder.Services.Configure<AuthEndpoints>(
-                builder.Configuration.GetSection("ServiceUrls:Auth:Endpoints"));
+                app.UseAuthentication();
+                app.UseAuthorization();
 
-            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Order:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                app.MapControllers();
 
-            builder.Services.Configure<OrderEndpoints>(
-                builder.Configuration.GetSection("ServiceUrls:Order:Endpoints"));
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                Log.Information("✅ Payment API started successfully");
+                app.Run();
             }
-
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "❌ Payment API terminated unexpectedly");
+            }
+            finally
+            {
+                Log.Information("🧹 Shutting down Payment API...");
+                Log.CloseAndFlush();
+            }
         }
     }
 }

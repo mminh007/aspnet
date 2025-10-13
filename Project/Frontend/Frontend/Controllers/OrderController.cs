@@ -65,13 +65,20 @@ namespace Frontend.Controllers
             });  
         }
 
-        [HttpPut("update-quantity")]
-        public async Task<IActionResult> UpdateQuantity(
+        [HttpPut("update-qty")]
+        public async Task<IActionResult> UpdateQty(
             [FromQuery] Guid buyer,
+            [FromQuery] Guid id,
             [FromQuery] Guid store,
-            [FromBody] UpdateQuantityModel request)
+            [FromBody] RequestUpdate request)
         {
-            var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, store, request);
+            var updateProd = new UpdateQuantityModel
+            {
+                Quantity = request.Quantity,
+                Productid = request.Productid
+            };
+
+            var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, store, id, updateProd);
 
             //_logger.LogInformation("CartDTO result: {CartJson}",
             //JsonSerializer.Serialize(data, new JsonSerializerOptions
@@ -88,13 +95,53 @@ namespace Frontend.Controllers
             // ✅ Tính tổng số lượng trong store
             var totalItemsInStore = itemsInStore.Sum(i => i.Quantity);
 
-            return Ok( new
+            return Ok(new
             {
                 message = msg,
                 data = data,
                 countItemsInStore = totalItemsInStore
             });
         }
+
+        //[HttpPut("update-quantity")]
+        //public async Task<IActionResult> UpdateQuantity(
+        //    [FromQuery] Guid buyer,
+        //    [FromQuery] Guid store,
+        //    [FromBody] RequestUpdate request)
+        //{
+        //    var updateProd = new UpdateQuantityModel
+        //    {
+        //        Quantity = request.Quantity,
+        //        Productid = request.Productid
+        //    };
+
+        //    var (msg, status, data) = await _orderService.UpdateItemsInCart(buyer, store, request.CartItemId, updateProd);
+
+        //    //_logger.LogInformation("CartDTO result: {CartJson}",
+        //    //JsonSerializer.Serialize(data, new JsonSerializerOptions
+        //    //{
+        //    //    WriteIndented = true 
+        //    //}));
+
+        //    // Bug
+        //    // ✅ Lọc ra các CartItem theo storeId
+        //    var itemsInStore = data.Items
+        //                           .Where(i => i.StoreId == store)
+        //                           .ToList();
+
+        //    // ✅ Tính tổng số lượng trong store
+        //    var totalItemsInStore = itemsInStore.Sum(i => i.Quantity);
+
+        //    return Ok( new
+        //    {
+        //        message = msg,
+        //        data = data,
+        //        countItemsInStore = totalItemsInStore
+        //    });
+        //}
+
+        
+
 
         [HttpPost]
         public async Task<IActionResult> CreateOrder(Guid userId, [FromForm] List<Guid> selectedProducts)

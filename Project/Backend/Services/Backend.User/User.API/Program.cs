@@ -13,7 +13,7 @@ using System.Text;
 using User.BLL.External.Interfaces;
 using User.Common.Urls.Order;
 using User.Helpers;
-
+using Serilog;
 
 namespace User
 {
@@ -28,190 +28,169 @@ namespace User
 
             builder.Configuration.AddEnvironmentVariables();
 
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
+
             // Add services to the container.
 
-            builder.Services.AddHttpContextAccessor();
-
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
+            try
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.User", Version = "v1" });
+                Log.Information("🚀 Starting User API...");
 
+                // ----------------------------
+                // Core Services
+                // ----------------------------
+                builder.Services.AddHttpContextAccessor();
 
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                builder.Services.AddControllers();
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerGen(c =>
                 {
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Description = "Input Token: Bearer {token}"
-                });
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebService.User", Version = "v1" });
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                     {
-                        new OpenApiSecurityScheme {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-            });
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Description = "Input Token: Bearer {token}"
+                    });
 
-            // Add Dependency injection
-            // Connect Auth Service
-            builder.Services.AddScoped<HeaderHandler>();
-
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IUserService, UserService>();
-
-            builder.Services.AddDbContext<UserDbContext>(option =>
-                     option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
-
-            var jwt = builder.Configuration.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
-
-            builder.Services
-                .AddAuthentication(options =>
-                {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = true;
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwt["Issuer"],
-                        ValidAudience = jwt["Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        ClockSkew = TimeSpan.Zero,
-                        RoleClaimType = ClaimTypes.Role
-                    };
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnAuthenticationFailed = context =>
                         {
-                            Console.WriteLine($"❌ Authentication failed: {context.Exception.Message}");
-                            Console.WriteLine($"❌ Exception type: {context.Exception.GetType().Name}");
-                            Console.WriteLine("❌ Auth failed: " + context.Exception);
-                            
-                            //var authHeader = context.Request.Headers["Authorization"].ToString();
-                            //if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-                            //{
-                            //    try
-                            //    {
-                            //        var token = authHeader.Substring("Bearer ".Length);
-                            //        var parts = token.Split('.');
-                            //        if (parts.Length == 3)
-                            //        {
-                            //            // Decode payload
-                            //            var payload = parts[1];
-                            //            // Add padding if needed
-                            //            switch (payload.Length % 4)
-                            //            {
-                            //                case 2: payload += "=="; break;
-                            //                case 3: payload += "="; break;
-                            //            }
-
-                            //            var jsonBytes = Convert.FromBase64String(payload);
-                            //            var json = Encoding.UTF8.GetString(jsonBytes);
-                            //            Console.WriteLine($"📋 Token payload: {json}");
-
-                            //            // Parse để lấy exp và nbf
-                            //            var tokenData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                            //            if (tokenData.ContainsKey("exp"))
-                            //            {
-                            //                var exp = ((JsonElement)tokenData["exp"]).GetInt64();
-                            //                var expTime = DateTimeOffset.FromUnixTimeSeconds(exp);
-                            //                Console.WriteLine($"🕐 Token expires at: {expTime} UTC");
-                            //                Console.WriteLine($"🕐 Time until expiry: {expTime - DateTimeOffset.UtcNow}");
-                            //            }
-                            //            if (tokenData.ContainsKey("nbf"))
-                            //            {
-                            //                var nbf = ((JsonElement)tokenData["nbf"]).GetInt64();
-                            //                var nbfTime = DateTimeOffset.FromUnixTimeSeconds(nbf);
-                            //                Console.WriteLine($"🕐 Token valid from: {nbfTime} UTC");
-                            //                Console.WriteLine($"🕐 Time since valid: {DateTimeOffset.UtcNow - nbfTime}");
-                            //            }
-                            //        }
-                            //    }
-                            //    catch (Exception ex)
-                            //    {
-                            //        Console.WriteLine($"❌ Error parsing token: {ex.Message}");
-                            //    }
-                            //}
-
-                            return Task.CompletedTask;
-                        },
-
-                        OnMessageReceived = ctx =>
-                        {
-                            Console.WriteLine("🔎 Raw Authorization header JwtBearer sees: " + ctx.Request.Headers["Authorization"]);
-                            return Task.CompletedTask;
-                        },
-                    };
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
                 });
 
-            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Store:BaseUrl"]);
-                client.DefaultRequestHeaders.Add("Store-Agent", "AuthService/1.0");
-            });
+                // ----------------------------
+                // Dependency Injection
+                // ----------------------------
+                builder.Services.AddScoped<HeaderHandler>();
+                builder.Services.AddScoped<IUserRepository, UserRepository>();
+                builder.Services.AddScoped<IUserService, UserService>();
 
-            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Order:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                builder.Services.AddDbContext<UserDbContext>(option =>
+                    option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer")));
 
-            builder.Services.Configure<OrderEndpoints>(
-                builder.Configuration.GetSection("ServiceUrls:Order:Endpoints"));
+                // ----------------------------
+                // JWT Configuration
+                // ----------------------------
+                var jwt = builder.Configuration.GetSection("Jwt");
+                var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
+                builder.Services
+                    .AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    })
+                    .AddJwtBearer(options =>
+                    {
+                        options.RequireHttpsMetadata = true;
+                        options.SaveToken = true;
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = jwt["Issuer"],
+                            ValidAudience = jwt["Audience"],
+                            IssuerSigningKey = new SymmetricSecurityKey(key),
+                            ClockSkew = TimeSpan.Zero,
+                            RoleClaimType = ClaimTypes.Role
+                        };
+                        options.Events = new JwtBearerEvents
+                        {
+                            OnAuthenticationFailed = context =>
+                            {
+                                Log.Warning("❌ JWT Authentication failed: {Error}", context.Exception.Message);
+                                return Task.CompletedTask;
+                            },
+                            OnMessageReceived = ctx =>
+                            {
+                                Log.Debug("🔎 Authorization header received: {Header}", ctx.Request.Headers["Authorization"].ToString());
+                                return Task.CompletedTask;
+                            }
+                        };
+                    });
 
-
-            builder.Services.AddAuthorization();
-
-            var app = builder.Build();
-
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Headers.ContainsKey("Authorization"))
+                // ----------------------------
+                // HttpClient configuration
+                // ----------------------------
+                builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
                 {
-                    Console.WriteLine("👉 Incoming Authorization: " + context.Request.Headers["Authorization"]);
-                }
-                else
+                    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Store:BaseUrl"]);
+                    client.DefaultRequestHeaders.Add("Store-Agent", "UserService/1.0");
+                });
+
+                builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
                 {
-                    Console.WriteLine("👉 Incoming Authorization: <none>");
+                    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Order:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
+
+                builder.Services.Configure<OrderEndpoints>(
+                    builder.Configuration.GetSection("ServiceUrls:Order:Endpoints"));
+
+                builder.Services.AddAuthorization();
+
+                // ----------------------------
+                // Build application
+                // ----------------------------
+                var app = builder.Build();
+
+                // Log Authorization header for debugging
+                app.Use(async (context, next) =>
+                {
+                    if (context.Request.Headers.ContainsKey("Authorization"))
+                        Log.Debug("👉 Incoming Authorization: {Auth}", context.Request.Headers["Authorization"].ToString());
+                    else
+                        Log.Debug("👉 Incoming Authorization: <none>");
+                    await next();
+                });
+
+                // ----------------------------
+                // Middleware
+                // ----------------------------
+                if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
                 }
 
-                await next();
-            });
+                app.UseHttpsRedirection();
+                app.UseAuthentication();
+                app.UseAuthorization();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                app.MapControllers();
+
+                app.Run();
             }
-
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthentication();
-
-            app.UseAuthorization();
-
-            app.MapControllers();
-
-            app.Run();
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "❌ User API terminated unexpectedly");
+            }
+            finally
+            {
+                Log.Information("🧹 Application shutting down...");
+                Log.CloseAndFlush(); // ensure logs written completely
+            }
         }
     }
 }

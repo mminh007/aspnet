@@ -56,7 +56,7 @@ namespace Order.BLL.Services
             }
         }
 
-        public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act = "check")
+        public async Task<OrderResponseModel<CartDTO?>> GetCartAsync(Guid userId, string act = "check", bool noTracking=false)
         {
             var cart = await _uow.Carts.GetCartByUserIdAsync(userId);
 
@@ -262,12 +262,13 @@ namespace Order.BLL.Services
             }
 
             // ✅ Trả về giỏ hàng mới nhất sau khi xóa
-            var updatedCart = await GetCartAsync(userId, "");
+            var updatedCart = await _uow.Carts.GetCartByUserIdAsync(userId, noTracking: true);
+            var dto = _mapper.Map<CartDTO>(updatedCart);
             return new OrderResponseModel<CartDTO>
             {
                 Success = true,
                 Message = OperationResult.Success,
-                Data = updatedCart.Data
+                Data = dto
             };
         }
 
@@ -513,9 +514,9 @@ namespace Order.BLL.Services
 
         }
 
-        public async Task<OrderResponseModel<CartDTO>> UpdateItemAsync(Guid buyerId, Guid productId, UpdateQuantityRequest request)
+        public async Task<OrderResponseModel<CartDTO>> UpdateItemAsync(Guid buyerId, Guid cartItemId, UpdateQuantityRequest request)
         {
-            var cartItem = await _uow.Carts.GetCartItemByIdAsync(productId);
+            var cartItem = await _uow.Carts.GetCartItemByIdAsync(cartItemId);
             if (cartItem == null)
             {
                 return new OrderResponseModel<CartDTO>
