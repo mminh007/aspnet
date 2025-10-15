@@ -1,5 +1,5 @@
 ﻿@model List<Frontend.Models.Orders.DTOs.OrderDTO>
-
+@using Frontend.Helpers
 @{
     ViewData["Title"] = "Quản lý đơn hàng";
 }
@@ -18,7 +18,8 @@
         @foreach (var group in Model.GroupBy(o => o.Status).OrderBy(g => g.Key))
         {
             <div class="mb-5">
-                <h4 class="text-primary">Trạng thái: @group.Key (@group.Count() đơn)</h4>
+                <h4 class="text-primary">Trạng thái: @group.Key.ToVietnamese() (@group.Count() đơn)</h4>
+
                 <table class="table table-bordered table-hover align-middle mt-2">
                     <thead class="table-light">
                         <tr>
@@ -41,7 +42,7 @@
                                             data-bs-target="#orderDetailModal"
                                             data-order-name="@order.OrderName",
                                             data-order-id="@order.OrderId"
-                                            data-order-status="@order.Status"
+                                            data-order-status="@order.Status.ToVietnamese()"
                                             data-order-date="@order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")"
                                             data-order-total="@order.TotalAmount.ToString("N0") đ"
                                             data-order-items='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(order.OrderItems))'>

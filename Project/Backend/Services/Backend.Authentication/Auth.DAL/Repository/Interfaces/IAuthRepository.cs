@@ -17,6 +17,8 @@ namespace Auth.DAL.Repository.Interfaces
         Task<RefreshTokenModel?> GetRefreshTokenAsync(byte[] hashingToken);
         Task<IdentityModel?> FindUserByTokenIdAsync(Guid tokenId);
 
+        Task<IdentityModel?> GetByResetTokenAsync(string token);
+
         Task<int> UpdateVerificationAsync(IdentityModel user);
         Task<IdentityModel?> GetByEmailAsync(string email);
 

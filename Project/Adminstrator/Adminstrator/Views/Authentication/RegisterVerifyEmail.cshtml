@@ -1,4 +1,4 @@
-﻿@model Frontend.Models.Auth.Requests.VerifyEmailRequest
+﻿@model Adminstrator.Models.Auths.Requests.VerifyEmailRequest
 @{
     ViewData["Title"] = "Xác minh email";
     var email = ViewBag.Email as string;
@@ -21,7 +21,7 @@
             }
         </div>
 
-        <form id="verifyForm" asp-action="VerifyEmail" method="post">
+        <form id="verifyForm" asp-action="RegisterVerifyEmail" method="post">
             <input type="hidden" name="Email" value="@email" />
 
             <div class="form-group mb-3">
@@ -85,7 +85,7 @@
             resendBtn.disabled = true;
 
             try {
-                const response = await fetch("/Authentication/ResendCode", {
+                const response = await fetch("/Authentication/register-resend-code", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -112,7 +112,7 @@
         // Khởi động đếm ngược nếu vừa đăng ký xong
         @if (!canResend)
         {
-            <text>startCountdown();</text>
+                <text>startCountdown();</text>
         }
     </script>
 }

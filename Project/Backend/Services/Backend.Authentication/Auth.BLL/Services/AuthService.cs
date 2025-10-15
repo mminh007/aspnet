@@ -1,13 +1,15 @@
 ﻿using Auth.BLL.External;
 using Auth.BLL.Services.Interfaces;
-using Auth.DAL.Repository.Interfaces;
 using Auth.Common.Enums;
-using Auth.DAL.Models.Entities;
 using Auth.Common.Models.Requests;
 using Auth.Common.Models.Responses;
+using Auth.DAL.Models.Entities;
+using Auth.DAL.Repository.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using static Auth.Common.Models.DTOs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using static Auth.Common.Models.DTOs;
 
 namespace Auth.BLL.Services
 {
@@ -19,19 +21,22 @@ namespace Auth.BLL.Services
         private readonly UserApiService _userApiService;
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthService> _logger;
+        private readonly IConfiguration _config;
 
         public AuthService(IAuthRepository repository,
                            IPasswordHasher<IdentityModel> passwordHasher,
                            ITokenManager tokenManager,
                            UserApiService userApiService,
                            IEmailService emailService,
-                           ILogger<AuthService> logger)
+                           ILogger<AuthService> logger,
+                           IConfiguration config)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
             _tokenManager = tokenManager;
             _userApiService = userApiService;
             _emailService = emailService;
+            _config = config;
             _logger = logger;
         }
 
@@ -64,16 +69,16 @@ namespace Auth.BLL.Services
             if (user == null)
                 return new AuthResponseModel<TokenDto> { Message = OperationResult.NotFound, ErrorMessage = "Email not exists" };
 
-            //if (!user.IsVerified)
-            //    return new AuthResponseModel<TokenDto> 
-            //    { 
-            //        Message = OperationResult.Failed, 
-            //        ErrorMessage = "Email not verified",
-            //        Data = new TokenDto
-            //        {
-            //            VerifyEmail = false,
-            //        }
-            //    };
+            if (!user.IsVerified)
+                return new AuthResponseModel<TokenDto>
+                {
+                    Message = OperationResult.Failed,
+                    ErrorMessage = "Email not verified",
+                    Data = new TokenDto
+                    {
+                        VerifyEmail = false,
+                    }
+                };
 
             var verifyPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHashing, request.Password);
             if (verifyPassword == PasswordVerificationResult.Failed)
@@ -132,8 +137,8 @@ namespace Auth.BLL.Services
             var passwordHash = _passwordHasher.HashPassword(null!, request.Password);
 
             // ✅ Tạo mã xác minh
-            //var verifyCode = new Random().Next(100000, 999999).ToString();
-            //var expiry = DateTime.UtcNow.AddMinutes(10);
+            var verifyCode = new Random().Next(100000, 999999).ToString();
+            var expiry = DateTime.UtcNow.AddMinutes(2);
 
             var newUser = new IdentityModel
             {
@@ -141,9 +146,9 @@ namespace Auth.BLL.Services
                 UserId = userId,
                 Email = request.Email,
                 Role = request.Role,
-                //PasswordHashing = passwordHash,
-                //VerificationCode = verifyCode,
-                //VerificationExpiry = expiry
+                PasswordHashing = passwordHash,
+                VerificationCode = verifyCode,
+                VerificationExpiry = expiry
             };
 
             try
@@ -151,7 +156,7 @@ namespace Auth.BLL.Services
                 await _repository.CreateIdentityAsync(newUser);
 
                 // ✅ Gửi email xác minh
-                //await _emailService.SendVerificationEmailAsync(request.Email, verifyCode);
+                await _emailService.SendVerificationEmailAsync(request.Email, verifyCode);
 
                 return new AuthResponseModel<string>
                 {
@@ -170,81 +175,122 @@ namespace Auth.BLL.Services
             }
         }
 
-        //public async Task<AuthResponseModel<string>> VerifyEmailAsync(string email, string code)
-        //{
-        //    var user = await _repository.GetByEmailAsync(email);
-        //    if (user == null)
-        //        return new AuthResponseModel<string> { Message = OperationResult.NotFound, ErrorMessage = "User not found" };
+        public async Task<AuthResponseModel<string>> VerifyEmailAsync(string email, string code)
+        {
+            var user = await _repository.GetByEmailAsync(email);
+            if (user == null)
+                return new AuthResponseModel<string> { Message = OperationResult.NotFound, ErrorMessage = "User not found" };
 
-        //    if (user.IsVerified)
-        //        return new AuthResponseModel<string> { Message = OperationResult.Conflict, ErrorMessage = "Email already verified" };
+            //if (user.IsVerified)
+            //    return new AuthResponseModel<string> { Message = OperationResult.Conflict, ErrorMessage = "Email already verified" };
 
-        //    //if (user.VerificationCode != code)
-        //    //    return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Invalid verification code" };
+            if (user.VerificationCode != code)
+                return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Invalid verification code" };
 
-        //    if (user.VerificationExpiry < DateTime.UtcNow)
-        //        return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Verification code expired" };
+            if (user.VerificationExpiry < DateTime.UtcNow)
+                return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Verification code expired" };
 
-        //    user.IsVerified = true;
-        //    user.VerifiedAt = DateTime.UtcNow;
-        //    user.VerificationCode = null;
-        //    user.VerificationExpiry = null;
+            user.IsVerified = true;
+            user.VerifiedAt = DateTime.UtcNow;
+            user.VerificationCode = null;
+            user.VerificationExpiry = null;
 
-        //    await _repository.UpdateVerificationAsync(user);
+            await _repository.UpdateVerificationAsync(user);
 
-        //    return new AuthResponseModel<string>
-        //    {
-        //        Message = OperationResult.Success,
-        //        Data = "Email verified successfully"
-        //    };
-        //}
+            return new AuthResponseModel<string>
+            {
+                Message = OperationResult.Success,
+                Data = "Email verified successfully"
+            };
+        }
 
-        //public async Task<AuthResponseModel<string>> ResendVerificationCodeAsync(string email)
-        //{
-        //    var user = await _repository.GetByEmailAsync(email);
+        public async Task<AuthResponseModel<string>> ResendVerificationCodeAsync(string email)
+        {
+            var user = await _repository.GetByEmailAsync(email);
 
-        //    if (user == null)
-        //        return new AuthResponseModel<string>
-        //        {
-        //            Message = OperationResult.NotFound,
-        //            ErrorMessage = "User not found"
-        //        };
+            if (user == null)
+                return new AuthResponseModel<string>
+                {
+                    Message = OperationResult.NotFound,
+                    ErrorMessage = "User not found"
+                };
 
-        //    if (user.IsVerified)
-        //        return new AuthResponseModel<string>
-        //        {
-        //            Message = OperationResult.Conflict,
-        //            ErrorMessage = "Email already verified"
-        //        };
+            if (user.IsVerified)
+                return new AuthResponseModel<string>
+                {
+                    Message = OperationResult.Conflict,
+                    ErrorMessage = "Email already verified"
+                };
 
 
-        //    if (user.VerificationExpiry != null && user.VerificationExpiry > DateTime.UtcNow)
-        //    {
-        //        var remaining = user.VerificationExpiry.Value.Subtract(DateTime.UtcNow).TotalMinutes;
-        //        return new AuthResponseModel<string>
-        //        {
-        //            Message = OperationResult.Failed,
-        //            ErrorMessage = $"Verification code still valid. Please wait {remaining:F0} minutes or check your email."
-        //        };
-        //    }
+            if (user.VerificationExpiry != null && user.VerificationExpiry > DateTime.UtcNow &&
+                    (user.VerificationExpiry.Value - DateTime.UtcNow).TotalMinutes > 5)
+            {
+                var remaining = user.VerificationExpiry.Value.Subtract(DateTime.UtcNow).TotalMinutes;
+                return new AuthResponseModel<string>
+                {
+                    Message = OperationResult.Failed,
+                    ErrorMessage = $"Verification code still valid. Please wait {remaining:F0} minutes or check your email."
+                };
+            }
 
-        //    // ✅ Tạo mã mới
-        //    var newCode = new Random().Next(100000, 999999).ToString();
-        //    user.VerificationCode = newCode;
-        //    user.VerificationExpiry = DateTime.UtcNow.AddMinutes(10);
+            // ✅ Tạo mã mới
+            var newCode = new Random().Next(100000, 999999).ToString();
+            user.VerificationCode = newCode;
+            user.VerificationExpiry = DateTime.UtcNow.AddMinutes(2);
 
-        //    await _repository.UpdateVerificationAsync(user);
+            await _repository.UpdateVerificationAsync(user);
 
-        //    // ✅ Gửi email xác minh mới
-        //    await _emailService.SendVerificationEmailAsync(user.Email, newCode);
+            // ✅ Gửi email xác minh mới
+            await _emailService.SendVerificationEmailAsync(user.Email, newCode);
 
-        //    return new AuthResponseModel<string>
-        //    {
-        //        Message = OperationResult.Success,
-        //        Data = "A new verification code has been sent to your email."
-        //    };
-        //}
+            return new AuthResponseModel<string>
+            {
+                Message = OperationResult.Success,
+                Data = "A new verification code has been sent to your email."
+            };
+        }
 
+        public async Task<AuthResponseModel<string>> SendForgotPasswordEmailAsync(string email)
+        {
+            var user = await _repository.GetByEmailAsync(email);
+            if (user == null)
+                return new AuthResponseModel<string> { Message = OperationResult.NotFound, ErrorMessage = "Email not found" };
+
+            // ✅ Tạo token reset mật khẩu (random + base64)
+            var token = new Random().Next(100000, 999999).ToString();
+            user.VerificationCode = token;
+            user.VerificationExpiry = DateTime.UtcNow.AddMinutes(5);
+
+            await _repository.UpdateVerificationAsync(user);
+
+            // var emailBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(email));
+            var template = user.Role == "seller"
+                ? _config["RESET_PASSWORD_URL_ADMIN"]
+                : _config["RESET_PASSWORD_URL_CLIENT"];
+
+            var resetLink = template
+                    .Replace("{email}", Uri.EscapeDataString(email));
+
+            await _emailService.SendPasswordResetEmailAsync(email, resetLink, token);
+
+            return new AuthResponseModel<string> { Message = OperationResult.Success, Data = "Reset email sent" };
+        }
+
+        public async Task<AuthResponseModel<string>> ResetPasswordAsync(string email, string token, string newPassword)
+        {
+            var user = await _repository.GetByEmailAsync(email);
+            if (user == null || user.VerificationExpiry < DateTime.UtcNow)
+                return new AuthResponseModel<string> { Message = OperationResult.Failed, ErrorMessage = "Invalid or expired token" };
+
+            user.PasswordHashing = _passwordHasher.HashPassword(user, newPassword);
+            user.IsVerified = true;
+            user.VerificationCode = null;
+            user.VerificationExpiry = null;
+            await _repository.UpdateIdentityAsync(user);
+
+            return new AuthResponseModel<string> { Message = OperationResult.Success, Data = "Password reset successfully" };
+        }
 
 
         public AuthResponseModel<string> GetTokenSystemAsync()

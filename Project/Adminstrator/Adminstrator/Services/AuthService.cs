@@ -14,20 +14,21 @@ namespace Adminstrator.Services
             _authApi = authApi;
         }
 
-        public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, string UserId, string Message, int StatusCode)> Login(LoginModel model)
+        public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, 
+                    string UserId, string Message, int StatusCode, bool? verifyEmail)> Login(LoginModel model)
         {
             model.ClientType = "admin";
 
-            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role)
+            var (success, accessToken, refreshToken, expiresIn, message, statusCode, role, verifyEmail)
                 = await _authApi.LoginAsync(model);
 
             if (!success || string.IsNullOrEmpty(accessToken))
-                return (false, "", "", 0, "", "", message ?? "Login failed", statusCode);
+                return (false, "", "", 0, "", "", message ?? "Login failed", statusCode, verifyEmail);
 
             // Parse token để lấy userId
             var (isAuth, userId, Email, _) = AuthHelper.ParseUserIdFromToken(accessToken);
 
-            return (isAuth, accessToken, refreshToken, expiresIn, role, userId, message ?? "Login successful", statusCode);
+            return (isAuth, accessToken, refreshToken, expiresIn, role, userId, message ?? "Login successful", statusCode, null);
         }
 
         public async Task<(bool Success, string Message, int StatusCode)> Register(RegisterModel model)
@@ -43,5 +44,28 @@ namespace Adminstrator.Services
             return (Success, newAccessToken, newRefreshToken, expiresIn, Role, Message, StatusCode);
         }
 
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ResendCode(ResendCodeRequest model)
+        {
+            return await _authApi.ResendCodeAsync(model);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ResetPassword(ResetPasswordRequestModel model)
+        {
+            return await _authApi.ResetPasswordAsync(model);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> VerifyEmail(VerifyEmailRequest model)
+        {
+            return await _authApi.VerifyEmailAsync(model);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ForgotPassword(string email)
+        {
+            return await _authApi.ForgotPasswordAsync(email);
+        }
+
     }
+
+
+
 }

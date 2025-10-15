@@ -1,61 +1,108 @@
 ﻿using Auth.BLL.Services.Interfaces;
+using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Net.Mail;
-using System.Threading.Tasks;
+using MimeKit;
+using MimeKit.Text;
 
-namespace Auth.BLL.Services
+public class EmailService : IEmailService
 {
-    public class EmailService : IEmailService
+    private readonly ILogger<EmailService> _logger;
+    private readonly IConfiguration _config;
+
+    public EmailService(ILogger<EmailService> logger, IConfiguration config)
     {
-        private readonly ILogger<EmailService> _logger;
-        private readonly IConfiguration _config;
+        _logger = logger;
+        _config = config;
+    }
 
-        public EmailService(ILogger<EmailService> logger, IConfiguration config)
+    private async Task SendEmailAsync(string to, string subject, string htmlBody, string textBody = "")
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_config["SMTP_FROM_NAME"], _config["SMTP_FROM_EMAIL"]));
+        message.To.Add(MailboxAddress.Parse(to));
+        message.Subject = subject;
+        message.Date = DateTimeOffset.UtcNow;
+        message.Priority = MessagePriority.Urgent;
+
+        var builder = new BodyBuilder
         {
-            _logger = logger;
-            _config = config;
-        }
+            HtmlBody = htmlBody,
+            TextBody = string.IsNullOrEmpty(textBody)
+                ? "Please open this email in an HTML-compatible client."
+                : textBody
+        };
+        message.Body = builder.ToMessageBody();
 
-        public async Task SendVerificationEmailAsync(string email, string code)
+        try
         {
-            try
-            {
-                var smtpHost = _config["SMTP_HOST"];
-                var smtpPort = int.Parse(_config["SMTP_PORT"] ?? "25");
-                var enableSsl = bool.Parse(_config["SMTP_ENABLE_SSL"] ?? "false");
-                var username = _config["SMTP_USERNAME"];
-                var password = _config["SMTP_PASSWORD"];
-                var fromEmail = _config["SMTP_FROM_EMAIL"] ?? "no-reply@auth.local";
-                var fromName = _config["SMTP_FROM_NAME"] ?? "Auth Service";
+            using var client = new SmtpClient();
+            var host = _config["SMTP_HOST"];
+            var port = int.Parse(_config["SMTP_PORT"] ?? "587");
+            var enableSsl = bool.Parse(_config["SMTP_ENABLE_SSL"] ?? "true");
 
-                using var client = new SmtpClient(smtpHost, smtpPort)
-                {
-                    EnableSsl = enableSsl,
-                    Credentials = string.IsNullOrEmpty(username)
-                        ? CredentialCache.DefaultNetworkCredentials
-                        : new NetworkCredential(username, password)
-                };
+            // Timeout để tránh treo
+            client.Timeout = 10000;
 
-                var mail = new MailMessage
-                {
-                    From = new MailAddress(fromEmail, fromName),
-                    Subject = "Xác minh tài khoản",
-                    Body = $"Xin chào,\n\nMã xác minh của bạn là: {code}\n\nMã này sẽ hết hạn sau 2 phút.\n\nTrân trọng,\nĐội ngũ Auth Service",
-                    IsBodyHtml = false
-                };
-                mail.To.Add(email);
+            await client.ConnectAsync(host, port, enableSsl);
+            var username = _config["SMTP_USERNAME"];
+            var password = _config["SMTP_PASSWORD"];
 
-                await client.SendMailAsync(mail);
+            if (!string.IsNullOrEmpty(username))
+                await client.AuthenticateAsync(username, password);
 
-                _logger.LogInformation("✅ Verification email sent to {Email} with code {Code}", email, code);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Failed to send verification email to {Email}", email);
-                throw; // để controller xử lý nếu muốn retry
-            }
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation("📧 Email sent to {Email} with subject: {Subject}", to, subject);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to send email to {Email}", to);
+            throw; // để service biết email chưa gửi được
+        }
+    }
+
+    public async Task SendVerificationEmailAsync(string email, string code)
+    {
+        var htmlBody = $@"
+        <div style='font-family:Segoe UI, sans-serif; max-width:600px; margin:auto;'>
+            <h2 style='color:#4a90e2;'>Xác minh tài khoản của bạn</h2>
+            <p>Xin chào,</p>
+            <p>Cảm ơn bạn đã đăng ký tài khoản. Mã xác minh của bạn là:</p>
+            <div style='background-color:#f5f5f5; padding:10px 20px; font-size:18px; font-weight:bold; text-align:center; border-radius:6px;'>
+                {code}
+            </div>
+            <p>Mã này sẽ hết hạn sau <b>2 phút phút</b>. Nếu bạn không yêu cầu tạo tài khoản, vui lòng bỏ qua email này.</p>
+            <p>Trân trọng,<br><b>Auth Service Team</b></p>
+        </div>";
+
+        await SendEmailAsync(email, "Xác minh tài khoản", htmlBody);
+    }
+
+    public async Task SendPasswordResetEmailAsync(string email, string resetLink, string code)
+    {
+        var htmlBody = $@"
+        <div style='font-family:Segoe UI, sans-serif; max-width:600px; margin:auto;'>
+            <h2 style='color:#e24a4a;'>Đặt lại mật khẩu</h2>
+            <p>Xin chào,</p>
+            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu của bạn.</p>
+
+            <p>Mã xác minh của bạn là:</p>
+            <div style='background-color:#f5f5f5; padding:10px 20px; font-size:18px; font-weight:bold; text-align:center; border-radius:6px;'>
+                {code}
+            </div>
+
+            <p>Nhấp vào liên kết bên dưới để đặt lại mật khẩu (hết hạn sau 5 phút):</p>
+            <p style='text-align:center; margin:20px 0;'>
+                <a href='{resetLink}' style='background:#4a90e2; color:#fff; padding:12px 24px; text-decoration:none; border-radius:5px;'>
+                    Đặt lại mật khẩu
+                </a>
+            </p>
+            <p>Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.</p>
+            <p>Trân trọng,<br><b>Auth Service Team</b></p>
+        </div>";
+
+        await SendEmailAsync(email, "Reset Password", htmlBody);
     }
 }

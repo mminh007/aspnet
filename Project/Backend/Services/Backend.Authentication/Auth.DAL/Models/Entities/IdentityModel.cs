@@ -19,10 +19,9 @@ namespace Auth.DAL.Models.Entities
         [Required]
         public string Role { get; set; }
 
-        //public string? VerificationCode { get; set; }
-        //public DateTime? VerificationExpiry { get; set; }
-        //public bool IsVerified { get; set; } = false;
-        //public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        //public DateTime? VerifiedAt { get; set; }
+        public string? VerificationCode { get; set; }
+        public DateTime? VerificationExpiry { get; set; }
+        public bool IsVerified { get; set; } = false;
+        public DateTime? VerifiedAt { get; set; }
     }
 }

@@ -13,5 +13,10 @@ namespace Frontend.HttpsClients.Auths
         Task<(bool Success, string? Message, int statusCode, string? Data)> VerifyEmailAsync(VerifyEmailRequest model);
 
         Task<(bool Success, string? Message, int statusCode, string? Data)> ResendCodeAsync(ResendCodeRequest model);
+
+        Task<(bool Success, string? Message, int statusCode, string? Data)> ResetPasswordAsync(ResetPasswordRequestModel model);
+
+        Task<(bool Success, string? Message, int statusCode, string? Data)> ForgotPasswordAsync(string email);
+
     }
 }

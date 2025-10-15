@@ -119,9 +119,17 @@ namespace Adminstrator
 
             app.UseAuthorization();
 
+            app.MapGet("/", context =>
+            {
+                context.Response.Redirect("/authentication/login");
+                return Task.CompletedTask;
+            });
+
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Authentication}/{action=Login}/{id?}");
+
 
             app.Run();
         }

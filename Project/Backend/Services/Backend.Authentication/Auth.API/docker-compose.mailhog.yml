@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: always
+    ports:
+      - "1025:1025"   # SMTP server (MailKit connect)
+      - "8025:8025"   # Web UI (http://localhost:8025)
+    environment:
+      - MH_STORAGE=memory
+    networks:
+      - backend-net
+
+networks:
+  backend-net:
+    driver: bridge

@@ -15,6 +15,11 @@ namespace Frontend.Services
             _authApi = authApi;
         }
 
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ForgotPassword(string email)
+        {
+            return await _authApi.ForgotPasswordAsync(email);
+        }
+
         public async Task<(bool Success, string AccessToken, string RefreshToken, int ExpiresIn, string Role, string UserId, string Message, 
             int StatusCode, bool? verifyEmail)> Login(LoginModel model)
         {
@@ -48,6 +53,11 @@ namespace Frontend.Services
         public async Task<(bool Success, string Message, int StatusCode, string Data)> ResendCode(ResendCodeRequest model)
         {
             return await _authApi.ResendCodeAsync(model);
+        }
+
+        public async Task<(bool Success, string Message, int StatusCode, string Data)> ResetPassword(ResetPasswordRequestModel model)
+        {
+            return await _authApi.ResetPasswordAsync(model);
         }
 
         public async Task<(bool Success, string Message, int StatusCode, string Data)> VerifyEmail(VerifyEmailRequest model)

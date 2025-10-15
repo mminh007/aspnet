@@ -20,7 +20,7 @@ using StackExchange.Redis;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.StackExchangeRedis;
-
+using Serilog;
 
 namespace Frontend
 {
@@ -35,138 +35,161 @@ namespace Frontend
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration.AddEnvironmentVariables();
-            // Setting Helper
-            SettingsHelper.Configure(builder.Configuration);
-            builder.Services.AddHttpContextAccessor();
 
-            // Connect Auth Service
-            builder.Services.AddScoped<HeaderHandler>();
+            // ==========================================================
+            // 🧾 Configure Serilog (đọc từ appsettings.json)
+            // ==========================================================
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
+            builder.Host.UseSerilog();
 
-            // Order Enpoints
-            builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
+            try
             {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                // Setting Helper
+                SettingsHelper.Configure(builder.Configuration);
+                builder.Services.AddHttpContextAccessor();
 
-            builder.Services.Configure<OrderEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Order:Endpoints"));
+                // Connect Auth Service
+                builder.Services.AddScoped<HeaderHandler>();
 
-            // Auth Enpoints
-            builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            });
+                // Order Enpoints
+                builder.Services.AddHttpClient<IOrderApiClient, OrderApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
 
-            builder.Services.Configure<AuthEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Auth:Endpoints"));
+                builder.Services.Configure<OrderEndpoints>(
+                    builder.Configuration.GetSection("Ocelot:ServiceUrls:Order:Endpoints"));
 
-            // Store endpoints
-            builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                // Auth Enpoints
+                builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                });
 
-            builder.Services.Configure<StoreEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
+                builder.Services.Configure<AuthEndpoints>(
+                    builder.Configuration.GetSection("Ocelot:ServiceUrls:Auth:Endpoints"));
 
-            // Product Endpoints
-            builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                // Store endpoints
+                builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
 
-            builder.Services.Configure<ProductEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
+                builder.Services.Configure<StoreEndpoints>(
+                    builder.Configuration.GetSection("Ocelot:ServiceUrls:Store:Endpoints"));
 
-            builder.Services.AddHttpClient<IPaymentApiClient, PaymentApiClient>(client =>
-            {
-                client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
-            }).AddHttpMessageHandler<HeaderHandler>();
+                // Product Endpoints
+                builder.Services.AddHttpClient<IProductApiClient, ProductApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
 
-            builder.Services.Configure<PaymentEndpoints>(
-                builder.Configuration.GetSection("Ocelot:ServiceUrls:Payment:Endpoints"));
+                builder.Services.Configure<ProductEndpoints>(
+                    builder.Configuration.GetSection("Ocelot:ServiceUrls:Product:Endpoints"));
 
-            builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IStoreService, StoreService>();
-            builder.Services.AddScoped<IProductService, ProductService>();
-            builder.Services.AddScoped<IOrderService, OrderService>();  
-            builder.Services.AddScoped<IPaymentService, PaymentService>();
+                builder.Services.AddHttpClient<IPaymentApiClient, PaymentApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["Ocelot:BaseUrl"]);
+                }).AddHttpMessageHandler<HeaderHandler>();
 
+                builder.Services.Configure<PaymentEndpoints>(
+                    builder.Configuration.GetSection("Ocelot:ServiceUrls:Payment:Endpoints"));
 
-            // Redis Connection
-            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-            {
-                var configuration = builder.Configuration.GetConnectionString("Redis");
-                return ConnectionMultiplexer.Connect(configuration);
-            });
-
-            // Data Protection - lưu keys vào Redis
-            builder.Services.AddDataProtection()
-                .PersistKeysToStackExchangeRedis(
-                    builder.Services.BuildServiceProvider().GetRequiredService<IConnectionMultiplexer>(),
-                    "DataProtection-Keys"
-                )
-                .SetApplicationName("Frontend");
+                builder.Services.AddScoped<IAuthService, AuthService>();
+                builder.Services.AddScoped<IStoreService, StoreService>();
+                builder.Services.AddScoped<IProductService, ProductService>();
+                builder.Services.AddScoped<IOrderService, OrderService>();
+                builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 
-            // Redis Cache cho Session
-            builder.Services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = builder.Configuration.GetConnectionString("Redis") + ",defaultDatabase=1";
-                options.InstanceName = "Frontend_Session_";
-            });
+                // Redis Connection
+                builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+                {
+                    var configuration = builder.Configuration.GetConnectionString("Redis");
+                    return ConnectionMultiplexer.Connect(configuration);
+                });
 
-            builder.Services.AddSession(options =>
-            {
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-            });
-
-            builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
-
-            //JWT Authentication
-
-            builder.Services.AddAuthorization();
-
-            // Add services to the container.
-            builder.Services.AddControllersWithViews();
-
-            builder.Services.AddControllers()
-            .AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            });
+                // Data Protection - lưu keys vào Redis
+                builder.Services.AddDataProtection()
+                    .PersistKeysToStackExchangeRedis(
+                        builder.Services.BuildServiceProvider().GetRequiredService<IConnectionMultiplexer>(),
+                        "DataProtection-Keys"
+                    )
+                    .SetApplicationName("Frontend");
 
 
-            var app = builder.Build();
+                // Redis Cache cho Session
+                builder.Services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = builder.Configuration.GetConnectionString("Redis") + ",defaultDatabase=1";
+                    options.InstanceName = "Frontend_Session_";
+                });
 
-            // Configure the HTTP request pipeline.
-            if (!app.Environment.IsDevelopment())
-            {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
+                builder.Services.AddSession(options =>
+                {
+                    options.IdleTimeout = TimeSpan.FromMinutes(30);
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.IsEssential = true;
+                });
+
+                builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
+
+                //JWT Authentication
+
+                builder.Services.AddAuthorization();
+
+                // Add services to the container.
+                builder.Services.AddControllersWithViews();
+
+                builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                });
+
+
+                var app = builder.Build();
+
+                // Configure the HTTP request pipeline.
+                if (!app.Environment.IsDevelopment())
+                {
+                    app.UseExceptionHandler("/Home/Error");
+                    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                    app.UseHsts();
+                }
+
+                app.UseRouting();
+                app.UseSession();
+                app.UseMiddleware<SessionDebugMiddleware>();
+                app.UseMiddleware<SessionRestoreMiddleware>();
+                app.UseMiddleware<RefreshTokenMiddleware>();
+
+                app.UseHttpsRedirection();
+                app.UseStaticFiles();
+
+
+                app.UseAuthentication();
+                app.UseAuthorization();
+
+                app.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                app.Run();
+
             }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Application start-up failed");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
 
-            app.UseRouting();
-            app.UseSession();
-            app.UseMiddleware<SessionDebugMiddleware>();
-            app.UseMiddleware<SessionRestoreMiddleware>();
-            app.UseMiddleware<RefreshTokenMiddleware>();
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
-
-            app.Run();
+            }
         }
     }
 }

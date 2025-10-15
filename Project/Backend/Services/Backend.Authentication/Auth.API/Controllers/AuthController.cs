@@ -4,6 +4,7 @@ using Auth.Common.Enums;
 using Auth.Common.Models.Requests;
 using Auth.Common.Models.Responses;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -60,25 +61,42 @@ namespace API.Controllers
             return HandleResponse(result, "Login successfully!", "Invalid login credentials");
         }
 
-        //[AllowAnonymous]
-        //[HttpPost("verify-email")]
-        //public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest model)
-        //{
-        //    _logger.LogInformation("Email verification attempt for {Email}", model.Email);
-        //    var result = await _authService.VerifyEmailAsync(model.Email, model.Code);
-        //    return HandleResponse(result, "Email verified successfully!", "Email verification failed");
-        //}
+        [AllowAnonymous]
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest model)
+        {
+            _logger.LogInformation("Email verification attempt for {Email}", model.Email);
+            var result = await _authService.VerifyEmailAsync(model.Email, model.Code);
+            return HandleResponse(result, "Email verified successfully!", "Email verification failed");
+        }
 
-        //[AllowAnonymous]
-        //[HttpPost("resend-code")]
-        //public async Task<IActionResult> ResendCode([FromBody] ResendCodeRequest model)
-        //{
-        //    _logger.LogInformation("Resend verification code request for {Email}", model.Email);
+        [AllowAnonymous]
+        [HttpPost("resend-code")]
+        public async Task<IActionResult> ResendCode([FromBody] ResendCodeRequest model)
+        {
+            _logger.LogInformation("Resend verification code request for {Email}", model.Email);
 
-        //    var result = await _authService.ResendVerificationCodeAsync(model.Email);
-        //    return HandleResponse(result, "Verification code resent successfully!", "Failed to resend verification code");
-        //}
+            var result = await _authService.ResendVerificationCodeAsync(model.Email);
+            return HandleResponse(result, "Verification code resent successfully!", "Failed to resend verification code");
+        }
 
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
+        {
+            _logger.LogInformation("Reset Password for {Email} - {Token} - {newPassword}", model.Email, model.VerifyCode, model.NewPassword);
+            var result = await _authService.ResetPasswordAsync(model.Email, model.VerifyCode, model.NewPassword);
+            return HandleResponse(result, "Password reset successfully!", "Invalid or expired token");
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password/{email}")]
+        public async Task<IActionResult> ForgotPassword(string email)
+        {
+            _logger.LogInformation("Forgot password request for {Email}", email);
+            var result = await _authService.SendForgotPasswordEmailAsync(email);
+            return HandleResponse(result, "Password reset email sent successfully!", "Failed to send password reset email");
+        }
 
 
         [AllowAnonymous]
@@ -122,31 +140,36 @@ namespace API.Controllers
                 OperationResult.Failed => BadRequest(new
                 {
                     statusCode = 400,
-                    message = failedMessage ?? response.ErrorMessage ?? "Operation failed"
+                    message = failedMessage ?? response.ErrorMessage ?? "Operation failed",
+                    data = response.Data
                 }),
 
                 OperationResult.Forbidden => StatusCode(403, new
                 {
                     statusCode = 403,
-                    message = response.ErrorMessage ?? "Forbidden - You don't have permission"
+                    message = response.ErrorMessage ?? "Forbidden - You don't have permission",
+                    data = response.Data
                 }),
 
                 OperationResult.NotFound => NotFound(new
                 {
                     statusCode = 404,
-                    message = response.ErrorMessage ?? "Not found"
+                    message = response.ErrorMessage ?? "Not found",
+                    data = response.Data
                 }),
 
                 OperationResult.Conflict => Conflict(new
                 {
                     statusCode = 409,
-                    message = response.ErrorMessage ?? "Conflict occurred"
+                    message = response.ErrorMessage ?? "Conflict occurred",
+                    data = response.Data
                 }),
 
                 OperationResult.Error => StatusCode(500, new
                 {
                     statusCode = 500,
-                    message = response.ErrorMessage ?? "Unexpected error!"
+                    message = response.ErrorMessage ?? "Unexpected error!",
+                    data = response.Data
                 }),
 
                 _ => StatusCode(500, new { statusCode = 500, message = "Unexpected error!" })

@@ -42,6 +42,58 @@
       "UpstreamHttpMethod": [ "POST" ]
       // AllowAnonymous 
     },
+    {
+      "DownstreamPathTemplate": "/api/auth/verify-email",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/verify-email",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/resend-code",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/resend-code",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/reset-password",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/reset-password",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/forgot-password/{email}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/forgot-password/{email}",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
 
     // -------------------------
     // USER SERVICE
@@ -176,7 +228,7 @@
       "UpstreamPathTemplate": "/store/search-keyword",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -191,7 +243,7 @@
       "UpstreamPathTemplate": "/store/search-tag",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {

@@ -42,6 +42,58 @@
       "UpstreamHttpMethod": [ "POST" ]
       // AllowAnonymous 
     },
+    {
+      "DownstreamPathTemplate": "/api/auth/verify-email",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7272
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/verify-email",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/resend-code",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7272
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/resend-code",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/reset-password",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7272
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/reset-password",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/forgot-password/{email}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7272
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/forgot-password/{email}",
+      "UpstreamHttpMethod": [ "POST" ]
+      // AllowAnonymous 
+    },
 
     // -------------------------
     // USER SERVICE
@@ -176,7 +228,7 @@
       "UpstreamPathTemplate": "/store/search-keyword",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -191,7 +243,7 @@
       "UpstreamPathTemplate": "/store/search-tag",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -206,7 +258,7 @@
       "UpstreamPathTemplate": "/store/update",
       "UpstreamHttpMethod": [ "PUT" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
       //"RouteClaimsRequirement": {
       //  "Role": "seller"
@@ -224,7 +276,7 @@
       "UpstreamPathTemplate": "/store/delete",
       "UpstreamHttpMethod": [ "DELETE" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
       //"RouteClaimsRequirement": {
       //  "Role": "seller,admin"
@@ -242,7 +294,7 @@
       "UpstreamPathTemplate": "/store/change-active",
       "UpstreamHttpMethod": [ "PATCH" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
       //"RouteClaimsRequirement": {
       //  "Role": "seller,system"
@@ -261,7 +313,7 @@
       "UpstreamPathTemplate": "/store/get-detail",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
 
@@ -312,7 +364,7 @@
       "UpstreamPathTemplate": "/product/search/{productId}",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -327,7 +379,7 @@
       "UpstreamPathTemplate": "/product/get-product/{storeId}",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
 
     },
@@ -344,7 +396,7 @@
       "UpstreamPathTemplate": "/product/get/{storeId}",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -359,7 +411,7 @@
       "UpstreamPathTemplate": "/product/search-product/{storeId}",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
 
@@ -375,7 +427,7 @@
       "UpstreamPathTemplate": "/product/create-product",
       "UpstreamHttpMethod": [ "POST" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -390,7 +442,7 @@
       "UpstreamPathTemplate": "/product/update/{productId}",
       "UpstreamHttpMethod": [ "POST" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -405,7 +457,7 @@
       "UpstreamPathTemplate": "/product/update-active",
       "UpstreamHttpMethod": [ "PUT" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -420,7 +472,7 @@
       "UpstreamPathTemplate": "/product/delete/{productId}",
       "UpstreamHttpMethod": [ "DELETE" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
 
@@ -439,7 +491,7 @@
       "UpstreamPathTemplate": "/product/create-category",
       "UpstreamHttpMethod": [ "POST" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -454,7 +506,7 @@
       "UpstreamPathTemplate": "/product/search-category/{storeId}",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
     {
@@ -469,7 +521,7 @@
       "UpstreamPathTemplate": "/product/delete-category/{categoryId}",
       "UpstreamHttpMethod": [ "DELETE" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
+        "AuthenticationProviderKey": ""
       }
     },
 

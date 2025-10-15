@@ -14,14 +14,21 @@ namespace Auth.DAL.Databases
         {
             base.OnModelCreating(modelBuilder);
 
-            // IdentityModel
+            // ===============================
+            // 🧩 TABLE: IdentityModel
+            // ===============================
             modelBuilder.Entity<IdentityModel>(entity =>
             {
+                entity.ToTable("IdentityModels");
+
                 entity.HasKey(e => e.Id);
 
                 entity.Property(e => e.Email)
                       .IsRequired()
                       .HasMaxLength(200);
+
+                entity.HasIndex(e => e.Email)
+                      .IsUnique(); // 🔒 Email duy nhất
 
                 entity.Property(e => e.PasswordHashing)
                       .IsRequired();
@@ -29,19 +36,42 @@ namespace Auth.DAL.Databases
                 entity.Property(e => e.Role)
                       .IsRequired()
                       .HasMaxLength(50);
+
+                entity.Property(e => e.IsVerified)
+                      .HasDefaultValue(false);
+
+                entity.Property(e => e.VerifiedAt)
+                      .HasColumnType("datetime2");
+
+                entity.Property(e => e.VerificationCode)
+                      .HasMaxLength(20);
+
+                entity.Property(e => e.VerificationExpiry)
+                      .HasColumnType("datetime2");
             });
 
-            // RefreshTokenModel
+            // ===============================
+            // 🔄 TABLE: RefreshTokenModel
+            // ===============================
             modelBuilder.Entity<RefreshTokenModel>(entity =>
             {
+                entity.ToTable("RefreshTokenModels");
+
                 entity.HasKey(e => e.RefreshTokenId);
 
-                entity.Property(e => e.TokenHash).IsRequired();
-                entity.Property(e => e.ExpiryDate).IsRequired();
-                entity.Property(e => e.SessionExpiry).IsRequired();
-                entity.Property(e => e.LastActivity).IsRequired();
+                entity.Property(e => e.TokenHash)
+                      .IsRequired();
 
-                // Quan hệ 1-n: Một user có nhiều refresh token
+                entity.Property(e => e.ExpiryDate)
+                      .IsRequired();
+
+                entity.Property(e => e.SessionExpiry)
+                      .IsRequired();
+
+                entity.Property(e => e.LastActivity)
+                      .IsRequired();
+
+                // ⚙️ Quan hệ 1-N giữa IdentityModel và RefreshTokenModel
                 entity.HasOne<IdentityModel>()
                       .WithMany()
                       .HasForeignKey(rt => rt.IdentityId)
@@ -49,6 +79,22 @@ namespace Auth.DAL.Databases
 
                 entity.HasIndex(rt => rt.IdentityId);
             });
+
+            // ===============================
+            // 🔧 OPTIONAL: Seed dữ liệu mẫu
+            // ===============================
+            // modelBuilder.Entity<IdentityModel>().HasData(
+            //     new IdentityModel
+            //     {
+            //         Id = Guid.NewGuid(),
+            //         UserId = Guid.NewGuid(),
+            //         Email = "admin@auth.local",
+            //         PasswordHashing = "dummy-hash",
+            //         Role = "admin",
+            //         IsVerified = true,
+            //         VerifiedAt = DateTime.UtcNow
+            //     }
+            // );
         }
     }
 }

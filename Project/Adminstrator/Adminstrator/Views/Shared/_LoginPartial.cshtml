@@ -33,7 +33,11 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link text-dark" asp-controller="Authentication" asp-action="Logout">Đăng xuất</a>
+            <a href="#" class="nav-link text-dark"
+               onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
+                Đăng xuất
+            </a>
+            <form id="logoutForm" asp-controller="Authentication" asp-action="Logout" method="post" style="display:none;"></form>
         </li>
     }
     else

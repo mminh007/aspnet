@@ -1,5 +1,6 @@
 ﻿@using static Frontend.Models.Orders.DTOs
 @model IEnumerable<OrderDTO>
+@using Frontend.Helpers;
 
 @{
     ViewData["Title"] = "Đơn hàng vừa tạo";
@@ -16,7 +17,7 @@
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between">
                         <span><strong>Đơn hàng:</strong> @order.OrderName</span>
-                        <span><strong>Trạng thái:</strong> @order.Status</span>
+                        <span><strong>Trạng thái:</strong> @order.Status.ToVietnamese()</span>
                     </div>
                 </div>
                 <div class="card-body">

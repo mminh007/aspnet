@@ -1,0 +1,118 @@
+﻿@model Frontend.Models.Auth.Requests.VerifyEmailRequest
+@{
+    ViewData["Title"] = "Xác minh email";
+    var email = ViewBag.Email as string;
+    bool canResend = ViewBag.CanResend == true;
+}
+
+<div class="container mt-5">
+    <div class="card shadow-sm p-4 col-md-5 mx-auto">
+        <h4 class="mb-3 text-center text-primary">Xác minh email</h4>
+
+        <div id="alertBox">
+            @if (!string.IsNullOrEmpty(ViewBag.Message))
+            {
+                <div class="alert alert-success">@ViewBag.Message</div>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewBag.Error))
+            {
+                <div class="alert alert-danger">@ViewBag.Error</div>
+            }
+        </div>
+
+        <form id="verifyForm" asp-action="RegisterVerifyEmail" method="post">
+            <input type="hidden" name="Email" value="@email" />
+
+            <div class="form-group mb-3">
+                <label for="Code">Nhập mã xác minh:</label>
+                <input type="text" name="Code" id="Code" class="form-control" maxlength="6" placeholder="Nhập mã gồm 6 số" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Xác minh</button>
+        </form>
+
+        <hr />
+
+        <div class="text-center mt-3">
+            <p>Không nhận được mã?</p>
+            <button id="resendBtn" class="btn btn-outline-secondary" @(canResend ? "" : "disabled")>
+                Gửi lại mã
+            </button>
+            <div>
+                <small id="countdownText" class="text-muted"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const email = "@email";
+        const resendBtn = document.getElementById("resendBtn");
+        const countdownText = document.getElementById("countdownText");
+        const alertBox = document.getElementById("alertBox");
+
+        let countdown = 120; // 2 phút
+
+        // Hàm hiển thị thông báo alert
+        function showAlert(message, type = "success") {
+            alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+
+        // Đếm ngược thời gian resend
+        function startCountdown() {
+            resendBtn.disabled = true;
+            countdown = 120;
+            countdownText.textContent = `Vui lòng đợi ${countdown} giây để gửi lại mã.`;
+
+            const timer = setInterval(() => {
+                countdown--;
+                countdownText.textContent = `Vui lòng đợi ${countdown} giây để gửi lại mã.`;
+
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    resendBtn.disabled = false;
+                    countdownText.textContent = "Bạn có thể gửi lại mã ngay bây giờ.";
+                }
+            }, 1000);
+        }
+
+        // Bắt sự kiện click Resend Code (AJAX)
+        resendBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            showAlert("Đang gửi lại mã...", "info");
+            resendBtn.disabled = true;
+
+            try {
+                const response = await fetch("/Authentication/register-resend-code", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]')?.value || ""
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+
+                const data = await response.text(); // Trả về View partial
+                if (response.ok) {
+                    showAlert("Mã xác minh mới đã được gửi tới email của bạn.", "success");
+                } else {
+                    showAlert("Không thể gửi lại mã. Vui lòng thử lại sau.", "danger");
+                }
+
+                startCountdown();
+            } catch (error) {
+                console.error("❌ Lỗi khi gửi lại mã:", error);
+                showAlert("Lỗi kết nối tới máy chủ.", "danger");
+                resendBtn.disabled = false;
+            }
+        });
+
+        // Khởi động đếm ngược nếu vừa đăng ký xong
+        @if (!canResend)
+        {
+            <text>startCountdown();</text>
+        }
+    </script>
+}

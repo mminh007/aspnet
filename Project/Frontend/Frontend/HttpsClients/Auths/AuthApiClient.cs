@@ -78,17 +78,33 @@ namespace Frontend.HttpsClients.Auths
             return await ParseResponse<string>(response, "ResendCode");
         }
 
+        public async Task<(bool Success, string? Message, int statusCode, string? Data)> ResetPasswordAsync(ResetPasswordRequestModel model)
+        {
+            var url = _endpoints.ResetPassword;
+
+            var response = await  _httpClient.PostAsJsonAsync(url, model);
+            return await ParseResponse<string>(response, "ResetPassword");
+        }
+
+        public async Task<(bool Success, string? Message, int statusCode, string? Data)> ForgotPasswordAsync(string email)
+        {
+            var url = _endpoints.ForgotPassword.Replace("{email}", email);
+            var response = await _httpClient.PostAsJsonAsync(url, email);
+
+            return await ParseResponse<string>(response, "ForgotPassword");
+        }
+
         private async Task<(bool Success, string? Message, int statusCode, T Data)>ParseResponse<T>(HttpResponseMessage response, string action)
         {
             var content = await response.Content.ReadAsStringAsync();
             try
             {
-                var result = JsonSerializer.Deserialize<AuthApiResponse<T>>(content,
+                    var result = JsonSerializer.Deserialize<AuthApiResponse<T>>(content,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (!response.IsSuccessStatusCode || result == null)
                 {
-                    return (false, result?.Message ?? $"[{action}] Request failed: {content}", (int)response.StatusCode, default);
+                    return (false, result?.Message ?? $"[{action}] Request failed: {content}", (int)response.StatusCode, result.Data);
                 }
 
                 return (true, result.Message, result.StatusCode, result.Data);
@@ -100,6 +116,7 @@ namespace Frontend.HttpsClients.Auths
             }
         }
 
+     
 
         private class AuthApiResponse<T>
         {
