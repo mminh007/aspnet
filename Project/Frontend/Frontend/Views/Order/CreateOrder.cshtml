@@ -32,36 +32,38 @@
                             data-amount="@order.TotalAmount">
                         Thanh toán
                     </button>
-
-                    <table class="table table-bordered text-center mt-3">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Ảnh</th>
-                                <th>Sản phẩm</th>
-                                <th>Số lượng</th>
-                                <th>Giá</th>
-                                <th>Thành tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in order.OrderItems)
-                            {
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered text-center">
+                            <thead class="table-light">
                                 <tr>
-                                    <td><img src="@item.ProductImage" alt="img" class="order-img me-2" /></td>
-                                    <td>@item.ProductName</td>
-                                    <td>@item.Quantity</td>
-                                    <td>@item.Price.ToString("N0") đ</td>
-                                    <td>@item.LineTotal.ToString("N0") đ</td>
+                                    <th>Ảnh</th>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng</th>
+                                    <th>Giá</th>
+                                    <th>Thành tiền</th>
                                 </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="3" class="text-end fw-bold">Tổng cộng</td>
-                                <td class="fw-bold text-primary">@order.TotalAmount.ToString("N0") đ</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in order.OrderItems)
+                                {
+                                    <tr>
+                                        <td><img src="@item.ProductImage" alt="img" class="order-img me-2" /></td>
+                                        <td>@item.ProductName</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.Price.ToString("N0") đ</td>
+                                        <td>@item.LineTotal.ToString("N0") đ</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Tổng cộng</td>
+                                    <td class="fw-bold text-primary">@order.TotalAmount.ToString("N0") đ</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
                 </div>
             </div>
         }

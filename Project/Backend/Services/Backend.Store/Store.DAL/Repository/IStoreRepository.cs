@@ -22,7 +22,9 @@ namespace Store.DAL.Repository
 
         Task<int> ChangeActiveStoreAsync(Guid storeId, bool IsActive);
 
-        Task<IEnumerable<StoreModel>> SearchStoreByKeywordAsync(string keyword);
+        Task<IEnumerable<StoreDTO>> SearchStoreByKeywordPageAsync(string keyword, int page, int pageSize);
+
+        Task<int> CountStoreByKeywordAsync(string keyword);
 
         Task<IEnumerable<StoreDTO>> SearchStoreByTagPagedAsync(string tag, int page, int pageSize);
         Task<int> CountStoreByTagAsync(string tag);

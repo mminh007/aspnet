@@ -14,7 +14,6 @@ namespace Frontend.HttpsClients.Stores
         private readonly HttpClient _httpClient;
         private readonly ILogger<StoreApiClient> _logger;
         private readonly StoreEndpoints _endpoints;
-        private readonly ISlugHelper _slugHelper;
 
         public StoreApiClient(HttpClient httpClient,
                               ILogger<StoreApiClient> logger,
@@ -24,7 +23,6 @@ namespace Frontend.HttpsClients.Stores
             _logger = logger;
             _endpoints = endpoints.Value;
 
-            _slugHelper = new VietnameseSlugHelper();
            
         }
 
@@ -47,26 +45,22 @@ namespace Frontend.HttpsClients.Stores
             return await ParseResponse<StoreDto>(response, "GetStoreById");
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<StoreDto> data)> SearchStoreByKeywordAsync(string keyword)
+        public async Task<(bool Success, string? Message, int statusCode, PaginatedStoreResponse data)> SearchStoreByKeywordAsync(string keyword, int page, int pageSize)
         {
-            var url = _endpoints.GetStoreByKeyword.Replace("{keyword}", keyword.ToString());
+            
+            var url = _endpoints.GetStoreByKeyword
+                .Replace("{keyword}", keyword)
+                .Replace("{page}", page.ToString())
+                .Replace("{pageSize}", pageSize.ToString());
+
             var response = await _httpClient.GetAsync(url);
 
-            return await ParseResponse<IEnumerable<StoreDto>>(response, "SearchByKeyword");
+            return await ParseResponse<PaginatedStoreResponse>(response, "SearchByKeyword");
         }
 
         public async Task<(bool Success, string? Message, int statusCode, PaginatedStoreResponse data)>
-            SearchStoreByTag(string tag, int page, int pageSize)
+            SearchStoreByTag(string slugTag, int page, int pageSize)
         {
-            // ✅ Nếu tag null hoặc rỗng thì để trống
-            string slugTag = string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(tag))
-            {
-
-                // "Đồ ăn" → "do-an", "Mỹ phẩm, Dược phẩm" → "my-pham-duoc-pham"
-                slugTag = _slugHelper.GenerateSlug(tag);
-            }
 
             var url = _endpoints.GetStoreByTag
                                 .Replace("{tag}", slugTag)

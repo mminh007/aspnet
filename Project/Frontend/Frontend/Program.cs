@@ -161,22 +161,31 @@ namespace Frontend
                     app.UseHsts();
                 }
 
+                app.UseHttpsRedirection();
+
+                app.UseStaticFiles();
+
                 app.UseRouting();
+
                 app.UseSession();
                 app.UseMiddleware<SessionDebugMiddleware>();
                 app.UseMiddleware<SessionRestoreMiddleware>();
                 app.UseMiddleware<RefreshTokenMiddleware>();
 
-                app.UseHttpsRedirection();
-                app.UseStaticFiles();
-
-
                 app.UseAuthentication();
                 app.UseAuthorization();
+
+                app.MapGet("/", context =>
+                {
+                    context.Response.Redirect("/Home/Index");
+                    return Task.CompletedTask;
+                });
 
                 app.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                
 
                 app.Run();
 

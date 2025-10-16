@@ -31,9 +31,12 @@ namespace Store.API.Controllers
         }
 
         [HttpGet("search-keyword")]
-        public async Task<IActionResult> SearchStoreByKeyword(string keyword)
+        public async Task<IActionResult> SearchStoreByKeyword(
+            [FromQuery] string keyword,
+            [FromQuery] int page,
+            [FromQuery] int pageSize)
         {
-            var result = await _storeService.SearchStoreByKeywordAsync(keyword);
+            var result = await _storeService.SearchStoreByKeywordAsync(keyword, page, pageSize);
             return HandleResponse(result);
         }
 

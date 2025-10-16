@@ -19,13 +19,13 @@
                         <li><strong>Địa chỉ:</strong> @Model.Store.Address</li>
                         <li><strong>Điện thoại:</strong> @Model.Store.Phone</li>
                         <li>
-                            <strong>Status:</strong>
+                            <strong>Trạng thái:</strong>
                             <div class="form-check form-switch d-inline-block ms-2">
                                 <input class="form-check-input" type="checkbox" id="toggleActive"
                                        @(Model.Store.IsActive ? "checked" : "")
                                        data-store-id="@Model.Store.StoreId" />
                                 <label class="form-check-label" for="toggleActive">
-                                    @(Model.Store.IsActive ? "Active" : "Inactive")
+                                    @(Model.Store.IsActive ? "Đang bán" : "Đóng cửa")
                                 </label>
                             </div>
                                 
@@ -132,7 +132,7 @@
                                                            @(product.IsActive ? "checked" : "")
                                                            data-product-id="@product.ProductId" />
                                                     <label class="form-check-label @(product.IsActive ? "text-success" : "text-muted")">
-                                                        @(product.IsActive ? "Active" : "Inactive")
+                                                        @(product.IsActive ? "Còn hàng" : "Hết hàng")
                                                     </label>
                                                 </div>
                                             </div>

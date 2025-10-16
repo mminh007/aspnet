@@ -1,0 +1,88 @@
+﻿@using Frontend.Helpers;
+@model Frontend.Models.Stores.PaginatedStoreResponse
+
+@{
+    ViewData["Title"] = $"Từ khóa '{ViewData["SelectedKeyword"] ?? "Tất cả"}'";
+    var tag = ViewData["SelectedKeyword"]?.ToString() ?? "Tất cả";
+    var token = Context.Request.Cookies["accessToken"];
+    var isLoggedIn = !string.IsNullOrEmpty(token);
+    var AuthHeader = AuthHelper.GetUserInfo(Context);
+    var userId = AuthHeader.userId;
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary">
+        Từ khóa: <span class="text-danger">@tag</span>
+    </h2>
+
+    <div id="store-results" class="row">
+        @if (Model != null && Model.Stores.Any())
+        {
+            @await Html.PartialAsync("_StoreCardPartial", Model.Stores)
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-warning text-center">
+                    Không có cửa hàng nào thuộc thẻ "@tag".
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ✅ PHÂN TRANG -->
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4">
+            <ul class="pagination pagination-sm">
+
+                <!-- Nút Previous -->
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       href="@Url.Action("SelectedKeyword", new { tag = tag, page = Model.CurrentPage - 1, pageSize = Model.PageSize })">
+                        &laquo;
+                    </a>
+                </li>
+
+                @{
+                    int visiblePages = 7;
+                    int startPage = Math.Max(1, Model.CurrentPage - visiblePages / 2);
+                    int endPage = Math.Min(Model.TotalPages, startPage + visiblePages - 1);
+
+                    if (startPage > 1)
+                    {
+                        <li class="page-item"><a class="page-link" href="@Url.Action("SelectedKeyword", new { tag = tag, page = 1 })">1</a></li>
+                        if (startPage > 2)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                    }
+
+                    for (int i = startPage; i <= endPage; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("SelectedKeyword", new { tag = tag, page = i })">@i</a>
+                        </li>
+                    }
+
+                    if (endPage < Model.TotalPages)
+                    {
+                        if (endPage < Model.TotalPages - 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                        <li class="page-item"><a class="page-link" href="@Url.Action("SelectedKeyword", new { tag = tag, page = Model.TotalPages })">@Model.TotalPages</a></li>
+                    }
+                }
+
+                <!-- Nút Next -->
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       href="@Url.Action("SelectedKeyword", new { tag = tag, page = Model.CurrentPage + 1, pageSize = Model.PageSize })">
+                        &raquo;
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

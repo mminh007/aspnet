@@ -1,8 +1,10 @@
-﻿using Frontend.HttpsClients.Stores;
+﻿using Frontend.Helpers;
+using Frontend.HttpsClients.Stores;
 using Frontend.Models.Stores;
 using Frontend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Slugify;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Frontend.Controllers
@@ -11,11 +13,14 @@ namespace Frontend.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IStoreService _storeService;
+        private readonly ISlugHelper _slugHelper;
+
 
         public HomeController(IStoreService storeService, ILogger<HomeController> logger)
         {
             _storeService = storeService;
             _logger = logger;
+            _slugHelper = new VietnameseSlugHelper();
         }
 
         public async Task<IActionResult> Index()
@@ -46,7 +51,17 @@ namespace Frontend.Controllers
         [HttpGet]
         public async Task<IActionResult> SearchStoreByTag(string tag, int page = 1, int pageSize = 9)
         {
-            var (message, statusCode, data) = await _storeService.GetStoresByTagPagedAsync(tag, page, pageSize);
+            // ✅ Nếu tag null hoặc rỗng thì để trống
+            string slugTag = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+
+                // "Đồ ăn" → "do-an", "Mỹ phẩm, Dược phẩm" → "my-pham-duoc-pham"
+                slugTag = _slugHelper.GenerateSlug(tag);
+            }
+
+            var (message, statusCode, data) = await _storeService.GetStoresByTagPagedAsync(slugTag, page, pageSize);
 
             ViewData["SelectedTag"] = tag;
 
@@ -57,18 +72,28 @@ namespace Frontend.Controllers
         }
 
 
-        //[HttpGet]
-        //public async Task<IActionResult> SearchStoreByKeyword(string keyword)
-        //{
-        //    var (message, statusCode, data) = await _storeService.GetStoreByTagAsync(keyword);
+        [HttpGet("Home/search")]
+        public async Task<IActionResult> SearchStoreByKeyword([FromQuery] string q, int page, int pageSize)
+        {
+            // ✅ Nếu tag null hoặc rỗng thì để trống
+            string slugTag = string.Empty;
 
-        //    ViewData["SelectedKeyword"] = keyword; 
-        //    ViewData["Title"] = keyword;
+            if (!string.IsNullOrWhiteSpace(q))
+            {
 
-        //    if (data == null)
-        //        return View("SelectedKeyword", Enumerable.Empty<StoreDto>());
+                // "Đồ ăn" → "do-an", "Mỹ phẩm, Dược phẩm" → "my-pham-duoc-pham"
+                slugTag = _slugHelper.GenerateSlug(q);
+            }
 
-        //    return View("SelectedKeyword", data);
-        //}
+            var (message, statusCode, data) = await _storeService.GetStoreByKeywordAsync(slugTag, page, pageSize);
+
+
+            ViewData["SelectedKeyword"] = q;
+
+            if (data == null)
+                return View("SearchStoreByKeyword", new PaginatedStoreResponse { Stores = new List<StoreDto>() });
+
+            return View("SearchStoreByKeyword", data);
+        }
     }
 }

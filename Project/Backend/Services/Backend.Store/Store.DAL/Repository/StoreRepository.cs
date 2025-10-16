@@ -4,6 +4,7 @@ using Store.Common.Models.Responses;
 using Store.DAL.Databases;
 using Store.DAL.Models.Entities;
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 
 namespace Store.DAL.Repository
 {
@@ -17,10 +18,39 @@ namespace Store.DAL.Repository
             _db = db;
         }
 
-        public async Task<IEnumerable<StoreModel>> SearchStoreByKeywordAsync(string keyword)
+        public async Task<IEnumerable<StoreDTO>> SearchStoreByKeywordPageAsync(string keyword, int page, int pageSize)
         {
+            var skip = (page - 1) * pageSize;
+                
+            var query = _db.Stores
+                //.Where(s => RemoveDiacritics(s.StoreName ?? "").ToLower().Contains(RemoveDiacritics(keyword).ToLower()))
+                .Where(s => EF.Functions.Collate(s.StoreName, "SQL_Latin1_General_CP1_CI_AI")
+                            .Contains(EF.Functions.Collate(keyword, "SQL_Latin1_General_CP1_CI_AI")))
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(s => new StoreDTO
+                {
+                    StoreId = s.StoreId,
+                    StoreCategory = s.StoreCategory,
+                    StoreName = s.StoreName,
+                    Address = s.Address,
+                    Description = s.Description,
+                    StoreImage = s.StoreImage,
+                    IsActive = s.IsActive
+                });
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<int> CountStoreByKeywordAsync(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return 0;
+
             return await _db.Stores
-                .Where(p => (p.StoreName ?? "").Contains(keyword)).ToListAsync();
+                .Where(s => (s.StoreName ?? "").Contains(keyword))
+                .CountAsync();
         }
 
         public async Task<IEnumerable<StoreDTO>> SearchStoreByTagPagedAsync(string tagSlug, int page, int pageSize)
@@ -188,6 +218,20 @@ namespace Store.DAL.Repository
         public async Task SaveChangesAsync()
         {
             await _db.SaveChangesAsync();
+        }
+
+        private string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (var ch in normalized)
+            {
+                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+                    sb.Append(ch);
+            }
+            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
         }
     }
 }

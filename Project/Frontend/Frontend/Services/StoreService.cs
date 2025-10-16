@@ -62,24 +62,24 @@ namespace Frontend.Services
             return (message, statusCode, data);
         }
 
-        public async Task<(string message, int statusCode, IEnumerable<StoreDto?> data)> GetStoreByKeywordAsync(string keyword)
+        public async Task<(string message, int statusCode, PaginatedStoreResponse data)> GetStoreByKeywordAsync(string keyword, int page=1, int pageSize=9)
         {
             string cacheKey = $"search: {keyword}";
-            var cachedData = await _cache.GetAsync<IEnumerable<StoreDto>>(cacheKey);
+            var cachedData = await _cache.GetAsync<PaginatedStoreResponse>(cacheKey);
 
             if (cachedData != null)
             {
                 return ("OK (from cache)", 200, cachedData);
             }
 
-            var (sucess, message, status, data) = await _storeApiClient.SearchStoreByKeywordAsync(keyword);
+            var (sucess, message, status, data) = await _storeApiClient.SearchStoreByKeywordAsync(keyword, page, pageSize);
 
             await _cache.SetAsync(cacheKey, data, _cacheDuration);
             return (message, status, data);
 
         }
 
-        public async Task<(string message, int statusCode, PaginatedStoreResponse data)> GetStoresByTagPagedAsync(string tag, int page = 1, int pageSize = 9)
+        public async Task<(string message, int statusCode, PaginatedStoreResponse data)> GetStoresByTagPagedAsync(string slugTag, int page = 1, int pageSize = 9)
         {
             string cacheKey = $"tag:page:{page}:size:{pageSize}";
 
@@ -91,7 +91,7 @@ namespace Frontend.Services
             }
 
             // Call API if not in cache
-            var (success, message, statusCode, data) = await _storeApiClient.SearchStoreByTag(tag, page, pageSize);
+            var (success, message, statusCode, data) = await _storeApiClient.SearchStoreByTag(slugTag, page, pageSize);
 
             if (!success || data == null)
             {

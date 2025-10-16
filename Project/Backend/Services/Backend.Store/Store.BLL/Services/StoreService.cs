@@ -371,18 +371,75 @@ namespace Store.BLL.Services
             }
         }
 
-        public async Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByKeywordAsync(string keyword)
+        public async Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByKeywordAsync(string keyword, int page, int pageSize)
         {
-            var result = await _storeRepository.SearchStoreByKeywordAsync(keyword);
-
-            var dto = _mapper.Map<IEnumerable<StoreDTO>>(result);
-
-            return new StoreResponseModel<IEnumerable<StoreDTO>>()
+            try
             {
-                Message = OperationResult.Success,
-                Data = dto
-            };
+                if (string.IsNullOrWhiteSpace(keyword))
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Keyword không được để trống."
+                    };
+                }
+
+                // 🔹 Chuẩn hóa keyword (loại bỏ dấu và khoảng trắng thừa)
+                var normalizedKeyword = keyword.Trim().Replace("-", " ");
+
+                _logger.LogInformation("🔎 Searching stores by keyword: {Keyword}, page {Page}", normalizedKeyword, page);
+
+                // ✅ Lấy dữ liệu phân trang
+                var stores = await _storeRepository.SearchStoreByKeywordPageAsync(normalizedKeyword, page, pageSize);
+
+                // ✅ Đếm tổng số bản ghi
+                var totalRecords = await _storeRepository.CountStoreByKeywordAsync(normalizedKeyword);
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                if (stores == null || !stores.Any())
+                {
+                    return new StoreResponseModel<PaginatedStoreResponse>
+                    {
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "Không tìm thấy cửa hàng nào phù hợp với từ khóa."
+                    };
+                }
+
+                // ✅ Thêm BaseUrl cho ảnh
+                foreach (var store in stores)
+                {
+                    store.StoreImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{store.StoreImage}";
+                }
+
+                // ✅ Gói dữ liệu trả về
+                var response = new PaginatedStoreResponse
+                {
+                    Stores = stores,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Success,
+                    Data = response
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error while searching stores by keyword ({Keyword})", keyword);
+                return new StoreResponseModel<PaginatedStoreResponse>
+                {
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Unexpected error while searching stores by keyword"
+                };
+            }
         }
+
 
         public async Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByTagPagedAsync(string tagSlug, int page, int pageSize)
         {

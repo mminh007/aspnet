@@ -157,5 +157,99 @@ html, body {
         max-height: 80px;
     }
 }
+
+/* ===========================
+   FIX layout cho iPad / Tablet
+   =========================== */
+/*@media (max-width: 992px) and (min-width: 577px) {*/
+    /* Canh lại layout của card sản phẩm */
+    /*.product-card .row {
+        align-items: stretch;*/ /* các cột đều chiều cao */
+    /*}*/
+
+    /* Cột chứa nút chỉnh sửa */
+    /*.product-card .col-md-2 {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+    }*/
+
+    /* Nút chỉnh sửa full chiều ngang card */
+    /*.product-card .btn-warning {
+        width: 80%;
+        font-size: 0.9rem;
+        padding: 6px 8px;
+    }*/
+
+    /* Giảm padding của body để không bị lệch */
+    /*.product-card .card-body {
+        padding: 12px 10px;
+    }*/
+
+    /* Ảnh nhỏ lại vừa khung iPad */
+    /*.product-img {
+        max-width: 100px;
+        max-height: 100px;
+    }
+}*/
+
+
+/* ===========================
+   FIX layout nút "Chỉnh sửa" cho iPad (768px)
+   =========================== */
+/* ===========================
+   FIX layout nút "Chỉnh sửa" cho iPad (768–991px)
+   =========================== */
+@media (min-width: 768px) and (max-width: 991px) {
+    /* Toàn bộ thẻ sản phẩm xếp dọc thay vì 3 cột ngang */
+    .product-card .row {
+        flex-direction: column;
+        align-items: flex-start; /* canh trái toàn card */
+    }
+
+    /* Ảnh sản phẩm: nằm giữa */
+    .product-card .col-md-3 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .product-img {
+        max-width: 120px;
+        max-height: 120px;
+        margin: 0 auto; /* canh giữa ảnh */
+        display: block;
+    }
+
+    /* Phần nội dung: canh trái */
+    .product-card .col-md-7 {
+        width: 100%;
+        text-align: left;
+        padding: 0 12px;
+    }
+
+    /* Cột chứa nút chỉnh sửa: full width, canh trái */
+    .product-card .col-md-2 {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0 12px 10px;
+    }
+
+    /* Nút "Chỉnh sửa" gọn gàng */
+    .product-card .btn-warning {
+        font-size: 0.9rem;
+        padding: 6px 10px;
+        width: auto;
+    }
+
+    /* Giảm padding tổng thể để nhìn thoáng hơn */
+    .product-card .card-body {
+        padding: 10px 12px;
+    }
 }
 

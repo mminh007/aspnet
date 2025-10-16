@@ -15,11 +15,12 @@
                             <p>Có hàng chục ngàn địa điểm ở TP. HCM từ 00:00 - 23:59</p>
 
                             <!-- Thanh Search -->
-                            <form asp-controller="Home" asp-action="SearchStoreByKeyword" method="get" class="d-flex justify-content-center mt-3">
-                                <input type="text" name="keyword" class="form-control w-75"
+                            <form id="Home-searchForm" class="d-flex justify-content-center mt-3">
+                                <input type="text" id="keywordInput" name="keyword" class="form-control w-75"
                                        placeholder="Tìm địa điểm, món ăn, địa chỉ..." />
                                 <button type="submit" class="btn btn-primary ms-2">Tìm</button>
                             </form>
+
 
                             <!-- Categories -->
                             <div class="categories mt-4 d-flex flex-wrap justify-content-center gap-2">
@@ -317,6 +318,17 @@
             if (savedAddress) {
                 document.querySelector('[data-bs-target="#addressModal"]').innerHTML =
                     `<strong class="text-primary">Đồ ăn</strong> → ${savedAddress}`;
+            }
+        });
+    </script>
+
+    <script>
+        document.getElementById("Home-searchForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const keyword = document.getElementById("keywordInput").value.trim();
+            if (keyword) {
+                //const slug = keyword.replace(/\s+/g, '-');
+                window.location.href = `search?q=${encodeURIComponent(keyword)}`;
             }
         });
     </script>

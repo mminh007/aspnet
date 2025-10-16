@@ -21,7 +21,7 @@ namespace Store.BLL.Services
 
         Task<StoreResponseModel<StoreDTO>> GetStoreDetailByIdAsync(Guid storeId);
 
-        Task<StoreResponseModel<IEnumerable<StoreDTO>>> SearchStoreByKeywordAsync(string keyword);
+        Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByKeywordAsync(string keyword, int page, int pageSize);
 
         Task<StoreResponseModel<PaginatedStoreResponse>> SearchStoreByTagPagedAsync(string tag, int page, int pageSize);
     }
