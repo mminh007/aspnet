@@ -12,6 +12,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend.Product", "Backend.Product", "{095A3BF4-1860-4C9A-8488-78C3F90213DE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Gateway", "Gateway", "{993FC159-FF30-46BA-856D-D228C7A4B9EC}"
+	ProjectSection(SolutionItems) = preProject
+		gateway.dockerfile = gateway.dockerfile
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "Gateway\API\API.csproj", "{D7812DE3-F893-458F-87C7-F82B0D1E54F3}"
 EndProject
@@ -20,6 +23,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EventBus", "EventBus", "{60C25CFB-F7E1-4BED-AE22-CE4060B55966}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{2090F945-521F-4F15-BC5B-F39250FD47DA}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		docker-compose.tripe.yaml = docker-compose.tripe.yaml
+		docker-compose.yaml = docker-compose.yaml
+		template.dockerfile = template.dockerfile
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventBus", "EventBus\EventBus\EventBus.csproj", "{56463BA9-F442-4A1A-864E-5042AA8CE40B}"
 EndProject
@@ -61,8 +70,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "User.DAL", "Services\Backen
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend.Payment", "Backend.Payment", "{8824CC5C-DD63-4E65-B035-FFE33F947FE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order.BLL", "Services\Backend.Order\Oder.BLL\Order.BLL.csproj", "{F118AC55-EB96-40F7-8C9D-9C181B033E07}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order.DAL", "Services\Backend.Order\Order.DAL\Order.DAL.csproj", "{C57B2BA3-3D65-4763-8C17-3946F193F305}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order.Common", "Services\Backend.Order\Order.Common\Order.Common.csproj", "{992C98D4-4AF9-45D2-878E-6C10DDBE52E0}"
@@ -76,6 +83,19 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payment.DAL", "Services\Backend.Payment\Payment.DAL\Payment.DAL.csproj", "{067D19DB-3734-4B85-9566-2CF5A81D0F90}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payment.Common", "Services\Backend.Payment\Payment.Common\Payment.Common.csproj", "{5608056F-9FCC-4798-8889-2D9C87C9757D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker-config", "docker-config", "{DDFBE6BE-44C5-4E8B-8EEB-AE76AF01ED4B}"
+	ProjectSection(SolutionItems) = preProject
+		auth.dockerfile = auth.dockerfile
+		order.dockerfile = order.dockerfile
+		payment.dockerfile = payment.dockerfile
+		product.dockerfile = product.dockerfile
+		store.dockerfile = store.dockerfile
+		template.dockerfile = template.dockerfile
+		user.dockerfile = user.dockerfile
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order.BLL", "Services\Backend.Order\Order.BLL\Order.BLL.csproj", "{EE3D1650-C6F9-1D1F-D558-470718E46CCC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,10 +183,6 @@ Global
 		{7F1A7E8E-2953-6EC6-7246-3BB17B636152}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F1A7E8E-2953-6EC6-7246-3BB17B636152}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F1A7E8E-2953-6EC6-7246-3BB17B636152}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F118AC55-EB96-40F7-8C9D-9C181B033E07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F118AC55-EB96-40F7-8C9D-9C181B033E07}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F118AC55-EB96-40F7-8C9D-9C181B033E07}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F118AC55-EB96-40F7-8C9D-9C181B033E07}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C57B2BA3-3D65-4763-8C17-3946F193F305}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C57B2BA3-3D65-4763-8C17-3946F193F305}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C57B2BA3-3D65-4763-8C17-3946F193F305}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -195,6 +211,10 @@ Global
 		{5608056F-9FCC-4798-8889-2D9C87C9757D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5608056F-9FCC-4798-8889-2D9C87C9757D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5608056F-9FCC-4798-8889-2D9C87C9757D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE3D1650-C6F9-1D1F-D558-470718E46CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE3D1650-C6F9-1D1F-D558-470718E46CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE3D1650-C6F9-1D1F-D558-470718E46CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE3D1650-C6F9-1D1F-D558-470718E46CCC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -225,7 +245,6 @@ Global
 		{0D31096F-5687-A01E-591F-C5233534A8AF} = {3946BD05-52B5-4F85-ADA3-5D6662838021}
 		{7F1A7E8E-2953-6EC6-7246-3BB17B636152} = {3946BD05-52B5-4F85-ADA3-5D6662838021}
 		{8824CC5C-DD63-4E65-B035-FFE33F947FE9} = {2090F945-521F-4F15-BC5B-F39250FD47DA}
-		{F118AC55-EB96-40F7-8C9D-9C181B033E07} = {AF04FC8D-07BD-4F49-8CA1-A382FF29F437}
 		{C57B2BA3-3D65-4763-8C17-3946F193F305} = {AF04FC8D-07BD-4F49-8CA1-A382FF29F437}
 		{992C98D4-4AF9-45D2-878E-6C10DDBE52E0} = {AF04FC8D-07BD-4F49-8CA1-A382FF29F437}
 		{5EEEC3A5-B8FF-400C-B9AB-2F76581DC336} = {AF04FC8D-07BD-4F49-8CA1-A382FF29F437}
@@ -233,6 +252,8 @@ Global
 		{66C876B5-089A-4AD7-B123-497098C7B5D0} = {8824CC5C-DD63-4E65-B035-FFE33F947FE9}
 		{067D19DB-3734-4B85-9566-2CF5A81D0F90} = {8824CC5C-DD63-4E65-B035-FFE33F947FE9}
 		{5608056F-9FCC-4798-8889-2D9C87C9757D} = {8824CC5C-DD63-4E65-B035-FFE33F947FE9}
+		{DDFBE6BE-44C5-4E8B-8EEB-AE76AF01ED4B} = {2090F945-521F-4F15-BC5B-F39250FD47DA}
+		{EE3D1650-C6F9-1D1F-D558-470718E46CCC} = {AF04FC8D-07BD-4F49-8CA1-A382FF29F437}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {02C2A0F2-90A9-48B7-849B-E96859491F67}

@@ -272,5 +272,11 @@
 </div>
 
 @section Scripts {
+    <script>
+        // Trạng thái đăng nhập & link login để JS dùng
+        window.isLoggedIn = @(isLoggedIn.ToString().ToLower());
+        window.loginUrl = '@Url.Action("Login","Authentication")';
+    </script>
+
     <script src="~/js/product.js"></script>
 }

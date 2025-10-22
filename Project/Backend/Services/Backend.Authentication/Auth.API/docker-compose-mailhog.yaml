@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  mailhog:
+  mailhog-api:
     image: mailhog/mailhog:latest
-    container_name: mailhog
+    container_name: mailhog-api
     restart: always
     ports:
       - "1025:1025"   # SMTP server (MailKit connect)

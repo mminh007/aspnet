@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+    adminstrator:
+       build:
+         context: .
+         dockerfile: admin.dockerfile
+       container_name: admin
+       env_file:
+         - ./.env.docker
+       environment:
+         ASPNETCORE_ENVIRONMENT: "docker"
+         OCELOT__BASEURL: "https://localhost:7048"
+       volumes:
+         - ./certs/adminapp.pfx:/app/certs/adminapp.pfx:ro
+         - ../logs:/app/logs:rw
+       ports:
+         - "7055:8080"
+       networks:
+         - backend-net        
+
+
+networks:
+  backend-net:
+    external: true
+    driver: bridge
+    name: backend_backend-net
+

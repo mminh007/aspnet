@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  stripe-listener-api:
+    image: stripe/stripe-cli
+    container_name: listener
+    restart: always
+    environment:
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+    command: listen --forward-to https://host.docker.internal:8001/api/webhook --skip-verify

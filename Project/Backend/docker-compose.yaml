@@ -1,0 +1,181 @@
+version: "3.8"
+
+networks:
+    backend-net:
+        driver: bridge
+
+services:
+    mailhog:
+        image: mailhog/mailhog:latest
+        container_name: mailhog
+        restart: always
+        ports:
+            - "1025:1025" 
+            - "8025:8025"
+        environment:
+            - MH_STORAGE=memory
+        networks: [backend-net]
+    
+    stripe-listener:
+        image: stripe/stripe-cli
+        container_name: stripe-listener
+        restart: always
+        env_file:
+            - ./Services/Backend.Payment/Payment.API/.env.docker
+        command: listen --forward-to https://host.docker.internal:7190/api/webhook --skip-verify
+
+    auth:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.Authentication" 
+                API_PROJECT: "Auth"
+        env_file:
+            - ./Services/Backend.Authentication/Auth.API/.env.docker
+        container_name: auth-service
+        depends_on:
+            - mailhog
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+            SMTP_HOST: "mailhog"
+            ServiceUrls__User__BaseUrl: "http://user:8080"
+        volumes:
+            - ./logs/auth:/app/logs:rw
+        networks: [backend-net]
+        ports:
+            - "5206:8080"
+
+    user:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.User" 
+                API_PROJECT: "User"
+        env_file:
+            - ./Services/Backend.User/User.API/.env.docker
+        container_name: user-service
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+        volumes:
+            - ./logs/user:/app/logs:rw
+        ports:
+            - "5093:8080" 
+        networks: [backend-net]
+    
+    store:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.Store" 
+                API_PROJECT: "Store"
+        env_file:
+            - ./Services/Backend.Store/Store.API/.env.docker
+        container_name: store-service
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+            STATICFILES__BASEURL: "https://localhost:7048"
+            STATICFILES__IMAGEURL__PHYSICALPATH: "/data/images"
+            STATICFILES__IMAGEURL__REQUESTPATH: "/store-images"
+        volumes:
+            - "D:/aspnet/Project/src:/data/images:rw"
+            - ./logs/store:/app/logs:rw 
+        ports:
+            - "5246:8080" 
+        networks: [backend-net]
+    
+    order:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.Order" 
+                API_PROJECT: "Order"
+        env_file:
+            - ./Services/Backend.Order/Order.API/.env.docker
+        container_name: order-service
+        depends_on:
+            - store
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+            STATICFILES__BASEURL: "https://localhost:7048"
+            STATICFILES__IMAGEURL__PHYSICALPATH: "/data/images"
+            STATICFILES__IMAGEURL__REQUESTPATH: "/store-images"
+        volumes:
+            - "D:/aspnet/Project/src:/data/images:rw"
+            - ./logs/order:/app/logs:rw 
+        ports:
+            - "5051:8080"
+        networks: [backend-net]
+
+    product:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.Product" 
+                API_PROJECT: "Product"
+        env_file:
+            - ./Services/Backend.Product/Product.API/.env.docker
+        container_name: product-service
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+            STATICFILES__BASEURL: "https://localhost:7048"
+            STATICFILES__IMAGEURL__PHYSICALPATH: "/data/images"
+            STATICFILES__IMAGEURL__REQUESTPATH: "/product-images"
+        volumes:
+            - "D:/aspnet/Project/src:/data/images:rw"
+            - ./logs/product:/app/logs:rw 
+        ports:
+            - "5234:8080"
+        networks: [backend-net]
+
+    payment:
+        build:
+            context: .
+            dockerfile: ./template.dockerfile
+            args:
+                SERVICE_FOLDER: "Services/Backend.Payment" 
+                API_PROJECT: "Payment"
+        env_file:
+            - ./Services/Backend.Payment/Payment.API/.env.docker
+        container_name: payment-service
+        depends_on:
+            - stripe-listener
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+        volumes:
+            - ./logs/payment:/app/logs:rw
+        ports:
+            - "5291:8080"
+        networks: [backend-net]
+    
+    gateway:
+        build:
+            context: .
+            dockerfile: ./gateway.dockerfile
+            args:
+                SERVICE_FOLDER: "Gateway"
+        env_file:
+            - ./Gateway/API/.env.docker
+        container_name: gateway-service
+        depends_on:
+            - auth
+            - user
+            - store
+            - order
+            - product
+            - payment
+        environment:
+            ASPNETCORE_ENVIRONMENT: "docker"
+            ASPNETCORE_URLS: "http://+:8080"
+        volumes:
+            - ./certs/gateway.pfx:/app/certs/gateway.pfx:ro
+            - ./Gateway/API/ocelotsettings.docker.json:/app/ocelotsettings.docker.json:ro
+            - ./logs/gateway:/app/logs:rw
+        ports:
+            - "7048:8080"
+        networks: [backend-net]
+        

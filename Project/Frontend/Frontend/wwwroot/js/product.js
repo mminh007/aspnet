@@ -4,11 +4,18 @@
     const storeId = floatingBtn?.dataset.storeId || "";
     
 
-    if (!userId || !storeId) {
-        console.error("❌ Missing userId or storeId");
-        console.log("⚠️ Script stopped early because userId or storeId missing:", { userId, storeId });
+    //if (!userId || !storeId) {
+    //    console.error("❌ Missing userId or storeId");
+    //    console.log("⚠️ Script stopped early because userId or storeId missing:", { userId, storeId });
 
-        return;
+    //    return;
+    //}
+
+    const isLoggedIn = typeof window.isLoggedIn === "boolean" ? window.isLoggedIn : false;
+    const loginUrl = window.loginUrl || "/Authentication/login";
+
+    if (!userId || !storeId) {
+        console.warn("⚠️ Missing userId/storeId (có thể do chưa login). Vẫn tiếp tục để chặn và chuyển sang login khi người dùng bấm +.");
     }
 
     // =============================
@@ -273,6 +280,22 @@
         const productId = btn.dataset.productId;
         const sId = btn.dataset.storeId;
         const cartItemId = btn.dataset.cartItemId;
+
+        console.log('[AUTH CHECK]', { userId, isLoggedIn, loginUrl });
+        console.log('[LOGIN REDIRECT]', {
+            href: window.location.href,
+            relative: window.location.pathname + window.location.search + window.location.hash
+        });
+
+        if (!userId) {
+            e.preventDefault();
+            alert("Bạn hãy đăng nhập trước khi mua hàng");
+            const ret = encodeURIComponent(
+                window.location.pathname + window.location.search + window.location.hash
+            );
+            window.location.href = `${loginUrl}?returnUrl=${ret}`;
+            return;
+        }
 
         if (btn.classList.contains("add-to-cart")) {
             e.preventDefault();

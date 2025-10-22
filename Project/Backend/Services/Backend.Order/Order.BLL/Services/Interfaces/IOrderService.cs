@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Order.Common.Models.DTOs;
 
-namespace Oder.BLL.Services.Interfaces
+namespace Order.BLL.Services.Interfaces
 {
     public interface IOrderService
     {

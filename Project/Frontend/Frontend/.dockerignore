@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/*.user
+**/*.suo
+**/*.swp
+**/*.log
+*.pdb
+*.cache
+*.db
+*.mdf
+*.ldf
+.logs/
+.secrets/
+.env*
+Dockerfile*
+node_modules/

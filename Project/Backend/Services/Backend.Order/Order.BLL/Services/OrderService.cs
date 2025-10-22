@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Oder.BLL.Services.Interfaces;
+using Order.BLL.Services.Interfaces;
 using Order.BLL.External.Interfaces;
 using Order.Common.Enums;
 using Order.Common.Models.Requests;

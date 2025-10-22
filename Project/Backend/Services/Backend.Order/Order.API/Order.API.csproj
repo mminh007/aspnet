@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Oder.BLL\Order.BLL.csproj" />
+    <ProjectReference Include="..\Order.BLL\Order.BLL.csproj" />
     <ProjectReference Include="..\Order.Common\Order.Common.csproj" />
   </ItemGroup>
 	

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Oder.BLL.Services.Interfaces;
+using Order.BLL.Services.Interfaces;
 using Order.API.Mapping;
 using Order.BLL.External;
 using Order.BLL.External.Interfaces;

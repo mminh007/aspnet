@@ -6,6 +6,7 @@ using Auth.DAL.Models.Entities;
 using Auth.DAL.Repository.Interfaces;
 using Auth.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -193,6 +194,11 @@ namespace Auth.API
                 // 🚀 Build & Run app
                 // =====================================================
                 var app = builder.Build();
+
+                app.UseForwardedHeaders(new ForwardedHeadersOptions
+                {
+                    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor
+                });
 
                 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
                 {
