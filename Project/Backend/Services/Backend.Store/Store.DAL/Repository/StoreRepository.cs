@@ -119,26 +119,15 @@ namespace Store.DAL.Repository
 
         public async Task<StoreModel> GetStoreInfo(Guid userId)
         {
-            var store = await _db.Stores.FirstOrDefaultAsync(
+            var store = await _db.Stores.
+                Include(s => s.AccountBanking)
+                .FirstOrDefaultAsync(
                 s => s.UserId == userId);
 
             if (store == null)
             {
                 return null;
             }
-
-            //var info = new StoreDTO
-            //{
-            //    StoreId = store.StoreId,
-            //    StoreName = store.StoreName,
-            //    StoreCategory = store.StoreCategory,
-            //    Description = store.Description,
-            //    StoreImage = store.StoreImage,
-            //    IsActive = store.IsActive,
-            //    Address = store.Address,
-            //    Phone = store.Phone
-                
-            //};
 
             return store;
         }
@@ -151,21 +140,13 @@ namespace Store.DAL.Repository
         // ✅ New: Get store detail by StoreId
         public async Task<StoreModel?> GetStoreDetailById(Guid storeId)
         {
-            var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            var store = await _db.Stores
+                .Include(s => s.AccountBanking)
+                .FirstOrDefaultAsync(s => s.StoreId == storeId);
             if (store == null) return null;
 
             return store;
-            //return new StoreDTO
-            //{
-            //    StoreId = store.StoreId,
-            //    StoreName = store.StoreName,
-            //    StoreCategory = store.StoreCategory,
-            //    Description = store.Description,
-            //    StoreImage = store.StoreImage,
-            //    IsActive = store.IsActive,
-            //    Address = store.Address,
-            //    Phone = store.Phone
-            //};
+           
         }
 
       
@@ -219,19 +200,99 @@ namespace Store.DAL.Repository
         {
             await _db.SaveChangesAsync();
         }
-
-        private string RemoveDiacritics(string text)
+        public async Task<int> UpsertAccountBankingAsync(Guid storeId, string bankName, string accountNumber)
         {
-            if (string.IsNullOrEmpty(text)) return text;
-            var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
-            var sb = new StringBuilder();
-            foreach (var ch in normalized)
+            var store = await _db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (store == null) return 0;
+
+            var banking = await _db.AccountBankings.FirstOrDefaultAsync(b => b.StoreId == storeId);
+
+            if (banking == null)
             {
-                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
-                    sb.Append(ch);
+                banking = new AccountBanking
+                {
+                    StoreId = storeId,
+                    BankName = bankName?.Trim() ?? string.Empty,
+                    AccountNumber = accountNumber?.Trim() ?? string.Empty,
+                    Balance = 0m
+                };
+                _db.AccountBankings.Add(banking);
             }
-            return sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+            else
+            {
+                banking.BankName = bankName?.Trim() ?? banking.BankName;
+                banking.AccountNumber = accountNumber?.Trim() ?? banking.AccountNumber;
+                _db.AccountBankings.Update(banking);
+            }
+
+            // cập nhật UpdatedAt của store
+            var trackedStore = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (trackedStore != null) trackedStore.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync();
+        }
+
+        public async Task<int> SetAccountBalanceAsync(Guid storeId, decimal newBalance)
+        {
+            if (newBalance < 0) throw new ArgumentOutOfRangeException(nameof(newBalance));
+
+            var banking = await _db.AccountBankings.FirstOrDefaultAsync(b => b.StoreId == storeId);
+            if (banking == null) return 0;
+
+            banking.Balance = newBalance;
+
+            var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (store != null) store.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync();
+        }
+
+        // ➕/➖ Cộng/trừ số dư an toàn (không cho âm)
+        public async Task<int> IncreaseBalanceAsync(Guid storeId, decimal amount)
+        {
+            if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+
+            var banking = await _db.AccountBankings.FirstOrDefaultAsync(b => b.StoreId == storeId);
+            if (banking == null) return 0;
+
+            banking.Balance += amount;
+
+            var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (store != null) store.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync();
+        }
+
+        public async Task<int> DecreaseBalanceAsync(Guid storeId, decimal amount)
+        {
+            if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+
+            var banking = await _db.AccountBankings.FirstOrDefaultAsync(b => b.StoreId == storeId);
+            if (banking == null) return 0;
+
+            if (banking.Balance - amount < 0)
+                throw new InvalidOperationException("Balance cannot be negative.");
+
+            banking.Balance -= amount;
+
+            var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (store != null) store.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync();
+        }
+
+        // ❌ Xóa thông tin ngân hàng của Store (không xóa Store)
+        public async Task<int> DeleteAccountBankingAsync(Guid storeId)
+        {
+            var banking = await _db.AccountBankings.FirstOrDefaultAsync(b => b.StoreId == storeId);
+            if (banking == null) return 0;
+
+            _db.AccountBankings.Remove(banking);
+
+            var store = await _db.Stores.FirstOrDefaultAsync(s => s.StoreId == storeId);
+            if (store != null) store.UpdatedAt = DateTime.UtcNow;
+
+            return await _db.SaveChangesAsync();
         }
     }
 }

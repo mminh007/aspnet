@@ -18,11 +18,11 @@ namespace Order.BLL.Services.Interfaces
         Task<OrderResponseModel<OrderDTO>> UpdateOrderAsync(UpdateOrderRequest dto); // update payment status, payment method, order status, dont update products
         Task<OrderResponseModel<string>> DeleteOrderAsync(Guid orderId);
 
-        Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status);
+        Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status, decimal totalAmount);
 
 
 
         // Checkout từ cart
-        Task<OrderResponseModel<IEnumerable<OrderDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds);
+        Task<OrderResponseModel<IEnumerable<OrderDTO>>> CheckoutAsync(Guid userId, RequestOrderModel request);
     }
 }

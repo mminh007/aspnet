@@ -219,7 +219,29 @@ namespace Store.API.Controllers
             });
         }
 
-        
+        [HttpPost("settlements")]
+        [Authorize(Roles = "system")]
+        public async Task<IActionResult> UpdateAmountAsync([FromBody] UpdateStoreAmountRequest model)
+        {
+            // Lấy Idempotency-Key từ header nếu client không gửi trong body
+            model.IdempotencyKey ??= Request.Headers["Idempotency-Key"].FirstOrDefault();
+
+            // Validate cơ bản
+            if (model is null)
+                return BadRequest(new { statusCode = 400, message = "Body is required." });
+
+            if (model.StoreId == Guid.Empty)
+                return BadRequest(new { statusCode = 400, message = "StoreId is required." });
+
+            if (model.Amount <= 0)
+                return BadRequest(new { statusCode = 400, message = "Amount must be greater than 0." });
+
+            // Gọi service xử lý settle/credit
+            var result = await _storeService.SettleAsync(model);
+
+            return HandleResponse(result);
+        }
+
 
         private IActionResult HandleResponse<T>(StoreResponseModel<T> response)
         {

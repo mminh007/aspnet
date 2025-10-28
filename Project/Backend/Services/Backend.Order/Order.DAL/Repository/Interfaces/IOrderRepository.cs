@@ -16,7 +16,7 @@ namespace Order.DAL.Repository.Interfaces
         Task CreateOrderAsync(OrderModel order);
         Task UpdateOrderAsync(OrderModel order);
         Task DeleteOrderAsync(Guid orderId);
-        Task UpdateStatus(Guid orderId, string status);
+        Task UpdateStatus(Guid orderId, string status, decimal totalAmount);
 
         // === Business use case ===
         Task<OrderModel> CreateOrderFromCartAsync(CartModel cart, Guid storeId);

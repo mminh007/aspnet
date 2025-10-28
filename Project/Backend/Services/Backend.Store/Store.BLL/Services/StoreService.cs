@@ -506,5 +506,109 @@ namespace Store.BLL.Services
             return string.Join(",", tags); // => "my-pham,duoc-pham"
         }
 
+        public async Task<StoreResponseModel<object>> SettleAsync(UpdateStoreAmountRequest model)
+        {
+            try
+            {
+                // 1) Validate
+                if (model is null)
+                {
+                    return new StoreResponseModel<object>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Body is required."
+                    };
+                }
+
+                if (model.StoreId == Guid.Empty)
+                {
+                    return new StoreResponseModel<object>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "StoreId is required."
+                    };
+                }
+
+                if (model.Amount == 0)
+                {
+                    return new StoreResponseModel<object>
+                    {
+                        Message = OperationResult.Failed,
+                        ErrorMessage = "Amount must be non-zero."
+                    };
+                }
+
+                // 2) Kiểm tra store tồn tại & còn hoạt động
+                var store = await _storeRepository.GetStoreDetailById(model.StoreId);
+                if (store == null)
+                {
+                    return new StoreResponseModel<object>
+                    {
+                        Message = OperationResult.NotFound,
+                        ErrorMessage = "Store not found."
+                    };
+                }
+
+                if (!store.IsActive)
+                {
+                    return new StoreResponseModel<object>
+                    {
+                        Message = OperationResult.Forbidden,
+                        ErrorMessage = "Store is inactive."
+                    };
+                }
+
+                //var entity = await _storeRepository.GetStoreDetailById(model.StoreId);
+
+
+                // 3) Đảm bảo có AccountBanking (nếu chưa có thì tạo với placeholder)
+                //await _storeRepository.UpsertAccountBankingAsync(
+                //    model.StoreId,
+                //    bankName: string.IsNullOrWhiteSpace(entity.AccountBanking.BankName) ? "N/A" : entity.AccountBanking.BankName!,
+                //    accountNumber: string.IsNullOrWhiteSpace(model.AccountNumber) ? "N/A" : model.AccountNumber!
+                //);
+
+                // 4) Cập nhật số dư: Amount > 0 => cộng; Amount < 0 => trừ
+                if (model.Amount > 0)
+                {
+                    await _storeRepository.IncreaseBalanceAsync(model.StoreId, model.Amount);
+                }
+                else
+                {
+                    // Trừ tiền – không cho âm
+                    await _storeRepository.DecreaseBalanceAsync(model.StoreId, Math.Abs(model.Amount));
+                }
+
+                return new StoreResponseModel<object>
+                {
+                    Message = OperationResult.Success,
+                    Data = new
+                    {
+                        storeId = model.StoreId,
+                        changed = model.Amount
+                    }
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                // ví dụ: "Balance cannot be negative."
+                _logger.LogWarning(ex, "Settle failed (business rule). StoreId={StoreId}", model?.StoreId);
+                return new StoreResponseModel<object>
+                {
+                    Message = OperationResult.Conflict,
+                    ErrorMessage = ex.Message
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in SettleAsync. StoreId={StoreId}", model?.StoreId);
+                return new StoreResponseModel<object>
+                {
+                    Message = OperationResult.Error,
+                    ErrorMessage = "Unexpected error while settling store amount."
+                };
+            }
+        }
+
     }
 }

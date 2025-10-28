@@ -57,7 +57,9 @@
                                                     data-bs-target="#paymentModal"
                                                     data-order-id="@order.OrderId"
                                                     data-order-name="@order.OrderName"
+                                                    data-store-id="@order.StoreId"
                                                     data-amount="@order.TotalAmount">
+                                                    
                                                 Thanh toán
 
                                             </button>
@@ -112,6 +114,7 @@
                 <div class="modal-body">
                     <input type="hidden" name="OrderId" id="OrderId" />
                     <input type="hidden" name="Amount" id="Amount" />
+                    <input type="hidden" id="StoreId" name="StoreId" />
 
                     <div class="mb-3">
                         <label>Mã đơn hàng</label>
@@ -120,13 +123,29 @@
 
                     <div class="mb-3">
                         <label>Phương thức thanh toán</label>
-                        <select name="Method" class="form-select">
-                            <option value="CreditCard">Credit Card</option>
-                            <option value="DebitCard">Debit Card</option>
-                            <option value="BankTransfer">Bank Transfer</option>
-                            <option value="EWallet">E-Wallet</option>
-                            <option value="QRCode">QR Code</option>
+                        <select name="Method" id="PaymentMethod" class="form-select">
+                            <option value="CreditCard"
+                                    data-requires-card="true"
+                                    data-fee-percent="1.10"
+                                    data-desc="Thanh toán bằng thẻ tín dụng qua cổng Stripe. Phí 1.10%.">
+                                Credit Card
+                            </option>
+                            <option value="DebitCard"
+                                    data-requires-card="true"
+                                    data-fee-percent="0.80"
+                                    data-desc="Thẻ ghi nợ nội địa/quốc tế qua Stripe. Phí 0.80%.">
+                                Debit Card
+                            </option>
                         </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <small id="MethodDesc" class="text-muted d-block"></small>
+                        <div id="FeeBreakdown" class="small mt-1">
+                            <div>Tạm tính: <span id="AmountBaseText"></span></div>
+                            <div>Phí phương thức: <span id="FeeText"></span></div>
+                            <div class="fw-bold">Tổng cần thanh toán: <span id="AmountFinalText"></span></div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -136,13 +155,12 @@
 
                     <div class="mb-3">
                         <label>Tiền tệ</label>
-                        <select name="Currency" class="form-select">
+                        <select name="Currency" class="form-select" disabled>
                             <option value="VND">VND</option>
-                            <option value="USD">USD</option>
                         </select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="CardRow">
                         <label>Thông tin thẻ</label>
                         <div id="card-element" class="form-control"></div>
                         <div id="card-errors" class="text-danger mt-2"></div>
@@ -187,19 +205,57 @@
                 });
             });
 
+            let amountBase = 0;
+            let requiresCard = true;
+
+            function formatVND(n){ return Number(n).toLocaleString("vi-VN") + " đ"; }
+
+            function recalcPaymentUI() {
+                const sel = document.getElementById('PaymentMethod');
+                const opt = sel.options[sel.selectedIndex];
+
+                const desc = opt.getAttribute('data-desc') || '';
+                const feePercent = parseFloat(opt.getAttribute('data-fee-percent') || '0');
+                requiresCard = (opt.getAttribute('data-requires-card') === 'true');
+
+                const fee = Math.round(amountBase * (feePercent/100));
+                const total = amountBase + fee;
+
+                // Cập nhật breakdown
+                document.getElementById('MethodDesc').innerText = desc;
+                document.getElementById('AmountBaseText').innerText = formatVND(amountBase);
+                document.getElementById('FeeText').innerText = feePercent ? `${formatVND(fee)} (${feePercent}%)` : formatVND(fee);
+                document.getElementById('AmountFinalText').innerText = formatVND(total);
+
+                // Hidden fields
+                document.getElementById('Amount').value = total;
+                document.getElementById('AmountDisplay').value = formatVND(total);
+
+                // Ẩn/hiện block thẻ
+                const cardRow = document.getElementById('CardRow');
+                if (requiresCard) cardRow.classList.remove('d-none');
+                else cardRow.classList.add('d-none');
+            }
+
             var paymentModal = document.getElementById('paymentModal');
             paymentModal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                var orderId = button.getAttribute('data-order-id');
-                var orderName = button.getAttribute('data-order-name');
-                var amount = button.getAttribute('data-amount');
+                const button = event.relatedTarget;
+                const orderId = button.getAttribute('data-order-id');
+                const storeId = button.getAttribute('data-store-id');
+                const orderName = button.getAttribute('data-order-name');
+                const amount = button.getAttribute('data-amount');
 
                 document.getElementById('OrderId').value = orderId;
-                document.getElementById('Amount').value = amount;
-
+                document.getElementById('StoreId').value = storeId;
                 document.getElementById('OrderNameDisplay').value = orderName;
-                document.getElementById('AmountDisplay').value = parseFloat(amount).toLocaleString("vi-VN") + " đ";
+                //document.getElementById('Amount').value = amount;
+
+                amountBase = Math.round(parseFloat(amount) || 0);
+                recalcPaymentUI();
+
             });
+
+            document.getElementById('PaymentMethod').addEventListener('change', recalcPaymentUI);
 
             // Submit form -> gọi API + Stripe confirm
             document.getElementById("paymentForm").addEventListener("submit", async function (e) {
@@ -207,9 +263,11 @@
 
                 const formData = new FormData(this);
                 const orderId = formData.get("OrderId");
+                const storeId = formData.get("StoreId");
                 const request = {
                     orderId: orderId,
                     buyerId: null,
+                    storeId: storeId,
                     method: formData.get("Method"),
                     amount: parseFloat(formData.get("Amount")),
                     currency: formData.get("Currency")

@@ -9,6 +9,6 @@ namespace Payment.BLL.External.Interface
 {
     public interface IOrderApiClient
     {
-        Task<PaymentResponseModel<string>> UpdateStatusOrder(Guid id, string status);
+        Task<PaymentResponseModel<string>> UpdateStatusOrder(Guid id, string status, decimal totalAmount);
     }
 }

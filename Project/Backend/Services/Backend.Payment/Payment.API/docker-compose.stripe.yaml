@@ -1,8 +1,8 @@
 version: "3.9"
 services:
-  stripe-listener-api:
+  listener-8001:
     image: stripe/stripe-cli
-    container_name: listener
+    container_name: listener-8001
     restart: always
     environment:
       - STRIPE_API_KEY=${STRIPE_API_KEY}

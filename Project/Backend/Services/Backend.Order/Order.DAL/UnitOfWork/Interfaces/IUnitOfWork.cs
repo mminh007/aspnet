@@ -13,6 +13,8 @@ namespace Order.DAL.UnitOfWork.Interfaces
         ICartRepository Carts { get; }
         IOrderRepository Orders { get; }
 
+        IShippingRepository Shippings { get; }
+
         Task<int> SaveChangesAsync();
     }
 }

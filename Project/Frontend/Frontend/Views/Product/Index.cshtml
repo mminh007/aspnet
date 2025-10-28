@@ -23,11 +23,15 @@
         <div class="col-md-12">
             <div class="card shadow-sm border-0">
                 <div class="row g-0 align-items-center">
+                   
                     <div class="col-md-4">
-                        <img src="@Model.Store.StoreImage"
+                        <div class="store-cover">
+                            <img src="@Model.Store.StoreImage" alt="@Model.Store.StoreName">
+                        </div>
+                        @* <img src="@Model.Store.StoreImage"
                              alt="@Model.Store.StoreName"
                              class="img-fluid rounded-start"
-                             style="object-fit: cover; height: 220px; width: 100%;" />
+                             style="object-fit: cover; height: 220px; width: 100%;" /> *@
                     </div>
                     <div class="col-md-8">
                         <div class="card-body">
@@ -65,6 +69,9 @@
                     <ul class="list-group" id="categoryList">
                         @foreach (var cat in Model.Categories)
                         {
+                            var hasAny = Model.Products.Any(p => p.CategoryId == cat.CategoryId && p.IsActive);
+                            if (!hasAny) { continue; }
+
                             <li class="list-group-item list-group-item-action category-link"
                                 data-target="cat-@cat.CategoryId">
                                 @cat.CategoryName
@@ -80,35 +87,87 @@
             <div class="row">
                 @foreach (var cat in Model.Categories)
                 {
+                    var hasAny = Model.Products.Any(p => p.CategoryId == cat.CategoryId && p.IsActive);
+                    if (!hasAny) { continue; }
                     <div id="cat-@cat.CategoryId" class="mb-4 category-section">
                         <h4 class="border-bottom pb-2">@cat.CategoryName</h4>
 
                         @foreach (var product in Model.Products.Where(p => p.CategoryId == cat.CategoryId))
-                        {
+                        {                  
                             @if (product.IsActive)
-                            {
+                            { 
+                                var existingItem = Model.cartItems?.FirstOrDefault(i => i.ProductId == product.ProductId);
+                                            
                                 <div class="card mb-3 shadow-sm border-0">
                                     <div class="row g-0 align-items-center">
-                                        <div class="col-md-3">
+                                        @* <div class="col-md-3">
                                             <div class="card-body py-2">
-                                                <img src="@product.ProductImage" alt="@product.ProductName" class="rounded-start product-img" />
+                                                <img src="@product.ProductImage" alt="@product.ProductName" class="img-fluid rounded-start product-img" />
+                                            </div>
+                                        </div> *@
+                                        <div class="col-4 col-md-3">
+                                            <div class="card-body py-2">
+                                                <div class="product-thumb">
+                                                    <img src="@product.ProductImage" alt="@product.ProductName">
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div class="col-md-6">
+                                        <div class="col-8 col-md-6">
                                             <div class="card-body py-2">
                                                 <h5 class="card-title mb-1">@product.ProductName</h5>
                                                 <p class="card-text text-muted small mb-1">@product.Description</p>
                                                 <span class="badge @(product.IsActive ? "bg-success" : "bg-secondary") mb-2">
                                                     @(product.IsActive ? "Đang bán" : "Ngừng bán")
                                                 </span>
-                                                <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+
+                                                <!-- Hàng giá + controls cho MOBILE -->
+                                                <div class="d-flex align-items-center justify-content-between gap-2 d-md-none">
+                                                    <p class="mb-0 fw-bold text-primary">@product.SalePrice.ToString("N0") đ</p>
+
+                                                    <div class="cart-actions-mobile"
+                                                         id="cart-actions-mobile-@product.ProductId"
+                                                         data-store-id="@product.StoreId"
+                                                         data-product-id="@product.ProductId"
+                                                         data-price="@product.SalePrice"
+                                                         @(existingItem != null ? $"data-cart-item-id=\"{existingItem.CartItemId}\"" : "")>
+                                                        @if (existingItem != null)
+                                                        {
+                                                            <div class="d-flex align-items-center">
+                                                                <button class="btn btn-sm btn-light border decrease"
+                                                                        data-product-id="@product.ProductId"
+                                                                        data-store-id="@product.StoreId"
+                                                                        data-cart-item-id="@existingItem.CartItemId">
+                                                                    -
+                                                                </button>
+                                                                <span class="mx-2 fw-bold" id="qty-card-mobile-@product.ProductId">@existingItem.Quantity</span>
+                                                                <button class="btn btn-sm btn-light border increase"
+                                                                        data-product-id="@product.ProductId"
+                                                                        data-store-id="@product.StoreId"
+                                                                        data-cart-item-id="@existingItem.CartItemId">
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn btn-primary btn-sm add-to-cart"
+                                                                    data-product-id="@product.ProductId"
+                                                                    data-store-id="@product.StoreId">
+                                                                +
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <!-- Giá riêng cho DESKTOP -->
+                                                <p class="mb-0 fw-bold text-primary d-none d-md-block">
+                                                    @product.SalePrice.ToString("N0") đ
+                                                </p>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 text-center pe-3">
-                                            @{
-                                                var existingItem = Model.cartItems?.FirstOrDefault(i => i.ProductId == product.ProductId);
-                                            }
+                                        <div class="col-md-3 text-center pe-3 d-none d-md-block">
+                                           
                                             <div class="cart-actions"
                                                  id="cart-actions-@product.ProductId"
                                                  data-store-id="@product.StoreId"
@@ -244,6 +303,51 @@
                         <p class="text-center text-muted">Giỏ hàng trống</p>
                     }
                 </div>
+                <div class="mt-3">
+                    <h6 class="fw-bold mb-2">Thông tin giao hàng</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Tên người nhận</label>
+                            <input type="text" name="shipping.FullName" 
+                                   form="checkoutForm" class="form-control" id="ship-fullname" placeholder="VD: Nguyễn Văn A">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Số điện thoại</label>
+                            <input type="tel" name="shipping.PhoneNumber"
+                                   form="checkoutForm" class="form-control" id="ship-phone" placeholder="VD: 0901234567">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Địa chỉ (Số nhà, đường)</label>
+                            <input type="text" class="form-control" id="ship-addressline" placeholder="VD: 12/3 Trần Hưng Đạo">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Tỉnh/Thành</label>
+                            <select id="ship-province" class="form-select">
+                                <option value="">-- Chọn Tỉnh/Thành --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Phường/Xã</label>
+                            <select id="ship-ward" class="form-select" disabled>
+                                <option value="">-- Chọn Phường/Xã --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Ghi chú (tuỳ chọn)</label>
+                            <textarea class="form-control" name="shipping.Note" form="checkoutForm" 
+                                      id="ship-note" rows="2" placeholder="VD: Gọi trước khi giao, để ở sảnh bảo vệ..."></textarea>
+                        </div>
+
+                        <input type="hidden"
+                               id="ship-fulladdress"
+                               name="shipping.Address"
+                               form="checkoutForm" />
+                    </div>
+                </div>
+
                 <div class="mt-2">
                     <small class="text-muted">
                         Giá món đã bao gồm thuế, nhưng chưa bao gồm phí giao hàng và các phí khác.

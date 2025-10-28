@@ -22,6 +22,32 @@ namespace Store.DAL.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Store.DAL.Models.Entities.AccountBanking", b =>
+                {
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("StoreId");
+
+                    b.HasIndex("BankName", "AccountNumber")
+                        .IsUnique();
+
+                    b.ToTable("AccountBankings", (string)null);
+                });
+
             modelBuilder.Entity("Store.DAL.Models.Entities.IntegrationEventLog", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -110,6 +136,22 @@ namespace Store.DAL.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Stores", (string)null);
+                });
+
+            modelBuilder.Entity("Store.DAL.Models.Entities.AccountBanking", b =>
+                {
+                    b.HasOne("Store.DAL.Models.Entities.StoreModel", "Store")
+                        .WithOne("AccountBanking")
+                        .HasForeignKey("Store.DAL.Models.Entities.AccountBanking", "StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("Store.DAL.Models.Entities.StoreModel", b =>
+                {
+                    b.Navigation("AccountBanking");
                 });
 #pragma warning restore 612, 618
         }

@@ -28,11 +28,12 @@ namespace Payment.BLL.External
             _client = client;
         }
 
-        public async Task<PaymentResponseModel<string>> UpdateStatusOrder(Guid orderId, string status)
+        public async Task<PaymentResponseModel<string>> UpdateStatusOrder(Guid orderId, string status, decimal t)
         {
             var url = _endpoints.UpdateStatus.Replace("{orderId}", orderId.ToString())
                                                   .Replace("{char}", status);
-            var response = await _client.PutAsync(url, null);
+            var amount = JsonContent.Create(t);
+            var response = await _client.PutAsync(url, amount);
 
             return await ParseResponse<string>(response, "UpdateStatus");
         }

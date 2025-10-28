@@ -41,6 +41,59 @@
     initializeCartBadges();
 
     // =============================
+    // 0.1 Load Provinces & Wards (no District)
+    // =============================
+    let VN_PROVINCES = [];
+    let VN_WARDS = [];
+
+    async function loadLocations() {
+        try {
+            const [pRes, wRes] = await Promise.all([
+                fetch("/data/vn-provinces.json"),
+                fetch("/data/vn-wards.json")
+            ]);
+            if (!pRes.ok || !wRes.ok) throw new Error("Cannot load provinces/wards data");
+
+            VN_PROVINCES = await pRes.json();
+            VN_WARDS = await wRes.json();
+
+            const provSel = document.getElementById("ship-province");
+            const wardSel = document.getElementById("ship-ward");
+            if (!provSel || !wardSel) return;
+
+            // Fill provinces
+            VN_PROVINCES.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.code;
+                opt.textContent = p.name;
+                provSel.appendChild(opt);
+            });
+
+            // On province change → filter wards
+            provSel.addEventListener("change", () => {
+                const code = provSel.value;
+                wardSel.innerHTML = `<option value="">-- Chọn Phường/Xã --</option>`;
+                wardSel.disabled = true;
+
+                if (!code) return;
+
+                const wards = VN_WARDS.filter(w => String(w.provinceCode) === String(code));
+                wards.forEach(w => {
+                    const opt = document.createElement("option");
+                    opt.value = w.code;
+                    opt.textContent = w.name;
+                    wardSel.appendChild(opt);
+                });
+
+                wardSel.disabled = wards.length === 0;
+            });
+        } catch (e) {
+            console.error("Load locations error:", e);
+        }
+    }
+    loadLocations();
+
+    // =============================
     // 1. API Functions
     // =============================
     async function addToCart(productId, storeId, userId) {
@@ -121,10 +174,13 @@
                 const oldStore = parseInt(currentBadge?.textContent || 0);
 
                 // Lấy quantity của item vừa xóa
-                const deletedQty = parseInt(document.getElementById(`qty-modal-${productId}`)?.textContent || 0);
+                //const deletedQty = parseInt(document.getElementById(`qty-modal-${productId}`)?.textContent || 0);
 
-                totalItems = Math.max(0, oldTotal - deletedQty);
-                storeItems = Math.max(0, oldStore - deletedQty);
+                //totalItems = Math.max(0, oldTotal - deletedQty);
+                //storeItems = Math.max(0, oldStore - deletedQty);
+
+                totalItems = Math.max(0, oldTotal - 1);
+                storeItems = Math.max(0, oldStore - 1);
             }
 
             updateBadges(totalItems, storeItems);
@@ -212,12 +268,29 @@
                                 data-store-id="${storeId}"
                                 data-cart-item-id="${newCartItemId}">+</button>
                     </div>`;
+
+                const mob = document.getElementById(`cart-actions-mobile-${productId}`);
+                if (mob) {
+                    mob.innerHTML = `
+                    <div class="d-flex align-items-center">
+                      <button class="btn btn-sm btn-light border decrease"
+                              data-product-id="${productId}" data-store-id="${storeId}"
+                              data-cart-item-id="${newCartItemId}">-</button>
+                      <span class="mx-2 fw-bold" id="qty-card-mobile-${productId}">1</span>
+                      <button class="btn btn-sm btn-light border increase"
+                              data-product-id="${productId}" data-store-id="${storeId}"
+                              data-cart-item-id="${newCartItemId}">+</button>
+                    </div>`;
+                }
+
                 const modalRow = document.querySelector(`#modal-body-item-list #qty-modal-${productId}`)?.closest(".border-bottom");
                 if (modalRow) {
                     modalRow.querySelectorAll(`button.increase, button.decrease`).forEach(btn => {
                         btn.dataset.cartItemId = newCartItemId;
                     });
                 }
+
+                
 
                 const modalQtyEl = document.getElementById(`qty-modal-${productId}`);
                 if (modalQtyEl) {
@@ -234,12 +307,24 @@
             if (result && result.statusCode === 200) {
                 removeItemFromModal(productId);
                 resetCardToAddButton(productId, storeId);
+
+                // Cập nhật nút ở mobile card
+                const mob = document.getElementById(`cart-actions-mobile-${productId}`);
+                if (mob) {
+                    mob.innerHTML = `
+                        <button class="btn btn-primary btn-sm add-to-cart"
+                                data-product-id="${productId}" data-store-id="${storeId}">+</button>`;
+                }
                 updateCartTotal();
             }
         } else {
             const result = await updateQuantity(productId, storeId, userId, currentQty, cartItemId);
             if (result && qtyEl) {
                 qtyEl.textContent = currentQty;
+
+                const mobileQtyEl = document.getElementById(`qty-card-mobile-${productId}`);
+                if (mobileQtyEl) mobileQtyEl.textContent = currentQty;
+
                 const modalQtyEl = document.getElementById(`qty-modal-${productId}`);
                 if (modalQtyEl) modalQtyEl.textContent = currentQty;
                 updateCartTotal();
@@ -356,14 +441,6 @@
             return;
         }
 
-        //const activeItems = items.filter(item => item.isAvailable === true || item.isActive === true);
-
-        //if (activeItems.length === 0) {
-        //    container.innerHTML = `<p class="text-center text-muted">Giỏ hàng trống</p>`;
-        //    document.getElementById("cart-total").textContent = "0 đ";
-        //    return;
-        //}
-
         let html = "";
         items.forEach(item => {
             total += item.isAvailable ? item.price * item.quantity : 0;
@@ -411,6 +488,28 @@
         checkoutBtn.innerHTML = "Đang kiểm tra...";
 
         try {
+            const fullname = (document.getElementById("ship-fullname")?.value || "").trim();
+            const phone = (document.getElementById("ship-phone")?.value || "").trim();
+            const addressLine = (document.getElementById("ship-addressline")?.value || "").trim();
+            const provinceCode = document.getElementById("ship-province")?.value || "";
+            const wardCode = document.getElementById("ship-ward")?.value || "";
+            const note = (document.getElementById("ship-note")?.value || "").trim();
+
+            const provinceName = VN_PROVINCES.find(p => p.code === provinceCode)?.name || "";
+            const wardName = VN_WARDS.find(w => w.code === wardCode)?.name || "";
+
+            const fullAddress = [addressLine, wardName, provinceName].filter(Boolean).join(", ");
+
+            const phoneOk = /^(\+?\d{1,3}[- ]?)?\d{9,11}$/.test(phone);
+            if (!fullname || !phone || !addressLine || !provinceCode || !wardCode) {
+                showErrorModal("<p>Vui lòng nhập đầy đủ <strong>tên</strong>, <strong>điện thoại</strong>, <strong>địa chỉ</strong>, <strong>Tỉnh</strong> và <strong>Phường</strong>.</p>");
+                return;
+            }
+            if (!phoneOk) {
+                showErrorModal("<p>Số điện thoại không hợp lệ.</p>");
+                return;
+            }
+
             const res = await fetch(`/Order/get-cart?id=${userId}`);
             if (!res.ok) {
                 alert("❌ Lỗi khi kiểm tra giỏ hàng.");
@@ -440,7 +539,17 @@
             if (checkoutForm) {
                 // clear input cũ
                 checkoutForm.querySelectorAll('input[name="selectedProducts"]').forEach(n => n.remove());
-                checkoutForm.innerHTML = `<input type="hidden" name="userId" value="${userId}">`;
+                //checkoutForm.innerHTML = `<input type="hidden" name="userId" value="${userId}">`;
+
+                let userIdInput = checkoutForm.querySelector('input[name="userId"]');
+                if (!userIdInput) {
+                    userIdInput = document.createElement("input");
+                    userIdInput.type = "hidden";
+                    userIdInput.name = "userId";
+                    checkoutForm.appendChild(userIdInput);
+                }
+                userIdInput.value = userId;
+
                 items.forEach(it => {
                     const hidden = document.createElement("input");
                     hidden.type = "hidden";
@@ -448,6 +557,20 @@
                     hidden.value = it.productId;
                     checkoutForm.appendChild(hidden);
                 });
+
+                const provinceName = VN_PROVINCES.find(p => p.code === (document.getElementById("ship-province")?.value || ""))?.name || "";
+                const wardName = VN_WARDS.find(w => w.code === (document.getElementById("ship-ward")?.value || ""))?.name || "";
+                const addrLine = (document.getElementById("ship-addressline")?.value || "").trim();
+                const fullAddress = [addrLine, wardName, provinceName].filter(Boolean).join(", ");
+
+                document.getElementById("ship-fulladdress").value = fullAddress;
+
+                const fd = new FormData(checkoutForm);
+                console.log("== FormData Preview ==");
+                for (const [k, v] of fd.entries()) {
+                    console.log(k, v);
+                }
+
                 checkoutForm.submit();
             } else {
                 window.location.href = "/Order/CreateOrder";

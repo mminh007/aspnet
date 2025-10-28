@@ -144,17 +144,29 @@ namespace Frontend.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrder(Guid userId, [FromForm] List<Guid> selectedProducts)
+        public async Task<IActionResult> CreateOrder(Guid userId, [FromForm] List<Guid> selectedProducts, [FromForm] RequestOrderModel shipping)
         {
             ViewBag.StripePublishableKey = _config["STRIPE:PUBLISHABLEKEY"];
 
+            if (shipping.Note == null)
+            {
+                shipping.Note = string.Empty;
+            }
             if (selectedProducts == null || !selectedProducts.Any())
             {
                 TempData["Error"] = "Bạn chưa chọn sản phẩm nào để tạo đơn hàng.";
                 return RedirectToAction("CreateCart", new { id = userId });
             }
 
-            var (msg, status, data) = await _orderService.CreateOrder(userId, selectedProducts);
+            if (string.IsNullOrWhiteSpace(shipping.FullName) ||
+                string.IsNullOrWhiteSpace(shipping.PhoneNumber) ||
+                string.IsNullOrWhiteSpace(shipping.Address))
+            {
+                TempData["Error"] = "Thông tin giao hàng không hợp lệ.";
+                return RedirectToAction("CreateCart", new { id = userId });
+            }
+
+            var (msg, status, data) = await _orderService.CreateOrder(userId, selectedProducts, shipping);
 
             if (status != 200 || data == null)
             {

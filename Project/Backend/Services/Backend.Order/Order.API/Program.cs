@@ -119,6 +119,7 @@ namespace Order.API
                 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
                 builder.Services.AddScoped<IOrderService, OrderService>();
                 builder.Services.AddScoped<ICartService, CartService>();
+                builder.Services.AddScoped<IShippingRepository, ShippingRepository>();
 
                 // =====================================================
                 // 🌐 HTTP Clients

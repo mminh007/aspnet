@@ -11,11 +11,14 @@ namespace Order.DAL.Repositories
         public ICartRepository Carts { get; }
         public IOrderRepository Orders { get; }
 
+        public IShippingRepository Shippings { get; }
+
         public UnitOfWork(OrderDbContext context)
         {
             _context = context;
             Carts = new CartRepository(context);
             Orders = new OrderRepository(context);
+            Shippings = new ShippingRepository(context);
         }
 
         public async Task<int> SaveChangesAsync()

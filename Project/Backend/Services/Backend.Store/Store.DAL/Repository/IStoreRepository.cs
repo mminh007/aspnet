@@ -29,6 +29,13 @@ namespace Store.DAL.Repository
         Task<IEnumerable<StoreDTO>> SearchStoreByTagPagedAsync(string tag, int page, int pageSize);
         Task<int> CountStoreByTagAsync(string tag);
 
+        Task<int> UpsertAccountBankingAsync(Guid storeId, string bankName, string accountNumber);
+
+        Task<int> SetAccountBalanceAsync(Guid storeId, decimal newBalance);
+        Task<int> IncreaseBalanceAsync(Guid storeId, decimal amount);
+        Task<int> DecreaseBalanceAsync(Guid storeId, decimal amount);
+        Task<int> DeleteAccountBankingAsync(Guid storeId);
+
         Task SaveChangesAsync();
 
 

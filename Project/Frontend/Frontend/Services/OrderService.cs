@@ -174,9 +174,10 @@ namespace Frontend.Services
         }
 
 
-        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds, RequestOrderModel shipping)
         {
-            var result = await _client.CreateOrder(userId, productIds);
+            shipping.ProductIds = productIds;
+            var result = await _client.CreateOrder(userId, shipping);
 
             if (result.data != null)
             {

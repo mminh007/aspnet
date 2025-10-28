@@ -1,5 +1,6 @@
 ﻿using API.Middlewares;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
@@ -57,11 +58,18 @@ namespace API
                 // 🔐 JWT Authentication
                 // ==========================================================
                 var jwt = builder.Configuration.GetSection("Jwt");
-                var key = Encoding.UTF8.GetBytes(jwt["Key"] ?? throw new InvalidOperationException("JWT key missing"));
+                var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
-                builder.Services.AddAuthentication("Bearer")
-                    .AddJwtBearer("Bearer", options =>
+                builder.Services
+                    .AddAuthentication(options =>
                     {
+                        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    })
+                    .AddJwtBearer(options =>
+                    {
+                        options.RequireHttpsMetadata = true;
+                        options.SaveToken = true;
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,
@@ -71,14 +79,19 @@ namespace API
                             ValidIssuer = jwt["Issuer"],
                             ValidAudience = jwt["Audience"],
                             IssuerSigningKey = new SymmetricSecurityKey(key),
-                            RoleClaimType = ClaimTypes.Role,
+                            ClockSkew = TimeSpan.Zero,
+                            RoleClaimType = ClaimTypes.Role
                         };
-
-                        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                        options.Events = new JwtBearerEvents
                         {
                             OnAuthenticationFailed = context =>
                             {
-                                Log.Warning("❌ JWT Authentication failed: {Message}", context.Exception.Message);
+                                Log.Warning("❌ JWT Authentication failed: {Error}", context.Exception.Message);
+                                return Task.CompletedTask;
+                            },
+                            OnMessageReceived = ctx =>
+                            {
+                                Log.Debug("🔎 Authorization header received: {Header}", ctx.Request.Headers["Authorization"].ToString());
                                 return Task.CompletedTask;
                             }
                         };

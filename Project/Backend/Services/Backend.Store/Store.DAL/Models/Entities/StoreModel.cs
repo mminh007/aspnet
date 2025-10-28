@@ -37,5 +37,7 @@ namespace Store.DAL.Models.Entities
 
         [Required]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public virtual AccountBanking? AccountBanking { get; set; }
     }
 }

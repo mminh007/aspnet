@@ -14,6 +14,8 @@ namespace Payment.Common.Models.Requests
 
         public Guid BuyerId { get; set; }
 
+        public Guid StoreId { get; set; }
+
         public PaymentMethod Method { get; set; }
 
         [Range(0.01, double.MaxValue)]

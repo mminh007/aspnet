@@ -43,6 +43,7 @@ namespace Frontend.Controllers
             var paymentRequest = new PaymentRequest
             {
                 OrderId = Guid.Parse(order_id),
+                StoreId = Guid.Parse(request.StoreId),
                 Method = Enum.Parse<PaymentMethod>(request.Method, true),
                 Amount = request.Amount,
                 Currency = request.Currency ?? "VND"

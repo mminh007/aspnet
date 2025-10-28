@@ -1,0 +1,27 @@
+﻿[
+  {
+    "code": "00101",
+    "name": "Phường Phúc Xá",
+    "provinceCode": "01"
+  },
+  {
+    "code": "00104",
+    "name": "Phường Trúc Bạch",
+    "provinceCode": "01"
+  },
+  {
+    "code": "26734",
+    "name": "Phường Bến Nghé",
+    "provinceCode": "79"
+  },
+  {
+    "code": "26740",
+    "name": "Phường Bến Thành",
+    "provinceCode": "79"
+  },
+  {
+    "code": "20308",
+    "name": "Phường Thạch Thang",
+    "provinceCode": "48"
+  }
+]

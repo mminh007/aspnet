@@ -542,14 +542,14 @@
                         console.log("📦 Parsed data:", data);
 
                         if (response.ok && data?.success) {
-                            label.textContent = isActive ? "Active" : "Inactive";
+                            label.textContent = isActive ? "Còn hàng" : "Hết hàng";
                             //label.classList.remove("text-warning");
                             label.classList.toggle("text-success", isActive);
                             label.classList.toggle("text-muted", !isActive);
                         } else {
                             alert("❌ Cập nhật trạng thái thất bại!");
                             this.checked = !isActive;
-                            label.textContent = this.checked ? "Active" : "Inactive";
+                            label.textContent = this.checked ? "Còn hàng" : "Hết hàng";
                             //label.classList.remove("text-warning");
                             label.classList.toggle("text-success", this.checked);
                             label.classList.toggle("text-muted", !this.checked);
@@ -558,7 +558,7 @@
                         console.error("⚠️ Lỗi JS:", err);
                         alert("⚠️ Có lỗi trong xử lý client-side!");
                         this.checked = !isActive;
-                        label.textContent = this.checked ? "Active" : "Inactive";
+                        label.textContent = this.checked ? "Còn hàng" : "Hết hàng";
                         //label.classList.remove("text-warning");
                         label.classList.toggle("text-success", this.checked);
                         label.classList.toggle("text-muted", !this.checked);

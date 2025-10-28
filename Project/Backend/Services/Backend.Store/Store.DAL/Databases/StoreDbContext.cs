@@ -6,7 +6,7 @@ namespace Store.DAL.Databases
     public class StoreDbContext : DbContext
     {
         public DbSet<StoreModel> Stores { get; set; }
-
+        public DbSet<AccountBanking> AccountBankings { get; set; } 
         public DbSet<IntegrationEventLog> IntegrationEventLogs { get; set; }
 
         public StoreDbContext(DbContextOptions<StoreDbContext> options) : base(options) { }
@@ -51,6 +51,33 @@ namespace Store.DAL.Databases
 
                 entity.Property(e => e.UpdatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            // AccountBanking
+            modelBuilder.Entity<AccountBanking>(entity =>
+            {
+                entity.ToTable("AccountBankings");
+                entity.HasKey(e => e.StoreId);
+
+                entity.Property(e => e.BankName)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(e => e.AccountNumber)
+                      .IsRequired()
+                      .HasMaxLength(40);
+
+                entity.Property(e => e.Balance)
+                      .HasColumnType("decimal(18,2)");
+
+                // (BankName, AccountNumber) duy nhất trong hệ thống
+                entity.HasIndex(e => new { e.BankName, e.AccountNumber }).IsUnique();
+
+                // 1–1: Store <-> AccountBanking (PK = FK)
+                entity.HasOne(e => e.Store)
+                      .WithOne(s => s.AccountBanking)
+                      .HasForeignKey<AccountBanking>(e => e.StoreId)
+                      .OnDelete(DeleteBehavior.Cascade); // Xóa Store sẽ xóa luôn AccountBanking
             });
 
             // IntegrationEventLog

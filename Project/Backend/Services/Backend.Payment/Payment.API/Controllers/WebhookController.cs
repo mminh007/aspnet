@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Payment.BLL.External;
 using Payment.BLL.External.Interface;
 using Payment.BLL.Services.Interfaces;
 using Payment.Common.Enums;
@@ -14,6 +15,7 @@ namespace Payment.API.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly IOrderApiClient _orderApiClient;
+        private readonly IStoreApiClient _storeApiClient;
         private readonly ILogger<WebhookController> _logger;
         private readonly IConfiguration _configuration;
 
@@ -53,8 +55,42 @@ namespace Payment.API.Controllers
                         await _paymentService.UpdatePaymentStatusAsync(paymentIntent.Id, PaymentStatus.Completed);
 
                         var orderId = Guid.Parse(paymentIntent.Metadata["OrderId"]);
+                        var storeId = Guid.Parse(paymentIntent.Metadata["StoreId"]);
+                        var order = await _paymentService.GetPaymentByOrderIdAsync(orderId);
 
-                        await _orderApiClient.UpdateStatusOrder(orderId, "Paid");
+                        var currency = paymentIntent.Currency;             // "vnd", "usd", ...
+                        var minor = paymentIntent.AmountReceived > 0
+                                        ? paymentIntent.AmountReceived
+                                        : paymentIntent.Amount; // ưu tiên AmountReceived
+                        decimal amount = IsZeroDecimal(currency)
+                            ? Convert.ToDecimal(minor)
+                            : Convert.ToDecimal(minor) / 100m;
+
+                        // 4) Gọi sang Store để cộng số dư (idempotency dùng paymentIntent.Id)
+                        var settleReq = new StoreSettleRequest
+                        {
+                            StoreId = storeId,
+                            Amount = amount,
+                            IdempotencyKey = paymentIntent.Id,
+                            PaymentId = paymentIntent.Id
+                        };
+
+                        //_logger.LogInformation("➡️ Calling Store.Settlements StoreId={StoreId} Amount={Amount}", storeId, amount);
+                        //var creditRes = await _storeApiClient.CreditAsync(settleReq, HttpContext.RequestAborted);
+
+                        //if (!creditRes.Success)
+                        //{
+                        //    _logger.LogError("❌ Store credit failed. StoreId={StoreId}, PI={PI}", storeId, paymentIntent.Id);
+                        //    // Tùy chiến lược: vẫn tiếp tục cập nhật Order để Stripe không retry,
+                        //    // hoặc dừng tại đây (return 500) để Stripe retry webhook.
+                        //    // Ở đây: ghi log và tiếp tục.
+                        //}
+                        //else
+                        //{
+                        //    _logger.LogInformation("🟩 Store credited successfully. StoreId={StoreId}, Amount={Amount}", storeId, amount);
+                        //}
+
+                        await _orderApiClient.UpdateStatusOrder(orderId, "Paid", amount);
                     }
                 }
                 else if (stripeEvent.Type == EventTypes.PaymentIntentPaymentFailed)
@@ -103,6 +139,14 @@ namespace Payment.API.Controllers
                 _logger.LogError(e, "Stripe webhook error");
                 return BadRequest();
             }
+        }
+
+        private static bool IsZeroDecimal(string currency)
+        {
+            // Stripe zero-decimal list (rút gọn những loại hay gặp)
+            // https://stripe.com/docs/currencies#zero-decimal
+            var c = currency?.Trim().ToLowerInvariant();
+            return c is "vnd" or "jpy" or "krw" or "clp" or "xaf" or "xpf" or "vuv" or "bif" or "djf" or "gnf" or "kmf" or "mga" or "pyg" or "rwf" or "xof";
         }
     }
 }

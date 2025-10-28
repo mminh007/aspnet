@@ -75,23 +75,23 @@ namespace Order.API.Controllers
         // ✅ Checkout từ giỏ
         [HttpPost("create-order")]
         [Authorize(Roles = "buyer")]
-        public async Task<IActionResult> CreateOrder([FromBody] IEnumerable<Guid> productIds)
+        public async Task<IActionResult> CreateOrder([FromBody] RequestOrderModel request)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                                     ?? User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
-            if (productIds == null || !productIds.Any())
+            if (request.ProductIds == null || !request.ProductIds.Any())
                 return BadRequest("No products selected for checkout");
 
-            var result = await _orderService.CheckoutAsync(userId, productIds);
+            var result = await _orderService.CheckoutAsync(userId, request);
             return HandleResponse(result);
         }
 
         [HttpPut("update-status/{orderId}")]
         [Authorize(Roles= "system")]
-        public async Task<IActionResult> UpdateStatusOrder(Guid orderId, [FromQuery] string status)
+        public async Task<IActionResult> UpdateStatusOrder(Guid orderId, [FromQuery] string status, [FromBody] decimal totalAmount)
         {
-            var response = await _orderService.UpdateStatusAsync(orderId, status);
+            var response = await _orderService.UpdateStatusAsync(orderId, status, totalAmount);
 
             return HandleResponse(response);
         }

@@ -10,6 +10,8 @@ namespace Frontend.Models.Payments.Requests
 
         public Guid BuyerId { get; set; }
 
+        public Guid StoreId { get; set; }
+
         [Required]
         public PaymentMethod Method { get; set; }
 

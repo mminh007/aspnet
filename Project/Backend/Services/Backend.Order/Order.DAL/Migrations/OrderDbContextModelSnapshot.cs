@@ -99,6 +99,9 @@ namespace Order.DAL.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<Guid?>("ShippingId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -120,7 +123,40 @@ namespace Order.DAL.Migrations
 
                     b.HasKey("OrderId");
 
+                    b.HasIndex("ShippingId");
+
                     b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("Order.DAL.Models.Entities.ShippingModel", b =>
+                {
+                    b.Property<Guid>("ShippingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("ShippingId");
+
+                    b.ToTable("Shippings");
                 });
 
             modelBuilder.Entity("OrderItemModel", b =>
@@ -157,6 +193,16 @@ namespace Order.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("Cart");
+                });
+
+            modelBuilder.Entity("Order.DAL.Models.Entities.OrderModel", b =>
+                {
+                    b.HasOne("Order.DAL.Models.Entities.ShippingModel", "Shipping")
+                        .WithMany()
+                        .HasForeignKey("ShippingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Shipping");
                 });
 
             modelBuilder.Entity("OrderItemModel", b =>

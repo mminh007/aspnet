@@ -22,6 +22,7 @@ namespace Frontend.Models.Payments
         {
             public string OrderId { get; set; }  // để client gửi string
             public string BuyerId { get; set; }
+            public string StoreId { get; set; }
             public string Method { get; set; }   // string, không enum
             public decimal Amount { get; set; }
             public string Currency { get; set; }

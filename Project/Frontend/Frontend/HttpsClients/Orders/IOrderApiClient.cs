@@ -19,7 +19,7 @@ namespace Frontend.HttpsClients.Orders
         Task<(bool Success, string? Message, int statusCode, DTOs.OrderDTO data)> GetOrderById(Guid orderId);
         Task<(bool Success, string? Message, int statusCode, List<DTOs.OrderDTO> data)> GetOrdersByUser(Guid userId);
         Task<(bool Success, string? Message, int statusCode)> DeleteOrder(Guid orderId);
-        Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.OrderDTO> data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds);
+        Task<(bool Success, string? Message, int statusCode, IEnumerable<DTOs.OrderDTO> data)> CreateOrder(Guid userId, RequestOrderModel shipping);
 
 
     }

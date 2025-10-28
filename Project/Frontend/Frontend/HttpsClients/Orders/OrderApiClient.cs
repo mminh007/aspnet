@@ -77,10 +77,11 @@ namespace Frontend.HttpsClients.Orders
             return (parsed.Success, parsed.Message, parsed.statusCode);
         }
 
-        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<OrderDTO> data)> CreateOrder(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<(bool Success, string? Message, int statusCode, IEnumerable<OrderDTO> data)> 
+                    CreateOrder(Guid userId, RequestOrderModel shipping)
         {
             var url = _endpoints.CreateOrder;
-            var response = await _httpClient.PostAsJsonAsync(url, productIds);
+            var response = await _httpClient.PostAsJsonAsync(url, shipping);
             return await ParseResponse<List<OrderDTO>>(response, "CreateOrder");
         }    
 

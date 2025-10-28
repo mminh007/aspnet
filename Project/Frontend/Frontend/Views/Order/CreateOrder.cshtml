@@ -23,12 +23,16 @@
                 <div class="card-body">
                     <p><strong>Store:</strong> @order.StoreName</p>
                     <p><strong>Ngày tạo:</strong> @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Người nhận:</strong> @order.ShippingInfo.FullName</p>
+                    <p><strong>Số điện thoại:</strong> @order.ShippingInfo.PhoneNumber</p>
+                    <p><strong>Địa chỉ giao hàng:</strong> @order.ShippingInfo.Address</p>
 
                     <button class="payment-info btn btn-success"
                             data-bs-toggle="modal"
                             data-bs-target="#paymentModal"
                             data-order-id="@order.OrderId"
                             data-order-name="@order.OrderName"
+                            data-store-id="@order.StoreId"
                             data-amount="@order.TotalAmount">
                         Thanh toán
                     </button>
@@ -88,7 +92,7 @@
                 <div class="modal-body">
                     <input type="hidden" name="OrderId" id="OrderId" />
                     <input type="hidden" name="Amount" id="Amount" />
-
+                    <input type="hidden" id="StoreId" name="StoreId" />
                     <div class="mb-3">
                         <label>Mã đơn hàng</label>
                         <input type="text" id="OrderIdDisplay" class="form-control" readonly />
@@ -96,13 +100,29 @@
 
                     <div class="mb-3">
                         <label>Phương thức thanh toán</label>
-                        <select name="Method" class="form-select">
-                            <option value="CreditCard">Credit Card</option>
-                            <option value="DebitCard">Debit Card</option>
-                            <option value="BankTransfer">Bank Transfer</option>
-                            <option value="EWallet">E-Wallet</option>
-                            <option value="QRCode">QR Code</option>
+                        <select name="Method" id="PaymentMethod" class="form-select">
+                            <option value="CreditCard"
+                                    data-requires-card="true"
+                                    data-fee-percent="1.10"
+                                    data-desc="Thanh toán bằng thẻ tín dụng qua cổng Stripe. Phí 1.10%.">
+                                Credit Card
+                            </option>
+                            <option value="DebitCard"
+                                    data-requires-card="true"
+                                    data-fee-percent="0.80"
+                                    data-desc="Thẻ ghi nợ nội địa/quốc tế qua Stripe. Phí 0.80%.">
+                                Debit Card
+                            </option>
                         </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <small id="MethodDesc" class="text-muted d-block"></small>
+                        <div id="FeeBreakdown" class="small mt-1">
+                            <div>Tạm tính: <span id="AmountBaseText"></span></div>
+                            <div>Phí phương thức: <span id="FeeText"></span></div>
+                            <div class="fw-bold">Tổng cần thanh toán: <span id="AmountFinalText"></span></div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -112,9 +132,8 @@
 
                     <div class="mb-3">
                         <label>Tiền tệ</label>
-                        <select name="Currency" class="form-select">
+                        <select name="Currency" class="form-select" disabled>
                             <option value="VND">VND</option>
-                            <option value="USD">USD</option>
                         </select>
                     </div>
 
@@ -136,7 +155,7 @@
 
 
 @section Scripts {
-    <script>
+    @* <script>
 
         var paymentModal = document.getElementById('paymentModal');
         paymentModal.addEventListener('show.bs.modal', function (event) {
@@ -213,5 +232,149 @@
                 alert("❌ Exception: " + err.message);
             }
         });
+    </script> *@
+
+    <script>
+        // Lưu base amount và trạng thái phương thức
+        let amountBase = 0;
+        let requiresCard = true;
+
+        function formatVND(n){ return Number(n).toLocaleString("vi-VN") + " đ"; }
+
+        function recalcPaymentUI() {
+            const sel = document.getElementById('PaymentMethod');
+            const opt = sel.options[sel.selectedIndex];
+
+            const desc = opt.getAttribute('data-desc') || '';
+            const feePercent = parseFloat(opt.getAttribute('data-fee-percent') || '0'); // ví dụ 1.10 (%)
+            requiresCard = (opt.getAttribute('data-requires-card') === 'true');
+
+            const fee = Math.round(amountBase * (feePercent/100));      // phí theo %
+            const total = amountBase + fee;
+
+            // Cập nhật UI
+            document.getElementById('MethodDesc').innerText = desc;
+            document.getElementById('AmountBaseText').innerText = formatVND(amountBase);
+            document.getElementById('FeeText').innerText = feePercent ? `${formatVND(fee)} (${feePercent}%)` : formatVND(fee);
+            document.getElementById('AmountFinalText').innerText = formatVND(total);
+
+            // Cập nhật hidden Amount gửi về backend
+            document.getElementById('Amount').value = total;
+            document.getElementById('AmountDisplay').value = formatVND(total);
+
+            // Ẩn/hiện khối nhập thẻ
+            const cardRow = document.getElementById('card-element').closest('.mb-3');
+            if (requiresCard) {
+                cardRow.classList.remove('hidden');
+            } else {
+                cardRow.classList.add('hidden');
+            }
+        }
+
+        // Khi mở modal: bind dữ liệu và tính lần đầu
+        var paymentModal = document.getElementById('paymentModal');
+        paymentModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var orderId = button.getAttribute('data-order-id');
+            var storeId = button.getAttribute('data-store-id');
+            var amount = button.getAttribute('data-amount');              // tạm tính từ order
+
+            document.getElementById('OrderId').value = orderId;
+            document.getElementById('StoreId').value = storeId;
+            document.getElementById('OrderIdDisplay').value = button.getAttribute('data-order-name');
+
+            amountBase = Math.round(parseFloat(amount) || 0);
+
+            // tính lần đầu theo option mặc định
+            recalcPaymentUI();
+        });
+
+        // Khi đổi phương thức → tính lại
+        document.getElementById('PaymentMethod').addEventListener('change', recalcPaymentUI);
+
+        // Submit form: tách 2 luồng
+        document.getElementById("paymentForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const orderId = formData.get("OrderId");
+            const storeId = formData.get("StoreId");
+            const method = formData.get("Method");
+            const amount = parseFloat(formData.get("Amount"));
+            const currency = formData.get("Currency");
+
+            // Nếu KHÔNG cần thẻ (ví dụ COD/BankTransfer), có thể gọi API khác
+            // if (!requiresCard) {
+            //     try {
+            //         const resp = await fetch("/payment/create-offline-payment", {
+            //             method: "POST",
+            //             headers: { "Content-Type": "application/json" },
+            //             body: JSON.stringify({ orderId, method, amount, currency })
+            //         });
+            //         const data = await resp.json();
+            //         if (!resp.ok) {
+            //             alert("❌ Lỗi backend: " + (data?.message || "Unknown"));
+            //             return;
+            //         }
+            //         alert("✅ Đã ghi nhận yêu cầu thanh toán offline.");
+            //         window.location.href = '@Url.Action("GetOrderList", "Order")';
+            //     } catch (err) {
+            //         alert("❌ Exception: " + err.message);
+            //     }
+            //     return;
+            // }
+
+            // Luồng cần thẻ → Stripe (giữ nguyên logic cũ)
+            const request = { orderId, buyerId: null, storeId, method, amount, currency };
+
+            try {
+                const response = await fetch(`/payment/create-payment?order_id=${orderId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(request)
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    alert("❌ Lỗi backend: " + text);
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.data?.clientSecret) {
+                    const { paymentIntent, error } = await stripe.confirmCardPayment(result.data.clientSecret, {
+                        payment_method: { card: cardElement }
+                    });
+
+                    if (error) {
+                        alert("❌ Thanh toán thất bại: " + error.message);
+                    } else if (paymentIntent.status === "succeeded") {
+                        const confirmResponse = await fetch("/payment/confirm-payment", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                orderId: orderId,
+                                paymentIntentId: paymentIntent.id,
+                                method: method,
+                                paidAmount: amount
+                            })
+                        });
+
+                        if (confirmResponse.ok) {
+                            alert("🎉 Thanh toán thành công và đã cập nhật đơn hàng!");
+                            window.location.href = '@Url.Action("GetOrderList", "Order")';
+                        } else {
+                            const confirmResult = await confirmResponse.json();
+                            alert("⚠️ Thanh toán xong nhưng chưa confirm order: " + (confirmResult.message || ''));
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("❌ Exception:", err);
+                alert("❌ Exception: " + err.message);
+            }
+        });
     </script>
+
+
 }

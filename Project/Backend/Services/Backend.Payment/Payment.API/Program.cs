@@ -123,6 +123,11 @@ namespace Payment.API
                 builder.Services.AddScoped<IPaymentService, PaymentService>();
                 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+                builder.Services.AddHttpClient<IStoreApiClient, StoreApiClient>(client =>
+                {
+                    client.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Store:BaseUrl"]);
+                });
+
                 // Auth API client
                 builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
                 {

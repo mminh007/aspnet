@@ -54,7 +54,9 @@ namespace Order.Common.Models
             public string Status { get; set; } = "Pending";
 
             public ICollection<OrderItemDTO> OrderItems { get; set; } = new List<OrderItemDTO>();
-            public decimal TotalAmount => OrderItems?.Sum(i => i.LineTotal) ?? 0;
+
+            public ShipDTO ShippingInfo { get; set; }
+            public decimal TotalAmount { get; set; }
             public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
             public string StoreName { get; set; }
             public string OrderName { get; set; }
@@ -94,6 +96,15 @@ namespace Order.Common.Models
 
             public bool IsActive { get; set; }
 
+        }
+
+        public class ShipDTO
+        {
+            public Guid ShippingId { get; set; }
+            public string FullName { get; set; }
+            public string PhoneNumber { get; set; }
+            public string Address { get; set; }
+            public string Note { get; set; }
         }
     }
 }

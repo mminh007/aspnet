@@ -40,13 +40,14 @@ namespace Payment.BLL.Services
             {
                 var options = new PaymentIntentCreateOptions
                 {
-                    Amount = (long)(request.Amount * 100),
+                    Amount = (long)(request.Amount),
                     Currency = request.Currency.ToLower(),
                     PaymentMethodTypes = new List<string> { "card" },
                     Metadata = new Dictionary<string, string>
                     {
                         { "OrderId", request.OrderId.ToString() },
-                        { "BuyerId", request.BuyerId.ToString() }
+                        { "BuyerId", request.BuyerId.ToString() },
+                        { "StoreId", request.StoreId.ToString() }
                     }
                 };
 
@@ -111,6 +112,14 @@ namespace Payment.BLL.Services
                     };
                 }
 
+                var currency = intent.Currency;             // "vnd", "usd", ...
+                var minor = intent.AmountReceived > 0
+                                ? intent.AmountReceived
+                                : intent.Amount; // ưu tiên AmountReceived
+                decimal amount = IsZeroDecimal(currency)
+                    ? Convert.ToDecimal(minor)
+                    : Convert.ToDecimal(minor) / 100m;
+
                 // ✅ Nếu Stripe trả về đang xử lý, mark Processing
                 if (intent.Status == "processing" || intent.Status == "requires_action")
                 {
@@ -119,7 +128,7 @@ namespace Payment.BLL.Services
                     await _unitOfWork.SaveChangesAsync();
 
                     // 👉 Trigger OrderService cập nhật trạng thái "Processing"
-                    var updateOrder = await _orderApiClient.UpdateStatusOrder(entity.OrderId, "Processing");
+                    var updateOrder = await _orderApiClient.UpdateStatusOrder(entity.OrderId, "Processing", amount);
 
                     _logger.LogInformation("Update Status Order: {status}", updateOrder.Success);
 
@@ -317,5 +326,12 @@ namespace Payment.BLL.Services
             };
         }
 
+        private static bool IsZeroDecimal(string currency)
+        {
+            // Stripe zero-decimal list (rút gọn những loại hay gặp)
+            // https://stripe.com/docs/currencies#zero-decimal
+            var c = currency?.Trim().ToLowerInvariant();
+            return c is "vnd" or "jpy" or "krw" or "clp" or "xaf" or "xpf" or "vuv" or "bif" or "djf" or "gnf" or "kmf" or "mga" or "pyg" or "rwf" or "xof";
+        }
     }
 }

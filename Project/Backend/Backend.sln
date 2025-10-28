@@ -25,9 +25,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{2090F945-521F-4F15-BC5B-F39250FD47DA}"
 	ProjectSection(SolutionItems) = preProject
 		.dockerignore = .dockerignore
-		docker-compose.tripe.yaml = docker-compose.tripe.yaml
-		docker-compose.yaml = docker-compose.yaml
 		template.dockerfile = template.dockerfile
+		docker-compose.backend.yaml = docker-compose.backend.yaml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventBus", "EventBus\EventBus\EventBus.csproj", "{56463BA9-F442-4A1A-864E-5042AA8CE40B}"

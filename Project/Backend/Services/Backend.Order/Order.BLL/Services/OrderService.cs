@@ -213,10 +213,10 @@ namespace Order.BLL.Services
         }
 
         // ✅ Checkout
-        public async Task<OrderResponseModel<IEnumerable<OrderDTO>>> CheckoutAsync(Guid userId, IEnumerable<Guid> productIds)
+        public async Task<OrderResponseModel<IEnumerable<OrderDTO>>> CheckoutAsync(Guid userId, RequestOrderModel request)
         {
             // Gọi CartService để checkout và lấy danh sách items
-            var checkoutResponse = await _cartService.CheckoutAsync(userId, productIds);
+            var checkoutResponse = await _cartService.CheckoutAsync(userId, request.ProductIds);
 
             // Kiểm tra response từ CartService
             if (!checkoutResponse.Success || checkoutResponse.Data == null || !checkoutResponse.Data.Any())
@@ -238,6 +238,16 @@ namespace Order.BLL.Services
             foreach (var storeGroup in groupedByStore)
             {
                 var storeinfo = await _storeService.GetStoreInfoAsync(storeGroup.Key); 
+
+                var shippInfo = new ShippingModel
+                {
+                    ShippingId = Guid.NewGuid(),
+                    Address = request.Address,
+                    FullName = request.FullName,
+                    PhoneNumber = request.PhoneNumber,
+                    Note = request.Note
+                };
+
                 // Tạo Order cho mỗi store
                 var orderEntity = new OrderModel
                 {
@@ -248,6 +258,8 @@ namespace Order.BLL.Services
                     TotalAmount = storeGroup.Sum(i => i.Price * i.Quantity),
                     StoreName = storeinfo.Data.StoreName,
                     OrderName = $"SPF{DateTime.UtcNow:yyMMdd}{GenerateRandomDigits(7)}",
+                    ShippingId = shippInfo.ShippingId,
+                    Shipping = shippInfo,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = storeGroup.Select(item => new OrderItemModel
@@ -263,6 +275,8 @@ namespace Order.BLL.Services
 
                 try
                 {
+                    // Tạo shipping record
+                    await _uow.Shippings.AddAsync(shippInfo);
                     await _uow.Orders.CreateOrderAsync(orderEntity);
                     createdOrders.Add(orderEntity);
                 }
@@ -305,9 +319,19 @@ namespace Order.BLL.Services
             };
         }
 
-        public async Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status)
+        public async Task<OrderResponseModel<string>> UpdateStatusAsync(Guid orderId, string status, decimal Amount)
         {
-            await _uow.Orders.UpdateStatus(orderId, status);
+            //if (!decimal.TryParse(Amount, out var total))
+            //{
+            //    return new OrderResponseModel<string>
+            //    {
+            //        Success = false,
+            //        Message = OperationResult.Failed,
+            //        ErrorMessage = "Invalid amount format"
+            //    };
+            //}
+
+            await _uow.Orders.UpdateStatus(orderId, status, Amount);
 
             await _uow.SaveChangesAsync();
 

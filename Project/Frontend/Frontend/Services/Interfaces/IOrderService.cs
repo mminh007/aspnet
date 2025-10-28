@@ -30,7 +30,7 @@ namespace Frontend.Services.Interfaces
             DeleteOrder(Guid orderId);
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)>
-            CreateOrder(Guid userId, IEnumerable<Guid> productIds);
+            CreateOrder(Guid userId, IEnumerable<Guid> productIds, RequestOrderModel shipping);
 
     }
 }

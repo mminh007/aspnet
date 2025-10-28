@@ -78,11 +78,12 @@ namespace Order.DAL.Repositories
             return order;
         }
 
-        public async Task UpdateStatus(Guid orderId, string status)
+        public async Task UpdateStatus(Guid orderId, string status, decimal totalAmount)
         {
             var order = await _context.Orders.FindAsync(orderId);
 
             order.Status = status;
+            order.TotalAmount = totalAmount;
 
         }
     }

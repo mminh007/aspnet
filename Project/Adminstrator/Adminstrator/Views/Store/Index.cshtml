@@ -150,7 +150,7 @@
 
                     if (response.ok) {
                         const label = document.querySelector("label[for='toggleActive']");
-                        label.textContent = isActive ? "Active" : "Inactive";
+                        label.textContent = isActive ? "Mở cửa" : "Đóng cửa";
                         label.classList.toggle("text-success", isActive);
                         label.classList.toggle("text-muted", !isActive);
                     } else {
