@@ -42,9 +42,14 @@
                         <li class="nav-item"><a class="nav-link fw-bold text-dark" href="#">Thú cưng</a></li>
                     </ul>
                 </div>
+                <partial name="_loginPartial" />
+            </div>
+        </nav>
 
-                <!-- Cart + Login -->
-                @* <div class="cart-login ms-auto">
+    </header>
+
+    <!-- Cart + Login -->
+    @* <div class="cart-login ms-auto">
                     @{
                         var user = AuthHelper.GetUserInfo(Context);
                     }
@@ -55,11 +60,7 @@
                     }
                     
                 </div>  *@
-                <partial name="_loginPartial" />
-                
-            </div>
-        </nav>
-    </header>
+   
 
     <!-- Body -->
     @if (ViewData["Title"]?.ToString() == "Homepage")
@@ -83,10 +84,12 @@
             &copy; 2025 - Frontend - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
-
+    @await RenderSectionAsync("Modals", required: false)
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/global.js"></script>
+
     
     <script src="https://js.stripe.com/v3/"></script>
     <script>

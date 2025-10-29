@@ -41,7 +41,45 @@
     initializeCartBadges();
 
     // =============================
-    // 0.1 Load Provinces & Wards (no District)
+    // 0.1 Custom Alert
+    // =============================
+    //function showAlert(message, type = "success") {
+    //    // tạo container nếu chưa có
+    //    let container = document.querySelector(".custom-alert-container");
+    //    if (!container) {
+    //        container = document.createElement("div");
+    //        container.className = "custom-alert-container";
+    //        document.body.appendChild(container);
+    //    }
+
+    //    // tạo alert
+    //    const el = document.createElement("div");
+    //    el.className = `custom-alert ${type}`;
+    //    el.innerHTML = `
+    //        <div class="alert-content">${message}</div>
+    //        <button class="alert-close" aria-label="Close">&times;</button>
+    //        `;
+    //    container.appendChild(el);
+
+    //    // show
+    //    requestAnimationFrame(() => el.classList.add("show"));
+
+    //    // auto close sau 3s
+    //    const timer = setTimeout(close, 3000);
+
+    //    // đóng khi bấm nút
+    //    el.querySelector(".alert-close").addEventListener("click", close);
+
+    //    function close() {
+    //        clearTimeout(timer);
+    //        el.classList.remove("show");
+    //        setTimeout(() => el.remove(), 220);
+    //    }
+    //}
+
+
+    // =============================
+    // 0.2 Load Provinces & Wards (dropdown custom, không dùng <select>)
     // =============================
     let VN_PROVINCES = [];
     let VN_WARDS = [];
@@ -57,41 +95,52 @@
             VN_PROVINCES = await pRes.json();
             VN_WARDS = await wRes.json();
 
-            const provSel = document.getElementById("ship-province");
-            const wardSel = document.getElementById("ship-ward");
-            if (!provSel || !wardSel) return;
+            const provinceList = document.getElementById("provinceList");
+            const wardList = document.getElementById("wardList");
+            if (!provinceList || !wardList) return;
 
-            // Fill provinces
-            VN_PROVINCES.forEach(p => {
-                const opt = document.createElement("option");
-                opt.value = p.code;
-                opt.textContent = p.name;
-                provSel.appendChild(opt);
-            });
+            // render tỉnh
+            provinceList.innerHTML = VN_PROVINCES.map(
+                p => `<li><button type="button" class="dropdown-item" data-code="${p.code}" data-name="${p.name}">${p.name}</button></li>`
+            ).join("");
 
-            // On province change → filter wards
-            provSel.addEventListener("change", () => {
-                const code = provSel.value;
-                wardSel.innerHTML = `<option value="">-- Chọn Phường/Xã --</option>`;
-                wardSel.disabled = true;
+            // chọn tỉnh
+            provinceList.addEventListener("click", e => {
+                const item = e.target.closest(".dropdown-item");
+                if (!item) return;
+                const code = item.dataset.code;
+                const name = item.dataset.name;
 
-                if (!code) return;
+                document.getElementById("ship-province").value = code;
+                document.getElementById("provinceText").textContent = name;
+
+                // reset ward
+                document.getElementById("ship-ward").value = "";
+                document.getElementById("wardText").textContent = "-- Chọn Phường/Xã --";
+                document.getElementById("wardBtn").disabled = false;
 
                 const wards = VN_WARDS.filter(w => String(w.provinceCode) === String(code));
-                wards.forEach(w => {
-                    const opt = document.createElement("option");
-                    opt.value = w.code;
-                    opt.textContent = w.name;
-                    wardSel.appendChild(opt);
-                });
+                wardList.innerHTML = wards.map(
+                    w => `<li><button type="button" class="dropdown-item" data-code="${w.code}" data-name="${w.name}">${w.name}</button></li>`
+                ).join("");
+            });
 
-                wardSel.disabled = wards.length === 0;
+            // chọn phường/xã
+            wardList.addEventListener("click", e => {
+                const item = e.target.closest(".dropdown-item");
+                if (!item) return;
+                const code = item.dataset.code;
+                const name = item.dataset.name;
+
+                document.getElementById("ship-ward").value = code;
+                document.getElementById("wardText").textContent = name;
             });
         } catch (e) {
             console.error("Load locations error:", e);
         }
     }
     loadLocations();
+
 
     // =============================
     // 1. API Functions
@@ -374,11 +423,15 @@
 
         if (!userId) {
             e.preventDefault();
-            alert("Bạn hãy đăng nhập trước khi mua hàng");
+            showAlert("Bạn hãy đăng nhập trước khi mua hàng", "warning"); 
+            //alert("Bạn hãy đăng nhập trước khi mua hàng");
             const ret = encodeURIComponent(
                 window.location.pathname + window.location.search + window.location.hash
             );
-            window.location.href = `${loginUrl}?returnUrl=${ret}`;
+            setTimeout(() => {
+                window.location.href = `${loginUrl}?returnUrl=${ret}`;
+            }, 2000);
+            
             return;
         }
 
@@ -396,6 +449,14 @@
 
     const cartModal = document.getElementById("cartItemModal");
     if (cartModal) {
+
+        // Khi modal show lên thì load lại dữ liệu tỉnh/phường
+        cartModal.addEventListener("show.bs.modal", () => {
+            if (!VN_PROVINCES.length) {
+                loadLocations();
+            }
+        });
+
         cartModal.addEventListener("click", (e) => {
             const btn = e.target.closest("#modal-body-item-list .increase, #modal-body-item-list .decrease");
             if (!btn) return;
@@ -512,7 +573,8 @@
 
             const res = await fetch(`/Order/get-cart?id=${userId}`);
             if (!res.ok) {
-                alert("❌ Lỗi khi kiểm tra giỏ hàng.");
+                showAlert("❌ Lỗi khi lấy giỏ hàng.");
+                //alert("❌ Lỗi khi kiểm tra giỏ hàng.");
                 return;
             }
             const result = await res.json();
@@ -577,7 +639,8 @@
             }
         } catch (err) {
             console.error("Check cart error:", err);
-            alert("❌ Có lỗi mạng khi lấy giỏ hàng.");
+            showAlert("❌ Có lỗi mạng khi lấy giỏ hàng.");
+            //alert("❌ Có lỗi mạng khi lấy giỏ hàng.");
         } finally {
             checkoutBtn.disabled = false;
             checkoutBtn.innerHTML = originalHtml;
@@ -591,7 +654,8 @@
             msgEl.innerHTML = html;
             new bootstrap.Modal(modalEl).show();
         } else {
-            alert(html.replace(/<[^>]*>/g, ""));
+            showAlert(html.replace(/<[^>]*>/g, ""), "error");
+            //alert(html.replace(/<[^>]*>/g, ""));
         }
     }
 

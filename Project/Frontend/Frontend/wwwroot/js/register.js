@@ -61,14 +61,17 @@ document.getElementById("resendBtn").addEventListener("click", async () => {
         if (res.ok) {
             remainingTime = 600;
             startCountdown();
-            alert("Mã xác minh mới đã được gửi!");
+            showAlert("Mã xác minh mới đã được gửi!", "success");
+            //alert("Mã xác minh mới đã được gửi!");
         } else {
-            alert("Gửi lại mã thất bại!");
+            showAlert("Gửi lại mã thất bại!", "error");
+            //alert("Gửi lại mã thất bại!");
             document.getElementById("resendBtn").disabled = false;
         }
     } catch (err) {
         console.error(err);
-        alert("Lỗi hệ thống khi gửi lại mã!");
+        showAlert("Lỗi hệ thống khi gửi lại mã!", "error");
+        //alert("Lỗi hệ thống khi gửi lại mã!");
     }
 });
 
@@ -79,7 +82,8 @@ document.getElementById("verifyBtn").addEventListener("click", async () => {
         .join("");
 
     if (code.length !== 6) {
-        alert("Vui lòng nhập đủ 6 chữ số!");
+        showAlert("Vui lòng nhập đủ 6 chữ số!", "error");
+        //alert("Vui lòng nhập đủ 6 chữ số!");
         return;
     }
 
@@ -91,7 +95,8 @@ document.getElementById("verifyBtn").addEventListener("click", async () => {
         });
 
         if (res.ok) {
-            alert("Xác minh thành công! Đang chuyển hướng...");
+            showAlert("Xác minh thành công! Đang chuyển hướng...", "success");
+            //alert("Xác minh thành công! Đang chuyển hướng...");
 
             const redirectTo =
                 localStorage.getItem("preRegisterUrl") ||
@@ -102,10 +107,12 @@ document.getElementById("verifyBtn").addEventListener("click", async () => {
             window.location.href = redirectTo;
         } else {
             const err = await res.text();
-            alert("Xác minh thất bại: " + err);
+            showAlert("Xác minh thất bại: " + err, "error");
+            //alert("Xác minh thất bại: " + err);
         }
     } catch (err) {
         console.error(err);
-        alert("Lỗi hệ thống khi xác minh!");
+        showAlert("Lỗi hệ thống khi xác minh!", "error");
+        //alert("Lỗi hệ thống khi xác minh!");
     }
 });

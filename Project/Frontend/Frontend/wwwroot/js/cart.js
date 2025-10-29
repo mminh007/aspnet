@@ -74,12 +74,14 @@
                     }
                 } else {
                     qtySpan.textContent = qtySpan.getAttribute("data-old");
-                    alert("❌ Lỗi cập nhật giỏ hàng.");
+                    showAlert("❌ Lỗi cập nhật giỏ hàng.", "error")
+                    //alert("❌ Lỗi cập nhật giỏ hàng.");
                 }
             } catch (err) {
                 qtySpan.textContent = qtySpan.getAttribute("data-old");
                 console.error("Network error:", err);
-                alert("❌ Có lỗi mạng. Thử lại sau.");
+                showAlert("❌ Có lỗi mạng. Thử lại sau.", "error")
+                //alert("❌ Có lỗi mạng. Thử lại sau.");
             } finally {
                 allBtns.forEach(b => b.disabled = false);
             }
@@ -105,11 +107,13 @@
                     location.reload();
                 } else {
                     const result = await response.json();
-                    alert("❌ " + (result.message || "Không thể xóa sản phẩm."));
+                    showAlert("❌ " + (result.message || "Không thể xóa sản phẩm."), "error")
+                    //alert("❌ " + (result.message || "Không thể xóa sản phẩm."));
                 }
             } catch (err) {
                 console.error("Delete error:", err);
-                alert("❌ Có lỗi mạng khi xóa sản phẩm.");
+                showAlert("❌ Có lỗi mạng khi xóa sản phẩm.", "error")
+                //alert("❌ Có lỗi mạng khi xóa sản phẩm.");
             }
         });
     });
@@ -146,11 +150,13 @@
                     // Nếu ok thì submit form thật
                     HTMLFormElement.prototype.submit.call(checkoutForm);
                 } else {
-                    alert("❌ Lỗi khi kiểm tra giỏ hàng mới nhất.");
+                    showAlert("❌ Lỗi khi kiểm tra giỏ hàng mới nhất.", "error")
+                    //alert("❌ Lỗi khi kiểm tra giỏ hàng mới nhất.");
                 }
             } catch (err) {
                 console.error("Check cart error:", err);
-                alert("❌ Có lỗi mạng khi lấy giỏ hàng.");
+                showAlert("❌ Có lỗi mạng khi lấy giỏ hàng.", "error")
+                //alert("❌ Có lỗi mạng khi lấy giỏ hàng.");
             }
         });
     }

@@ -23,7 +23,7 @@
         <div class="col-md-12">
             <div class="card shadow-sm border-0">
                 <div class="row g-0 align-items-center">
-
+                   
                     <div class="col-md-4">
                         <div class="store-cover">
                             <img src="@Model.Store.StoreImage" alt="@Model.Store.StoreName">
@@ -93,11 +93,11 @@
                         <h4 class="border-bottom pb-2">@cat.CategoryName</h4>
 
                         @foreach (var product in Model.Products.Where(p => p.CategoryId == cat.CategoryId))
-                        {
+                        {                  
                             @if (product.IsActive)
-                            {
+                            { 
                                 var existingItem = Model.cartItems?.FirstOrDefault(i => i.ProductId == product.ProductId);
-
+                                            
                                 <div class="card mb-3 shadow-sm border-0">
                                     <div class="row g-0 align-items-center">
                                         @* <div class="col-md-3">
@@ -167,7 +167,7 @@
                                             </div>
                                         </div>
                                         <div class="col-md-3 text-center pe-3 d-none d-md-block">
-
+                                           
                                             <div class="cart-actions"
                                                  id="cart-actions-@product.ProductId"
                                                  data-store-id="@product.StoreId"
@@ -255,7 +255,7 @@
 </div>
 
 <!-- Cart Modal -->
-@section Modals {
+@section Modals{
 
     <div class="modal fade" id="cartItemModal" tabindex="-1" aria-labelledby="CartItemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -324,34 +324,18 @@
                                 <input type="text" class="form-control" id="ship-addressline" placeholder="VD: 12/3 Trần Hưng Đạo">
                             </div>
 
-                            <!-- Dropdown chọn Tỉnh/Thành -->
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">Tỉnh/Thành</label>
-                                <div class="dropdown w-100" id="provinceWrap">
-                                    <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
-                                            type="button" id="provinceBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <span id="provinceText">-- Chọn Tỉnh/Thành --</span>
-                                        <span class="ms-2">▾</span>
-                                    </button>
-                                    <ul class="dropdown-menu w-100 shadow" id="provinceList" aria-labelledby="provinceBtn"></ul>
-                                </div>
-                                <input type="hidden" id="ship-province" name="shipping.ProvinceCode" value="">
+                                <select id="ship-province" class="form-select">
+                                    <option value="">-- Chọn Tỉnh/Thành --</option>
+                                </select>
                             </div>
-
-                            <!-- Dropdown chọn Phường/Xã -->
                             <div class="col-md-6">
                                 <label class="form-label small mb-1">Phường/Xã</label>
-                                <div class="dropdown w-100" id="wardWrap">
-                                    <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
-                                            type="button" id="wardBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                        <span id="wardText">-- Chọn Phường/Xã --</span>
-                                        <span class="ms-2">▾</span>
-                                    </button>
-                                    <ul class="dropdown-menu w-100 shadow" id="wardList" aria-labelledby="wardBtn"></ul>
-                                </div>
-                                <input type="hidden" id="ship-ward" name="shipping.WardCode" value="">
+                                <select id="ship-ward" class="form-select" disabled>
+                                    <option value="">-- Chọn Phường/Xã --</option>
+                                </select>
                             </div>
-
 
                             <div class="col-12">
                                 <label class="form-label small mb-1">Ghi chú (tuỳ chọn)</label>
@@ -398,8 +382,61 @@
     <script>
         // Trạng thái đăng nhập & link login để JS dùng
         window.isLoggedIn = @(isLoggedIn.ToString().ToLower());
-        window.loginUrl = '@Url.Action("Login", "Authentication")';
+        window.loginUrl = '@Url.Action("Login","Authentication")';
     </script>
 
     <script src="~/js/product.js"></script>
+
+    <script>
+
+            let VN_PROVINCES = [];
+        let VN_WARDS = [];
+
+        async function loadLocations() {
+            try {
+                const [pRes, wRes] = await Promise.all([
+                    fetch("/data/vn-provinces.json"),
+                    fetch("/data/vn-wards.json")
+                ]);
+                if (!pRes.ok || !wRes.ok) throw new Error("Cannot load provinces/wards data");
+
+                VN_PROVINCES = await pRes.json();
+                VN_WARDS = await wRes.json();
+
+                const provSel = document.getElementById("ship-province");
+                const wardSel = document.getElementById("ship-ward");
+                if (!provSel || !wardSel) return;
+
+                // Fill provinces
+                VN_PROVINCES.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p.code;
+                    opt.textContent = p.name;
+                    provSel.appendChild(opt);
+                });
+
+                // On province change → filter wards
+                provSel.addEventListener("change", () => {
+                    const code = provSel.value;
+                    wardSel.innerHTML = `<option value="">-- Chọn Phường/Xã --</option>`;
+                    wardSel.disabled = true;
+
+                    if (!code) return;
+
+                    const wards = VN_WARDS.filter(w => String(w.provinceCode) === String(code));
+                    wards.forEach(w => {
+                        const opt = document.createElement("option");
+                        opt.value = w.code;
+                        opt.textContent = w.name;
+                        wardSel.appendChild(opt);
+                    });
+
+                    wardSel.disabled = wards.length === 0;
+                });
+            } catch (e) {
+                console.error("Load locations error:", e);
+            }
+        }
+        loadLocations();
+    </script>
 }

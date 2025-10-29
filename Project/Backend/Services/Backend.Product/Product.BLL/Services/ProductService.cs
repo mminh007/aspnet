@@ -6,6 +6,7 @@ using Common.Models.Requests;
 using Common.Models.Responses;
 using DAL.Models.Entities;
 using DAL.Repository;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Product.Common.Configs;
 using Product.Common.Models.Requests;
@@ -17,12 +18,14 @@ namespace BLL.Services
         private readonly IProductRepository _repo;
         private readonly IMapper _mapper;
         private readonly StaticFileConfig _staticFileConfig;
+        private readonly ILogger<ProductService> _logger;
 
-        public ProductService(IProductRepository repo, IMapper mapper, IOptions<StaticFileConfig> staticFileConfig)
+        public ProductService(IProductRepository repo, IMapper mapper, IOptions<StaticFileConfig> staticFileConfig, ILogger<ProductService> logger)
         {
             _repo = repo;
             _mapper = mapper;
             _staticFileConfig = staticFileConfig.Value;
+            _logger = logger;
         }
 
         // ---------------------------
@@ -65,6 +68,7 @@ namespace BLL.Services
                 foreach (var dto in dtos)
                 {
                     dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+                    _logger.LogInformation("Product Image URL: {ProductImageUrl}", dto.ProductImage);
                 }
 
                 return new ProductResponseModel<IEnumerable<object>>
@@ -100,6 +104,7 @@ namespace BLL.Services
             foreach (var dto in dtos)
             {
                 dto.ProductImage = $"{_staticFileConfig.BaseUrl}{_staticFileConfig.ImageUrl.RequestPath}/{dto.ProductImage}";
+                _logger.LogInformation("Product Image URL: {ProductImageUrl}", dto.ProductImage);
             }
 
             return new ProductResponseModel<IEnumerable<DTOs.ProductSellerDTO>>

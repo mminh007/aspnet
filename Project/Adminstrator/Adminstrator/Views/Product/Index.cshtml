@@ -25,7 +25,7 @@
                                        @(Model.Store.IsActive ? "checked" : "")
                                        data-store-id="@Model.Store.StoreId" />
                                 <label class="form-check-label" for="toggleActive">
-                                    @(Model.Store.IsActive ? "Đang bán" : "Đóng cửa")
+                                    @(Model.Store.IsActive ? "Mở cửa" : "Đóng cửa")
                                 </label>
                             </div>
                                 
@@ -216,7 +216,37 @@
                                                         </small>
                                                     </div>
 
-                                                    <div class="mb-3">
+                                                    <div class="mb-3 category-picker" data-edit-category>
+                                                        <label class="form-label">Danh mục</label>
+
+                                                        <div class="dropdown w-100">
+                                                            <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
+                                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <span class="category-text">
+                                                                    @Model.Categories.FirstOrDefault(c => c.CategoryId == product.CategoryId)?.CategoryName
+                                                                </span>
+                                                                <span class="ms-2">▾</span>
+                                                            </button>
+
+                                                            <ul class="dropdown-menu w-100 shadow">
+                                                                @foreach (var c in Model.Categories)
+                                                                {
+                                                                    <li>
+                                                                        <button type="button" class="dropdown-item" data-value="@c.CategoryId">
+                                                                            @c.CategoryName
+                                                                        </button>
+                                                                    </li>
+                                                                }
+                                                            </ul>
+                                                        </div>
+
+                                                        <!-- Hidden submit -->
+                                                        <input type="hidden" name="CategoryId" value="@product.CategoryId" required />
+                                                    </div>
+
+
+
+                                                    @* <div class="mb-3">
                                                         <label class="form-label">Danh mục</label>
                                                         <div class="input-group">
                                                             <select name="CategoryId" class="form-select" required>
@@ -228,12 +258,12 @@
                                                                     </option>
                                                                 }
                                                             </select>
-                                                            @* <button type="button" class="btn btn-outline-primary"
+                                                            <!-- <button type="button" class="btn btn-outline-primary"
                                                                 data-bs-toggle="modal" data-bs-target="#quickAddCategoryModal">
                                                             + Thêm
-                                                        </button> *@
+                                                            </button> -->
                                                         </div>
-                                                    </div>
+                                                    </div> *@
 
                                                     <div class="row">
                                                         <div class="col-md-6 mb-3">
@@ -343,6 +373,30 @@
 
                     <div class="mb-3">
                         <label class="form-label">Danh mục</label>
+                        <div class="dropdown w-100" id="addCategoryDropdown">
+                            <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center"
+                                    type="button" id="addCategoryBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="addCategoryText">-- Chọn danh mục --</span>
+                                <span class="ms-2">▾</span>
+                            </button>
+                            <ul class="dropdown-menu w-100 shadow" id="addCategoryList" aria-labelledby="addCategoryBtn">
+                                @foreach (var c in Model.Categories)
+                                {
+                                    <li>
+                                        <button type="button" class="dropdown-item"
+                                                data-value="@c.CategoryId">
+                                            @c.CategoryName
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        <input type="hidden" name="CategoryId" id="addCategoryId" value="" required />
+                    </div>
+
+
+                    @* <div class="mb-3">
+                        <label class="form-label">Danh mục</label>
                         <div class="input-group">
                             <select name="CategoryId" class="form-select" required>
                                 <option value="">-- Chọn danh mục --</option>
@@ -351,12 +405,12 @@
                                     <option value="@c.CategoryId">@c.CategoryName</option>
                                 }
                             </select>
-                            @* <button type="button" class="btn btn-outline-primary"
+                            <!-- <button type="button" class="btn btn-outline-primary"
                                     data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                                 + Thêm
-                            </button> *@
+                            </button> -->
                         </div>
-                    </div>
+                    </div>  *@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -416,11 +470,13 @@
                     window.location.href = `/Product/Management/${storeId}`;
 
                 } else {
-                    alert("❌ Lỗi khi xóa danh mục: " + (data.message || "Không rõ nguyên nhân"));
+                    showAlert("❌ Lỗi khi xóa danh mục: " + (data.message || "Không rõ nguyên nhân"), "error");
+                    //alert("❌ Lỗi khi xóa danh mục: " + (data.message || "Không rõ nguyên nhân"));
                 }
             } catch (err) {
                 console.error("⚠️ Lỗi JS:", err);
-                alert("⚠️ Lỗi kết nối đến server!");
+                showAlert("⚠️ Lỗi kết nối đến server!", "error");
+                //alert("⚠️ Lỗi kết nối đến server!");
             }
         }
     </script>
@@ -452,6 +508,7 @@
 
                 if(!response.ok) {
                     const text = await response.text();
+                    showAlert("❌ Lỗi backend: " + text, "error");
                     alert("❌ Lỗi backend: " + text);
                     return;
                 }
@@ -462,12 +519,14 @@
                     //alert(result.message || "✅ Thêm danh mục thành công!");
                     window.location.href =  "/Product/Management/" + storeId;
                 } else {
-                     alert("❌ Thêm danh mục thất bại: " + (result.message || "Không rõ nguyên nhân"));
+                    showAlert("❌ Lỗi khi xóa danh mục: " + (data.message || "Không rõ nguyên nhân"), "error");
+                    //alert("❌ Thêm danh mục thất bại: " + (result.message || "Không rõ nguyên nhân"));
                 }
 
             } catch (err) {
                 console.error("❌ Exception:", err);
-                alert("❌ Exception: " + err.message);
+                showAlert("❌ Exception: " + err.message, "error");
+                //alert("❌ Exception: " + err.message);
             }
         }) 
         
@@ -506,15 +565,18 @@
                 const data = await response.json();
                 
                 if (response.ok & data.success) {
-                    alert(data.message || "Xóa sản phẩm thành công");
+                    showAlert(data.message || "Xóa sản phẩm thành công", "success");
+                    //alert(data.message || "Xóa sản phẩm thành công");
                     location.reload();
 
                 } else {
-                    alert("❌ Lỗi khi xóa: " + (data.message || "Không rõ nguyên nhân"));
+                    showAlert("❌ Lỗi khi xóa: " + (data.message || "Không rõ nguyên nhân"), "error")
+                    //alert("❌ Lỗi khi xóa: " + (data.message || "Không rõ nguyên nhân"));
                 }
             } catch (err) {
                 console.eror(err)
-                alert("⚠️ Lỗi kết nối đến server.");
+                showAlert("⚠️ Lỗi kết nối đến server!", "error");
+                //alert("⚠️ Lỗi kết nối đến server.");
             }
 
         }
@@ -547,7 +609,8 @@
                             label.classList.toggle("text-success", isActive);
                             label.classList.toggle("text-muted", !isActive);
                         } else {
-                            alert("❌ Cập nhật trạng thái thất bại!");
+                            showAlert("❌ Cập nhật trạng thái thất bại!", "error");
+                            //alert("❌ Cập nhật trạng thái thất bại!");
                             this.checked = !isActive;
                             label.textContent = this.checked ? "Còn hàng" : "Hết hàng";
                             //label.classList.remove("text-warning");
@@ -556,7 +619,8 @@
                         }
                     } catch (err) {
                         console.error("⚠️ Lỗi JS:", err);
-                        alert("⚠️ Có lỗi trong xử lý client-side!");
+                        showAlert("⚠️ Có lỗi trong xử lý client-side!", "error");
+                        //alert("⚠️ Có lỗi trong xử lý client-side!");
                         this.checked = !isActive;
                         label.textContent = this.checked ? "Còn hàng" : "Hết hàng";
                         //label.classList.remove("text-warning");
@@ -596,20 +660,56 @@
 
                     if (response.ok) {
                         const label = document.querySelector("label[for='toggleActive']");
-                        label.textContent = isActive ? "Active" : "Inactive";
+                        label.textContent = isActive ? "Mở cửa" : "Đóng cửa";
                         label.classList.toggle("text-success", isActive);
                         label.classList.toggle("text-muted", !isActive);
                     } else {
-                        alert("❌ Cập nhật trạng thái thất bại!");
+                        showAlert("❌ Cập nhật trạng thái thất bại!", "error");
+                        //alert("❌ Cập nhật trạng thái thất bại!");
                         this.checked = !isActive; // rollback
                     }
                 } catch (err) {
-                    alert("⚠️ Lỗi kết nối server!");
+                    showAlert("⚠️ Lỗi kết nối server!", "error");
+                    //alert("⚠️ Lỗi kết nối server!");
                     this.checked = !isActive; // rollback
                 }
             });
         });
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          // ADD PRODUCT dropdown (nếu bạn đã đổi ở modal "Thêm sản phẩm")
+          const addWrap = document.getElementById("addCategoryDropdown")?.closest(".mb-3");
+          if (addWrap) {
+            const list = document.getElementById("addCategoryList");
+            const text = document.getElementById("addCategoryText");
+            const hidden = document.getElementById("addCategoryId");
+            list?.addEventListener("click", (e) => {
+              const item = e.target.closest(".dropdown-item");
+              if (!item) return;
+              hidden.value = item.dataset.value;
+              text.textContent = item.textContent.trim();
+            });
+          }
+
+          // EDIT PRODUCT dropdowns — KHÔNG cần productId
+          document.querySelectorAll(".category-picker[data-edit-category]").forEach((wrap) => {
+            const list   = wrap.querySelector(".dropdown-menu");
+            const textEl = wrap.querySelector(".category-text");
+            const hidden = wrap.querySelector('input[type="hidden"][name="CategoryId"]');
+
+            list.addEventListener("click", (e) => {
+              const item = e.target.closest(".dropdown-item");
+              if (!item) return;
+              hidden.value = item.dataset.value;                 // ✅ không còn null
+              textEl.textContent = item.textContent.trim();
+            });
+          });
+        });
+    </script>
+
+
 
     
 }

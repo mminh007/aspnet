@@ -166,14 +166,17 @@
 
                                 if (res.ok) {
                                     console.log("✅ Đã gửi mã xác minh đến:", email);
-                                    alert("✅ Mã xác minh đã được gửi đến " + email);
+                                    showAlert("✅ Đã gửi mã xác minh đến: " + email, "success");
+                                    //alert("✅ Mã xác minh đã được gửi đến " + email);
                                 } else {
                                     console.warn("⚠️ Gửi mã thất bại!");
-                                    alert("⚠️ Không thể gửi mã xác minh!");
+                                    showAlert("⚠️ Gửi mã xác minh thất bại!", "error");
+                                    //alert("⚠️ Không thể gửi mã xác minh!");
                                 }
                             } catch (err) {
                                 console.error("❌ Lỗi khi gửi mã xác minh:", err);
-                                alert("❌ Lỗi hệ thống khi gửi mã!");
+                                showAlert("❌ Lỗi hệ thống khi gửi mã xác minh!", "error");
+                                //alert("❌ Lỗi hệ thống khi gửi mã!");
                             }
                         })();
                     }
@@ -208,14 +211,17 @@
                             if (res.ok) {
                                 remainingTime = 600;
                                 startCountdown();
-                                alert("✅ Mã xác minh mới đã được gửi!");
+                                showAlert("✅ Mã xác minh mới đã được gửi!", "success");
+                                //alert("✅ Mã xác minh mới đã được gửi!");
                             } else {
-                                alert("⚠️ Gửi lại mã thất bại!");
+                                showAlert("⚠️ Gửi lại mã xác minh thất bại!", "error");
+                                //alert("⚠️ Gửi lại mã thất bại!");
                                 resendBtn.disabled = false;
                             }
                         } catch (err) {
                             console.error("Resend error:", err);
-                            alert("❌ Lỗi hệ thống khi gửi lại mã!");
+                            showAlert("❌ Lỗi hệ thống khi gửi lại mã!", "error");
+                            //alert("❌ Lỗi hệ thống khi gửi lại mã!");
                             resendBtn.disabled = false;
                         }
                     });
@@ -230,7 +236,8 @@
                             .join("");
 
                         if (code.length !== 6) {
-                            alert("⚠️ Vui lòng nhập đủ 6 chữ số!");
+                            showAlert("⚠️ Vui lòng nhập đủ 6 chữ số!", "warning");
+                           //alert("⚠️ Vui lòng nhập đủ 6 chữ số!");
                             return;
                         }
 
@@ -242,17 +249,20 @@
                             });
 
                             if (res.ok) {
-                                alert("🎉 Xác minh thành công! Đang chuyển hướng...");
+                                showAlert("🎉 Xác minh thành công! Đang chuyển hướng...", "success");
+                                //alert("🎉 Xác minh thành công! Đang chuyển hướng...");
                                 const redirectTo = localStorage.getItem("preLoginUrl") || "/Home/Index";
                                 localStorage.removeItem("preLoginUrl");
                                 window.location.href = redirectTo;
                             } else {
                                 const err = await res.text();
-                                alert("❌ Xác minh thất bại: " + err);
+                                showAlert("❌ Xác minh thất bại: " + err, "error");
+                                //alert("❌ Xác minh thất bại: " + err);
                             }
                         } catch (err) {
                             console.error("Verify error:", err);
-                            alert("❌ Lỗi hệ thống khi xác minh!");
+                            showAlert("❌ Lỗi hệ thống khi xác minh!", "error");
+                            //alert("❌ Lỗi hệ thống khi xác minh!");
                         }
                     });
                 }
@@ -291,8 +301,12 @@
                         });
 
                         if (res.ok) {
-                            alert("✅ Link đổi mật khẩu đã được gửi về email của bạn!");
-                            window.location.href = "/Authentication/login";
+                            showAlert("✅ Link đổi mật khẩu đã được gửi về email của bạn!", "success");
+                            //alert("✅ Link đổi mật khẩu đã được gửi về email của bạn!");
+                            setTimeout(() => {
+                                    window.location.href = "/Authentication/login";
+                                }, 2000);
+                            //window.location.href = "/Authentication/login";
                         } else {
                             const msg = await res.text();
                             errorElem.textContent = msg || "❌ Gửi email thất bại, vui lòng thử lại!";

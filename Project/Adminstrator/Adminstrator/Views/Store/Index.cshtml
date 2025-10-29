@@ -34,7 +34,7 @@
                                            @(Model.IsActive ? "checked" : "")
                                            data-store-id="@Model.StoreId" />
                                     <label class="form-check-label" for="toggleActive">
-                                        @(Model.IsActive ? "Đang bán" : "Đóng cửa")
+                                        @(Model.IsActive ? "Mở cửa" : "Đóng cửa")
                                     </label>
                                 </div>
                             </li>
@@ -154,11 +154,13 @@
                         label.classList.toggle("text-success", isActive);
                         label.classList.toggle("text-muted", !isActive);
                     } else {
-                        alert("❌ Cập nhật trạng thái thất bại!");
+                        showAlert("❌ Cập nhật trạng thái thất bại!", "error");
+                        //alert("❌ Cập nhật trạng thái thất bại!");
                         this.checked = !isActive; // rollback
                     }
                 } catch (err) {
-                    alert("⚠️ Lỗi kết nối server!");
+                    console.error("⚠️ Lỗi kết nối server:", err);
+                    //alert("⚠️ Lỗi kết nối server!");
                     this.checked = !isActive; // rollback
                 }
             });
@@ -210,11 +212,13 @@
                     // document.querySelector(".card-title").textContent = result.data.storeName;
                     // document.querySelector(".card-text").textContent = result.data.description;
                 } else {
-                    alert("❌ " + result.message);
+                    showAlert("❌ " + result.message, "error");
+                    //alert("❌ " + result.message);
                 }
             } catch (err) {
                 console.error("⚠️ Lỗi kết nối:", err);
-                alert("⚠️ Không thể kết nối server!");
+                showAlert("⚠️ Không thể kết nối server!", "error");
+                //alert("⚠️ Không thể kết nối server!");
             }
         });
 
