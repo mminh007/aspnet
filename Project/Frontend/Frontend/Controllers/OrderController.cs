@@ -219,5 +219,26 @@ namespace Frontend.Controllers
 
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CancelOrder([FromQuery] Guid order_id)
+        {
+            _logger.LogInformation("CancelOrder called with order_id: {OrderId}", order_id);
+
+            if(order_id == Guid.Empty)
+            {
+                ViewBag.Error = "Order ID is required to cancel an order.";
+                return RedirectToAction("GetOrderList");
+            }
+
+            var (msg, status) = await _orderService.CancelOrder(order_id);
+            if (status == 200)
+            {
+                return RedirectToAction("GetOrderList");
+            }
+            ViewBag.Error = msg;
+            return RedirectToAction("GetOrderList");
+        }
+        
+
     }
 }

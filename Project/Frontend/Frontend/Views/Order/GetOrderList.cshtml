@@ -50,6 +50,12 @@
                                             Chi tiết
                                         </button>
 
+                                        <button>
+                                            <a class="text-decoration-none text-dark" asp-action="CancelOrder" asp-controller="Order"
+                                                  asp-route-orderId="@order.OrderId"
+                                               onclick="return confirm('Bạn có chắc muốn hủy đơn hàng này không?');"> Xóa Đơn</a>
+                                        </button>
+
                                         @if (order.Status == "Pending")
                                         {
                                             <button class="btn btn-sm btn-success payment-info"

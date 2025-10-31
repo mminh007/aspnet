@@ -278,6 +278,10 @@
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="mb-1">@item.ProductName</h6>
+                                        @if (!string.IsNullOrWhiteSpace(item.ErrorMessage))
+                                        {
+                                            <p class="text-danger mb-1 item-error">@item.ErrorMessage</p>
+                                        }
                                         <div class="fw-bold text-danger mt-1" data-price="@item.Price">
                                             @item.Price.ToString("N0") đ
                                         </div>

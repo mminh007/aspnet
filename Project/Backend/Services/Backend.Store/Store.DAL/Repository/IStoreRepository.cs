@@ -36,6 +36,8 @@ namespace Store.DAL.Repository
         Task<int> DecreaseBalanceAsync(Guid storeId, decimal amount);
         Task<int> DeleteAccountBankingAsync(Guid storeId);
 
+        
+
         Task SaveChangesAsync();
 
 

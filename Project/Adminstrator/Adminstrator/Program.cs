@@ -109,7 +109,7 @@ namespace Adminstrator
                     app.UseHsts();
                 }
 
-                app.UseHttpsRedirection();
+                //app.UseHttpsRedirection();
 
                 // Log mỗi HTTP request (status, timing, path, v.v.)
                 app.UseSerilogRequestLogging();

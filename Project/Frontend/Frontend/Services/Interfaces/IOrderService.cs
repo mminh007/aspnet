@@ -17,6 +17,8 @@ namespace Frontend.Services.Interfaces
 
         Task<(string Message, int StatusCode, DTOs.CartDTO data)> DeleteItemInCart(Guid userId, Guid productId);
 
+        Task<(string Message, int StatusCode)> CancelOrder(Guid orderId);
+
 
         // Order function
 
@@ -26,8 +28,7 @@ namespace Frontend.Services.Interfaces
         Task<(string Message, int StatusCode, List<DTOs.OrderDTO> Data)>
             GetOrdersByUser(Guid userId);
 
-        Task<(string Message, int StatusCode)>
-            DeleteOrder(Guid orderId);
+        //Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId);
 
         Task<(string Message, int StatusCode, IEnumerable<DTOs.OrderDTO> Data)>
             CreateOrder(Guid userId, IEnumerable<Guid> productIds, RequestOrderModel shipping);

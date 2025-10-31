@@ -506,14 +506,15 @@
         items.forEach(item => {
             total += item.isAvailable ? item.price * item.quantity : 0;
             html += `
-                <div class="d-flex align-items-center border-bottom py-2">
+                <div class="d-flex align-items-center border-bottom py-2"
+                        data-available="${item.isAvailable ? "true" : "false"}">
                     <div class="flex-shrink-0">
                         <img src="${item.productImage}" alt="${item.productName}"
                              class="img-thumbnail" style="width:60px; height:60px; object-fit:cover;">
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="mb-1">${item.productName}</h6>
-                        ${item.errorMessage ? `<p class="text-danger mb-1">${item.errorMessage}</p>` : ""}
+                        ${item.errorMessage ? `<p class="text-danger mb-1 item-error">${item.errorMessage}</p>` : ""}
                         <div class="fw-bold text-danger mt-1" data-price="${item.price}">
                             ${item.price.toLocaleString()} đ
                         </div>
@@ -543,6 +544,51 @@
         checkoutBtn.addEventListener("click", handleCheckoutClick);
     }
 
+    //const checkoutBtn = document.getElementById("btnCheckout");
+    //const checkoutForm = document.getElementById("checkoutForm");
+
+    //// Cờ cho phép submit hợp lệ
+    //let canSubmitCheckout = false;
+
+
+    //if (checkoutForm) {
+
+    //    const nativeSubmit = checkoutForm.submit.bind(checkoutForm);
+
+    //    // 1) Chặn submit qua event (requestSubmit / submit bằng Enter)
+    //    checkoutForm.addEventListener("submit", (e) => {
+    //        if (!canSubmitCheckout) {
+    //            e.preventDefault();
+    //            e.stopImmediatePropagation();
+    //            return false;
+    //        }
+    //        // Cho phép submit hợp lệ
+    //        return true;
+    //    });
+
+    //    // 2) Chặn submit bằng gọi trực tiếp form.submit() từ script khác
+    //    checkoutForm.submit = function () {
+    //        if (!canSubmitCheckout) {
+    //            // không làm gì nếu chưa được phép
+    //            return;
+    //        }
+    //        return nativeSubmit();
+    //    };
+    //}
+
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener("click", handleCheckoutClick);
+    }
+
+
+    function cartHasErrorsInDOM() {
+        const list = document.getElementById("modal-body-item-list");
+        if (!list) return false;
+        // Có thẻ .item-error hoặc data-available="false" là coi như có lỗi
+        return !!list.querySelector(".item-error, [data-available='false']");
+    }
+
+
     async function handleCheckoutClick() {
         checkoutBtn.disabled = true;
         const originalHtml = checkoutBtn.innerHTML;
@@ -563,11 +609,20 @@
 
             const phoneOk = /^(\+?\d{1,3}[- ]?)?\d{9,11}$/.test(phone);
             if (!fullname || !phone || !addressLine || !provinceCode || !wardCode) {
+                //canSubmitCheckout = false;
                 showErrorModal("<p>Vui lòng nhập đầy đủ <strong>tên</strong>, <strong>điện thoại</strong>, <strong>địa chỉ</strong>, <strong>Tỉnh</strong> và <strong>Phường</strong>.</p>");
                 return;
             }
             if (!phoneOk) {
+                //canSubmitCheckout = false;
                 showErrorModal("<p>Số điện thoại không hợp lệ.</p>");
+                return;
+            }
+
+            // ✅ CHẶN SỚM NẾU TRONG MODAL ĐÃ CÓ ITEM LỖI
+            if (cartHasErrorsInDOM()) {
+                //canSubmitCheckout = false;
+                showErrorModal("<p>Có sản phẩm không khả dụng. Vui lòng xoá hoặc chỉnh sửa trước khi tạo đơn.</p>");
                 return;
             }
 
@@ -585,11 +640,13 @@
             renderCartItems(items);
 
             if (items.length === 0) {
+                //canSubmitCheckout = false;
                 showErrorModal("<p><strong>Không có sản phẩm trong giỏ hàng.</strong></p>");
                 return;
             }
-            const invalidItems = items.filter(it => !it.isAvailable);
+            const invalidItems = items.filter(it => !it.isAvailable || it.errorMessage);
             if (invalidItems.length > 0) {
+                //canSubmitCheckout = false;
                 const html = invalidItems.map(it =>
                     `<p><strong>${it.productName}</strong>: ${it.errorMessage || "Ngừng bán"}</p>`
                 ).join("");
@@ -632,13 +689,16 @@
                 for (const [k, v] of fd.entries()) {
                     console.log(k, v);
                 }
-
+                //canSubmitCheckout = true;  
                 checkoutForm.submit();
             } else {
-                window.location.href = "/Order/CreateOrder";
+                setTimeout(() => {
+                    window.location.href = "/Order/CreateOrder";
+                }, 5000);
             }
         } catch (err) {
             console.error("Check cart error:", err);
+            canSubmitCheckout = false;
             showAlert("❌ Có lỗi mạng khi lấy giỏ hàng.");
             //alert("❌ Có lỗi mạng khi lấy giỏ hàng.");
         } finally {

@@ -225,11 +225,11 @@ namespace Frontend.Services
             return (result.Message ?? string.Empty, result.statusCode, result.data);
         }
 
-        public async Task<(string Message, int StatusCode)> DeleteOrder(Guid orderId)
+        public async Task<(string Message, int StatusCode)> CancelOrder(Guid orderId)
         {
             var result = await _client.DeleteOrder(orderId);
             return (result.Message ?? "No message", result.statusCode);
         }
-      
+
     }
 }
